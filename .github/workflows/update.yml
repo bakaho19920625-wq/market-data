@@ -1,19 +1,22 @@
-# 米国株データを毎日自動で取得し、「data」ブランチに最新版だけを保存する
+# 米国株データを毎日自動で取得・解析し、「data」ブランチに最新版だけを保存する
 name: update-market-data
 
 on:
   schedule:
-    # 月〜金の 22:17 UTC ＝ 日本時間 火〜土の朝 7:17（米国の取引終了後）
-    - cron: "17 22 * * 1-5"
+    # 月〜金の 21:45 UTC と 22:45 UTC ＝ 日本時間 火〜土の朝 6:45 と 7:45（米国の取引終了後）。
+    # 2回目は1回目の遅延・失敗に備えた保険（同じ内容を上書きするだけ）。
+    - cron: "45 21 * * 1-5"
+    - cron: "45 22 * * 1-5"
   workflow_dispatch: # 「Run workflow」ボタンで手動実行もできる
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v6
 
@@ -24,14 +27,39 @@ jobs:
       - name: Install
         run: pip install -r requirements.txt
 
+      - name: Keep the schedule alive
+        # 公開リポジトリは60日間活動がないと自動実行が止まる。毎回「有効化」を呼んで予防する。
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if gh api -X PUT "repos/${GITHUB_REPOSITORY}/actions/workflows/update.yml/enable"; then
+            echo "KEEPALIVE_STATUS=ok" >> "$GITHUB_ENV"
+          else
+            echo "KEEPALIVE_STATUS=failed" >> "$GITHUB_ENV"
+          fi
+
+      - name: Fetch previous ledger
+        # 前回の台帳（セットアップ登録・ブレイク追跡・レジーム履歴）を引き継ぐ
+        run: |
+          mkdir -p out/prev
+          if git fetch origin data:data-prev 2>/dev/null; then
+            git show data-prev:ledger.json > out/prev/ledger.json || echo "no previous ledger"
+          else
+            echo "no data branch yet"
+          fi
+
       - name: Fetch data
         run: python fetch_data.py --out out
+
+      - name: Analyze
+        run: python analyze.py --out out --prev-ledger out/prev/ledger.json
 
       - name: Publish to data branch
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           cd out
+          rm -rf prev
           git init -q
           git checkout -q -b data
           git config user.name "github-actions[bot]"
