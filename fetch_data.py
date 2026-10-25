@@ -7,7 +7,10 @@
                         配当込みの調整後終値は adj_close 列に別途保存。
   breadth.csv         : S&P500構成銘柄の株価から計算した市場内部（proxy）
                         50日線・200日線上比率、52週新高値・新安値、騰落数
-  manifest.json       : 実行日時、基準日、件数、取得できなかった銘柄など
+  prices_sp500.csv.gz : S&P500構成銘柄の日足（約2年、市場全体のRS順位・先導株・ブレイク統計用）
+  sp500_constituents.csv : 構成銘柄とGICSセクター
+  events.csv          : 監視銘柄の次回決算予定日（Yahooから取得できた分）
+  manifest.json       : 実行日時、基準日、件数、取得できなかった銘柄、リポジトリ最終更新日など
 
 データ元: Yahoo Finance（yfinance経由の非公式な取得。仕様変更で止まることがある）
 注意: breadth.csv は「現在の」S&P500構成銘柄で過去を計算するため、
@@ -128,11 +131,54 @@ def download(tickers, period, chunk=40, retries=3, pause=3.0):
 
 
 def load_sp500():
-    """S&P500構成銘柄の一覧を取得し、Yahooの表記（BRK.B→BRK-B）に直す。"""
+    """S&P500構成銘柄の一覧（ティッカー→GICSセクター）。Yahooの表記（BRK.B→BRK-B）に直す。"""
     with urllib.request.urlopen(SP500_URL, timeout=30) as r:
         df = pd.read_csv(r)
     syms = df["Symbol"].astype(str).str.strip().str.upper().str.replace(".", "-", regex=False)
-    return list(dict.fromkeys(syms))
+    sectors = df["GICS Sector"].astype(str) if "GICS Sector" in df.columns else pd.Series(["unknown"] * len(df))
+    out = {}
+    for s, sec in zip(syms, sectors):
+        out.setdefault(s, sec)
+    return out
+
+
+def fetch_earnings_dates(tickers, pause=0.3):
+    """監視銘柄の次回決算予定日。Yahooの非公式データなので取れない銘柄は空のまま。"""
+    rows = []
+    for t in tickers:
+        if t.startswith("^"):
+            continue
+        try:
+            tk = yf.Ticker(t)
+            dates = []
+            try:
+                cal = tk.calendar
+                if isinstance(cal, dict) and cal.get("Earnings Date"):
+                    dates = list(cal["Earnings Date"])
+            except Exception:
+                pass
+            if not dates:
+                try:
+                    ed = tk.get_earnings_dates(limit=8)
+                    if ed is not None and len(ed):
+                        dates = [d for d in ed.index.tz_localize(None) if d >= pd.Timestamp.utcnow().tz_localize(None) - pd.Timedelta(days=1)]
+                except Exception:
+                    pass
+            for d in dates[:2]:
+                rows.append({"date_et": pd.Timestamp(d).strftime("%Y-%m-%d"), "ticker": t, "event": "earnings", "source": "yahoo_unofficial"})
+        except Exception as e:  # 1銘柄の失敗で全体を止めない
+            print(f"earnings {t}: {e}", file=sys.stderr)
+        time.sleep(pause)
+    return pd.DataFrame(rows, columns=["date_et", "ticker", "event", "source"])
+
+
+def git_last_commit_iso():
+    """mainブランチ（チェックアウト中）の最終コミット日時。Actions の60日停止の目安に使う。"""
+    try:
+        import subprocess
+        return subprocess.check_output(["git", "log", "-1", "--format=%cI"], text=True).strip()
+    except Exception:
+        return None
 
 
 def compute_breadth(px, keep_days=260):
@@ -185,18 +231,31 @@ def main():
     if px.empty:
         print("データを1件も取得できませんでした。", file=sys.stderr)
         sys.exit(1)
+    # 休場日の幽霊行を除外する（^VIXなどが休場日にも出来高0の行を返し、
+    # そのままだと他の全銘柄がその日に欠損扱いになり移動平均が壊れる）。
+    # 取引日の暦はSPYの日付とし、SPYが無ければ「銘柄の半数以上にデータがある日」とする。
+    if "SPY" in set(px["ticker"]):
+        calendar = set(px.loc[px["ticker"] == "SPY", "date"])
+    else:
+        per_day = px.groupby("date")["ticker"].nunique()
+        calendar = set(per_day[per_day >= 0.5 * per_day.max()].index)
+    px = px[px["date"].isin(calendar)]
     px = px.sort_values(["ticker", "date"]).reset_index(drop=True)
     px.to_csv(os.path.join(a.out, "prices_daily.csv.gz"), index=False, compression="gzip")
     last_by_ticker = px.groupby("ticker")["date"].max()
     as_of = last_by_ticker.max()
     stale = sorted(last_by_ticker[last_by_ticker < as_of].index.tolist())
 
-    # 2) 市場内部（失敗しても日足は保存する）
+    # 2) S&P500全銘柄の日足と市場内部（失敗しても監視銘柄の日足は保存する）
     breadth = {"status": "skipped"}
     if not a.no_breadth:
         try:
             members = load_sp500()
-            bpx, bfailed = download(members, "2y")
+            pd.DataFrame({"ticker": list(members.keys()), "sector": list(members.values())}).to_csv(
+                os.path.join(a.out, "sp500_constituents.csv"), index=False)
+            bpx, bfailed = download(list(members.keys()), "2y")
+            bpx = bpx[bpx["date"].isin(calendar)]
+            bpx.sort_values(["ticker", "date"]).to_csv(os.path.join(a.out, "prices_sp500.csv.gz"), index=False, compression="gzip")
             b = compute_breadth(bpx)
             b.to_csv(os.path.join(a.out, "breadth.csv"), index=False)
             breadth = {
@@ -210,7 +269,16 @@ def main():
         except Exception as e:
             breadth = {"status": "failed", "error": str(e)[:300]}
 
-    # 3) 実行記録
+    # 3) 決算予定日（監視銘柄のみ）
+    earnings = {"status": "skipped"}
+    try:
+        ev = fetch_earnings_dates([t for t in tickers if t in set(px["ticker"])])
+        ev.to_csv(os.path.join(a.out, "events.csv"), index=False)
+        earnings = {"status": "ok", "rows": int(len(ev)), "tickers_with_date": int(ev["ticker"].nunique())}
+    except Exception as e:
+        earnings = {"status": "failed", "error": str(e)[:300]}
+
+    # 4) 実行記録
     finished = datetime.now(timezone.utc)
     manifest = {
         "generated_utc": finished.strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -229,6 +297,9 @@ def main():
             "tickers_stale": stale,
         },
         "breadth": breadth,
+        "earnings": earnings,
+        "repo_last_commit_main": git_last_commit_iso(),
+        "keepalive": os.environ.get("KEEPALIVE_STATUS"),
     }
     with open(os.path.join(a.out, "manifest.json"), "w", encoding="utf-8") as f:
         json.dump(manifest, f, ensure_ascii=False, indent=2)

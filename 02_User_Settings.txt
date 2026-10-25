@@ -1,0 +1,30 @@
+# 02_User_Settings.txt
+# 米国株指標チェック｜ユーザー設定（マスター仕様F1）
+# ユーザーが明示した値だけを書く。null＝未設定（F1の保守的な既定を使う）。
+# 変更したいときは、プロジェクトのチャットで「設定を変更：〜」と伝え、
+# 作り直したファイルをこのファイルと差し替える。
+
+USER_SETTINGS:
+  broker: null                 # 使っている証券会社
+  us_stock_order_types:
+    stop_market_buy: null      # 米国株で逆指値（成行）買いが使えるか
+    stop_limit_buy: null       # 逆指値付き指値買いが使えるか
+    extended_hours: null       # 時間外取引の可否
+    order_validity: null       # 当日限り／期間指定など
+  monitoring:
+    can_watch_us_session: null # 米国取引時間中（日本の深夜）に画面を見られるか
+    typical_check_times_jst: []
+  data_access:
+    official_rs_source: null   # MarketSurge等の契約（未契約なら「なし」）
+    export_available: null
+    connectors: []             # 接続済みの市場データコネクタ
+    github_pipeline: "bakaho19920625-wq/market-data（dataブランチ、F2.1）"
+    code_execution: null       # 最初のレポートで確認する
+  rs_route: proxy              # 公式RSの取得手段がないため独自proxyを正式ルートとする
+  account:
+    currency: null
+    equity: null
+    max_risk_per_trade_pct: null
+    max_portfolio_drawdown_pct: null
+    leverage_allowed: null
+  updated_jst: "2026-10-25"

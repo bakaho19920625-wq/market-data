@@ -1,0 +1,79 @@
+# 日次レポート 実行手順書（daily_runbook v1.0、マスター仕様v4.2のD7「Daily」の実装）
+# 日次の自動実行はこの手順書に従う。マスター仕様は定義の確認が必要なときだけ該当条項を読む。
+
+## 0. 原則
+- 計算はGitHubの解析エンジン（analyze.py）が済ませている。signals.json の値を再計算しない。
+  検証のための再計算は可。食い違いがあれば signals.json を優先し、食い違いを報告する。
+- 推測で埋めない。null や missing はそのまま「未確認」と書く。
+- 口座・保有・売買ログはユーザーがチャットで示した範囲だけ使う。未提供なら数量を出さない。
+- 本文は2〜3画面。重要ポイント（第2節）を先頭に置く。
+
+## 1. 取得と確認
+1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
+2. GitHub data ブランチから manifest.json、signals.json、setups.csv を取得する。
+   https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>
+   届かなければ git clone --depth 1 -b data https://github.com/bakaho19920625-wq/market-data.git
+3. データの新しさ：
+   - 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
+   - 前日が休場日 → 「新しい取引日はありません（休場）」と短く送って終了（保存しない）。
+   - signals.as_of_market_date がその取引日より古い → 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない）。
+4. リポジトリの活動（60日停止の予防）：
+   - manifest.repo_last_commit_main から経過日数を出す。45日以上なら、レポート冒頭に
+     「GitHubのリポジトリを更新してください（tickers.txt を開いて1行コメントを足して保存するだけで足ります）」と警告する。
+   - manifest.keepalive が "failed" なら、その旨も添える。
+5. 前回状態：保管ページDBの state/latest_daily、state/scenarios を読む。同じ基準日の日次が保存済みなら二重保存しない。
+
+## 2. 日次で逃さない重要ポイント（必ず冒頭に列挙）
+signals.key_events_today をすべて書く。空なら「本日の重要イベントなし」と書く。種類ごとの扱い：
+- regime_change：Tapeレジームの変更（hysteresisがprovisionalなら「確認待ち」と明記）。
+- new_ready：新しいセットアップready（銘柄、型、P、S、リスク幅）。決算5営業日以内なら「見送り」。
+- near_pivot：ピボットまで3%以内。Daily Planの候補。
+- breakout：価格ブレイク。rvol50と出来高確認、weak（弱いブレイク）を併記。
+- squat：ブレイク未達で押し戻し。「1〜2日、最長10日の回復待ち」と書く（E11.1）。
+- pivot_failure / stop_touched：追跡中のブレイクの失敗・ストップ抵触。
+- setup_failed：登録セットアップの崩れ。
+- leader_weakness：先導株の50日線割れなど（弱さの中での売り検討）。
+- climax_watch / climax_alert：強さの中での売り検討（該当項目を書く）。
+- earnings_within_5d：決算5営業日以内（新規通常サイズは見送り、保有はイベント確認）。
+決算日は Yahoo の非公式データなので「要確認」と添える。
+
+## 3. Tape（signals.tape）
+- regime_effective、regime_checklist、hysteresis、provisional、reasons、previous_confirmed。
+- チェックリスト表：SPY/QQQ（50日線・200日線・200日線の向き・52週高値比）、IX2（有効分配日）、
+  BR1（50日線上比率と4週前）、BR2（新高値−新安値5日平均と4週前）、BR3（RSP/SPY 4週）、
+  LD1（市場全体の先導候補数と4週前、セクター数）、FB1（ブレイク追随率 D+5 と4週前、件数）、
+  index_state（分配日の日付、ストーリング、ラリーアテンプト、FTD）。
+- 市場内部とFB1は現在のS&P500構成銘柄からのproxy（生存者バイアス）と注記する。
+- レジームの定義はマスター仕様C15.1（改訂版）。判定はエンジンの値をそのまま使う。
+
+## 4. Broad（短く）
+- 日々動く項目だけ：S&P500・NASDAQ・SOX（signals.market）、VIX、2年・10年金利、HY OAS、ドル円、原油、当日〜翌営業日のイベント。
+  金利・HY・為替・原油・イベントはWeb検索で取得し、出典と基準日を付ける。
+- Broad点は週次で確定。日次は「据置（前回週次：○点・○○）」を基本とし、判定帯をまたぐ明確な変化がある場合だけ暫定値と理由を書く。
+- マクロ値は state に保存しない（表示のみ。保存は週次）。
+
+## 5. 半導体・テクノロジー
+- tech_etf（SOXX、SMH、XLK、VGT、IGV、CIBR、SKYY、SOXL）：1日・1週・1か月のSPY比、50日線・200日線との位置。
+- tech_leaders（市場全体のRS百分位80以上かつTT価格7項目クリア）：銘柄、区分、RS、SPY比63日、52週高値比。
+- tech_watch：RS80以上だがTT未達、またはTT達成だがRS未達の銘柄（TT項目数、RS）。
+- setups：ready → watch → forming の順。各行：銘柄、型、フットプリント、P、S、リスク幅、ピボットまでの距離、DRY5。
+- ledger_cohorts：setup_type別のD+3/5/10（件数が20未満なら参考値）。
+- sell_signals：先導株・母集団のクライマックス／弱さ。
+
+## 6. Daily Plan（F4）
+- 前提：regime_effective と適用ゲート → 新規許容度（なし／Pilot／通常）。
+  F・D・Transition（provisional）は新規なし。Cは原則なし（例外はE12）。E・BはPilot〜選別。Aは通常。
+- 候補：ready と near_pivot の銘柄。各行：P、E_plan（=1.001P、注文トリガー未設定時）、E_max（=min(1.05P, S/0.93)）、
+  S、リスク幅、決算日（要確認）、許容サイズ区分、無効化条件。決算5営業日以内は見送り。
+- 米国時間（ET 9:30〜16:00。日本時間は夏時間22:30〜5:00、標準時間23:30〜6:00）とユーザー設定の注文手段を前提にする。
+  設定が null なら価格水準と条件だけを示し、注文方法の可否は断定しない。
+- 保有銘柄はユーザー提供時のみ扱う。
+- 前回Daily Planの結果：発動・見送り・squat・失敗（判明分のみ）。
+
+## 7. 出力と保存
+- report_id：YYYYMMDD-DAILY（基準日）。
+- SendUserMessage：一文結論、重要ポイント（第2節）、Tape（レジーム・変化）、Daily Planの候補数、データ状態。
+- 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
+- 保存（ArtifactData batch、F9の形式）：reports/<id>、report_bodies/<id>、state/latest_daily（yamlにはTape、L/H、候補、key_events、データ状態）。
+  state/ledger は使わない（台帳はGitHubの ledger.json が正本）。state/scenarios は週次が更新する。
+  既存ドキュメントは読んだ version を if_version に指定する。失敗したらユーザーに伝える。
