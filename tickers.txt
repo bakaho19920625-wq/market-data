@@ -1,0 +1,121 @@
+# 取得する銘柄の一覧（1行に1銘柄。# 以降はメモ）
+# 追加・削除はこのファイルを編集するだけでOK。
+
+# --- 指数・市場全体 ---
+^GSPC   # S&P500指数
+^IXIC   # Nasdaq Composite
+^VIX    # VIX（出来高はなし）
+SPY
+QQQ
+IWM
+RSP     # S&P500均等加重
+DIA
+
+# --- 11セクターETF ---
+XLB
+XLC
+XLE
+XLF
+XLI
+XLK
+XLP
+XLRE
+XLU
+XLV
+XLY
+
+# --- 半導体・テクノロジーETF ---
+SOXX
+SMH
+VGT
+IGV
+CIBR
+SKYY
+SOXL    # 3倍レバレッジ（A4の条件時に使用）
+
+# --- 金利・信用・ドル・商品（Broad用のproxy） ---
+TLT     # 米長期国債
+HYG     # ハイイールド債
+LQD     # 投資適格社債
+UUP     # ドル
+GLD     # 金
+USO     # 原油
+
+# --- 半導体（設計・製造・装置・メモリー・後工程） ---
+NVDA
+AVGO
+AMD
+TSM
+ASML
+QCOM
+TXN
+INTC
+MU
+AMAT
+LRCX
+KLAC
+ADI
+MRVL
+NXPI
+MCHP
+ON
+MPWR
+ARM
+SNPS
+CDNS
+TER
+ENTG
+SWKS
+QRVO
+LSCC
+ALAB
+CRDO
+COHR
+WDC
+STX
+MTSI
+RMBS
+AMKR
+ONTO
+FORM
+NVMI
+CAMT
+SITM
+
+# --- ソフトウェア・クラウド・サイバーセキュリティ ---
+MSFT
+ORCL
+CRM
+ADBE
+NOW
+INTU
+PLTR
+PANW
+CRWD
+ZS
+FTNT
+NET
+DDOG
+SNOW
+MDB
+OKTA
+TEAM
+WDAY
+ADSK
+APP
+IBM
+GOOGL   # クラウド事業（正式分類は情報技術外）
+AMZN    # クラウド事業（正式分類は情報技術外）
+
+# --- ハードウェア・ネットワーク・AI計算基盤 ---
+AAPL
+ANET
+CSCO
+DELL
+HPE
+SMCI
+CIEN
+LITE
+GLW
+APH
+CRWV
