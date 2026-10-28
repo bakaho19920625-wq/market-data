@@ -43,6 +43,8 @@ FIELDS = {
 }
 COLUMNS = ["date", "ticker", "open", "high", "low", "close", "adj_close", "volume", "adj_basis"]
 JST = timezone(timedelta(hours=9))
+# Yahooが終値だけ空欄の日足を返した日付と銘柄（未確定の足）。manifestに記録する
+INCOMPLETE = {}
 
 
 def read_tickers(path):
@@ -62,6 +64,10 @@ def _format_one(sub, ticker):
     sub = sub[keep]
     if "close" not in sub.columns:
         return pd.DataFrame(columns=COLUMNS)
+    if "open" in sub.columns:
+        bad = sub["close"].isna() & sub["open"].notna()
+        for d in pd.to_datetime(sub.index[bad]).strftime("%Y-%m-%d"):
+            INCOMPLETE.setdefault(d, set()).add(ticker)
     sub = sub.dropna(subset=["close"])
     if sub.empty:
         return pd.DataFrame(columns=COLUMNS)
@@ -349,6 +355,8 @@ def main():
             "tickers_ok": int(px["ticker"].nunique()),
             "tickers_failed": failed,
             "tickers_stale": stale,
+            # 基準日より新しい日付で、Yahooが終値を空欄のまま返した銘柄数（未確定。次回以降に自動で取り直す）
+            "yahoo_incomplete": {d: len(v) for d, v in sorted(INCOMPLETE.items()) if d > as_of},
         },
         "breadth": breadth,
         "earnings": earnings,
