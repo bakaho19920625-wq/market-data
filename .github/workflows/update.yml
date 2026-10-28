@@ -45,12 +45,25 @@ jobs:
           mkdir -p out/prev
           if git fetch origin data:data-prev 2>/dev/null; then
             git show data-prev:ledger.json > out/prev/ledger.json || echo "no previous ledger"
+            git show data-prev:manifest.json > out/prev/manifest.json || echo "no previous manifest"
           else
             echo "no data branch yet"
           fi
 
       - name: Fetch data
         run: python fetch_data.py --out out
+
+      - name: Do not go backwards
+        # 取得に失敗して前回より古いデータになった場合は公開しない（前回のデータを残す）
+        run: |
+          python - <<'PY'
+          import json, os, sys
+          new = json.load(open("out/manifest.json"))["prices"]["as_of"]
+          p = "out/prev/manifest.json"
+          old = json.load(open(p))["prices"]["as_of"] if os.path.exists(p) and os.path.getsize(p) > 0 else ""
+          print(f"previous as_of={old} new as_of={new}")
+          sys.exit(1 if old and new < old else 0)
+          PY
 
       - name: Analyze
         run: python analyze.py --out out --prev-ledger out/prev/ledger.json

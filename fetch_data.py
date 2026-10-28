@@ -98,28 +98,35 @@ def to_long(df, tickers):
     return pd.concat(parts, ignore_index=True)
 
 
+def _download_raw(part, period, retries=3, pause=3.0):
+    for attempt in range(retries):
+        try:
+            return yf.download(
+                part,
+                period=period,
+                interval="1d",
+                auto_adjust=False,
+                actions=False,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+            )
+        except Exception as e:  # 通信エラーや一時的な制限
+            print(f"retry {attempt + 1}/{retries}: {e}", file=sys.stderr)
+            time.sleep(pause * (attempt + 1))
+    return None
+
+
 def download(tickers, period, chunk=40, retries=3, pause=3.0):
-    """少しずつ分けて取得し、失敗したら待って再試行する。"""
+    """少しずつ分けて取得し、失敗したら待って再試行する。
+    指数（^で始まる）と株式・ETFを同じ回で取ると、取引所の時間帯の違いで株式の最新日が欠けることがあるため、
+    指数は1銘柄ずつ、株式・ETFはまとめて取得する。"""
     frames, failed = [], []
-    for i in range(0, len(tickers), chunk):
-        part = tickers[i:i + chunk]
-        df = None
-        for attempt in range(retries):
-            try:
-                df = yf.download(
-                    part,
-                    period=period,
-                    interval="1d",
-                    auto_adjust=False,
-                    actions=False,
-                    group_by="ticker",
-                    threads=True,
-                    progress=False,
-                )
-                break
-            except Exception as e:  # 通信エラーや一時的な制限
-                print(f"retry {attempt + 1}/{retries}: {e}", file=sys.stderr)
-                time.sleep(pause * (attempt + 1))
+    idx = [t for t in tickers if t.startswith("^")]
+    eq = [t for t in tickers if not t.startswith("^")]
+    parts = [[t] for t in idx] + [eq[i:i + chunk] for i in range(0, len(eq), chunk)]
+    for part in parts:
+        df = _download_raw(part, period, retries, pause)
         long = to_long(df, part)
         got = set(long["ticker"]) if not long.empty else set()
         failed += [t for t in part if t not in got]
@@ -127,7 +134,38 @@ def download(tickers, period, chunk=40, retries=3, pause=3.0):
             frames.append(long)
         time.sleep(pause)
     data = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame(columns=COLUMNS)
+    data, repaired = repair_latest(data, pause=0.2)
+    if repaired:
+        print(f"repaired latest bar: {len(repaired)} tickers", file=sys.stderr)
     return data, failed
+
+
+def latest_session_date():
+    """SPYを単独で取得し、Yahooが返す最新の取引日（YYYY-MM-DD）を返す。取れなければNone。"""
+    long = to_long(_download_raw(["SPY"], "5d"), ["SPY"])
+    return long["date"].max() if not long.empty else None
+
+
+def repair_latest(data, pause=0.2):
+    """まとめて取得したときに最新日が欠けた銘柄を、1銘柄ずつ取り直して補う。"""
+    if data.empty:
+        return data, []
+    ref = latest_session_date()
+    if ref is None:
+        return data, []
+    last = data.groupby("ticker")["date"].max()
+    lagging = [t for t, d in last.items() if d < ref]
+    add, repaired = [], []
+    for t in lagging:
+        new = to_long(_download_raw([t], "1mo"), [t])
+        new = new[new["date"] > last[t]]
+        if not new.empty:
+            add.append(new)
+            repaired.append(t)
+        time.sleep(pause)
+    if add:
+        data = pd.concat([data] + add, ignore_index=True)
+    return data, repaired
 
 
 def load_sp500():
