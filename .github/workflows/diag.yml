@@ -1,0 +1,54 @@
+# 一時的な診断用（手動実行のみ）。Yahooから最新の日足が取れるかを確かめ、結果を diag ブランチに置く。
+name: diag-yahoo
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Diagnose
+        run: |
+          mkdir -p out
+          python - <<'PY'
+          import json, datetime, traceback
+          import yfinance as yf, pandas as pd
+          res = {"utc_now": datetime.datetime.utcnow().isoformat(), "yfinance": yf.__version__, "pandas": pd.__version__}
+          def last(df):
+              if df is None or len(df) == 0: return None
+              idx = df.index[-3:]
+              return [str(x) for x in idx]
+          tries = {
+            "download_period": lambda: yf.download("SPY", period="5d", interval="1d", auto_adjust=False, progress=False),
+            "download_start": lambda: yf.download("SPY", start="2026-10-20", interval="1d", auto_adjust=False, progress=False),
+            "download_start_end": lambda: yf.download("SPY", start="2026-10-20", end="2026-10-29", interval="1d", auto_adjust=False, progress=False),
+            "history_period": lambda: yf.Ticker("SPY").history(period="5d", interval="1d", auto_adjust=False),
+            "history_1h": lambda: yf.Ticker("SPY").history(period="2d", interval="1h"),
+            "group_by_ticker_3y": lambda: yf.download(["SPY","QQQ"], period="3y", interval="1d", auto_adjust=False, group_by="ticker", progress=False),
+          }
+          for k, f in tries.items():
+              try:
+                  df = f(); res[k] = {"last_index": last(df), "rows": int(len(df))}
+              except Exception as e:
+                  res[k] = {"error": repr(e)[:300]}
+          try:
+              res["fast_info_last_price"] = float(yf.Ticker("SPY").fast_info["last_price"])
+          except Exception as e:
+              res["fast_info_error"] = repr(e)[:200]
+          json.dump(res, open("out/diag.json", "w"), indent=1, ensure_ascii=False)
+          print(json.dumps(res, indent=1))
+          PY
+      - name: Publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          cd out && git init -q && git checkout -q -b diag
+          git config user.name "github-actions[bot]"; git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A && git commit -q -m diag && git push -q -f "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" diag
