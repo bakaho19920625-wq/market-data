@@ -565,6 +565,8 @@ def update_ledger(ledger, P, universe_setups, today, i):
         t = s["ticker"]
         if t not in C.columns or s.get("status") in ("failed", "closed", "expired", "superseded"):
             continue
+        if s.get("registered", "") >= tstr:
+            continue  # 今日の足で登録したものは、翌営業日から判定する（同日再実行での誤検出を防ぐ）
         c, h, l = C[t].iloc[i], H[t].iloc[i], L[t].iloc[i]
         if any(math.isnan(x) for x in (c, h, l)):
             continue
@@ -745,7 +747,9 @@ def main():
             ledger = json.load(open(a.prev_ledger, encoding="utf-8"))
         except Exception:
             ledger = {}
-    prev_conf = (ledger.get("regime_history") or [{}])[-1].get("confirmed_regime")
+    # 同じ基準日の再実行（GitHubの予約が1日に複数回動く場合）では、前日以前の確定値と比べる
+    hist_before = [h for h in ledger.get("regime_history", []) if h.get("date", "") < tstr]
+    prev_conf = hist_before[-1].get("confirmed_regime") if hist_before else None
     eff_regime, hyst = apply_hysteresis(chk_today, chk_y, prev_conf)
 
     # --- セットアップ（テック・半導体のみ） ---
@@ -769,8 +773,15 @@ def main():
 
     # --- 台帳更新 ---
     events = update_ledger(ledger, P, setups, today, i)
-    ledger.setdefault("regime_history", []).append({"date": tstr, "checklist_regime": chk_today["regime"], "confirmed_regime": eff_regime,
-                                                    "hysteresis": hyst, "provisional": chk_today["provisional"]})
+    # 同じ基準日に先の実行で検出したイベント（ブレイク等）を引き継ぐ。再実行では同じ事象が再検出されないため
+    day = ledger.get("day_events") or {}
+    if day.get("date") == tstr:
+        seen = {json.dumps(e, sort_keys=True, ensure_ascii=False) for e in events}
+        events = [e for e in day.get("events", []) if json.dumps(e, sort_keys=True, ensure_ascii=False) not in seen] + events
+    ledger["day_events"] = {"date": tstr, "events": events}
+    ledger["regime_history"] = [h for h in ledger.get("regime_history", []) if h.get("date") != tstr]
+    ledger["regime_history"].append({"date": tstr, "checklist_regime": chk_today["regime"], "confirmed_regime": eff_regime,
+                                     "hysteresis": hyst, "provisional": chk_today["provisional"]})
     ledger["regime_history"] = ledger["regime_history"][-130:]
     ledger["updated"] = tstr
     ledger["definition_version"] = DEF_VERSION

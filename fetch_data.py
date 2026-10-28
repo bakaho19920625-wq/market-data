@@ -172,6 +172,15 @@ def fetch_earnings_dates(tickers, pause=0.3):
     return pd.DataFrame(rows, columns=["date_et", "ticker", "event", "source"])
 
 
+def unclosed_session_date():
+    """米国東部時間で今日の16:20より前なら、今日の日付（YYYY-MM-DD）を返す。それ以外はNone。"""
+    from zoneinfo import ZoneInfo
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    if now_et.hour * 60 + now_et.minute < 16 * 60 + 20:
+        return now_et.strftime("%Y-%m-%d")
+    return None
+
+
 def git_last_commit_iso():
     """mainブランチ（チェックアウト中）の最終コミット日時。Actions の60日停止の目安に使う。"""
     try:
@@ -240,6 +249,11 @@ def main():
         per_day = px.groupby("date")["ticker"].nunique()
         calendar = set(per_day[per_day >= 0.5 * per_day.max()].index)
     px = px[px["date"].isin(calendar)]
+    # 取引中・引け直後の未確定の日足を除く（米国東部16:20より前の当日分）。
+    # GitHubの予約実行は時刻がずれるため、どの時刻に動いても確定済みの終値だけを使う。
+    unclosed = unclosed_session_date()
+    if unclosed is not None:
+        px = px[px["date"] != unclosed]
     px = px.sort_values(["ticker", "date"]).reset_index(drop=True)
     px.to_csv(os.path.join(a.out, "prices_daily.csv.gz"), index=False, compression="gzip")
     last_by_ticker = px.groupby("ticker")["date"].max()
@@ -255,6 +269,8 @@ def main():
                 os.path.join(a.out, "sp500_constituents.csv"), index=False)
             bpx, bfailed = download(list(members.keys()), "2y")
             bpx = bpx[bpx["date"].isin(calendar)]
+            if unclosed is not None:
+                bpx = bpx[bpx["date"] != unclosed]
             bpx.sort_values(["ticker", "date"]).to_csv(os.path.join(a.out, "prices_sp500.csv.gz"), index=False, compression="gzip")
             b = compute_breadth(bpx)
             b.to_csv(os.path.join(a.out, "breadth.csv"), index=False)
