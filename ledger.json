@@ -1,0 +1,61 @@
+{
+ "setups": [],
+ "folded_counts": {},
+ "regime_history": [
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "initial",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-26",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-27",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-28",
+   "checklist_regime": "B",
+   "confirmed_regime": "E",
+   "hysteresis": "provisional→B（2日連続の確認待ち）",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-29",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-30",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  }
+ ],
+ "updated": "2026-10-30",
+ "definition_version": "ST-1.3 / engine 1.1",
+ "day_events": {
+  "date": "2026-10-30",
+  "events": []
+ }
+}
