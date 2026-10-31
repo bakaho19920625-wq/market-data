@@ -1,4 +1,4 @@
-# 日次レポート 実行手順書（daily_runbook v1.0、マスター仕様v4.2のD7「Daily」の実装）
+# 日次レポート 実行手順書（daily_runbook v1.1、マスター仕様v4.2のD7「Daily」の実装）
 # 日次の自動実行はこの手順書に従う。マスター仕様は定義の確認が必要なときだけ該当条項を読む。
 
 ## 0. 原則
@@ -42,6 +42,8 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - sector_rs_flip：セクター内区分がリーダー⇄ラガードに変わった（v4.3 E7.1。基準ETFを併記）。
 - next_candidate_new / next_candidate_out：調整耐性の「次の候補」に新しく入った／外れた（v4.3 E7.2。tier A/B/C、下げ耐性・戻りの区分）。監視候補であり買いではない。
 - late_break_new：「後崩れ」（下げに耐えたが戻りで売られている）に新しく入った。保有中なら弱さの中での売り検討の材料。
+- rs_line_lead：RSライン（対SPY）が52週高値を更新したのに株価はまだ高値の下（RSが株価に先行。v4.3b E7.3）。市場が下げている日ほど注目。候補であり買いではない。
+- rs_line_new_high：RSラインと株価がそろって52週高値（前回のRS新高値から20営業日以上あいたもの）。
 決算日は Yahoo の非公式データなので「要確認」と添える。
 
 ## 3. Tape（signals.tape）
@@ -69,6 +71,12 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - sector_rs（v4.3）：グループごとにリーダー上位3・ラガード下位3（rel_sec_63_pct）。セクター自体が指数に負けていれば「弱いセクターの中で相対的に強い」と書く。
 - correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low、dd_now）。next_candidates の上位5（tier、R_held、R_now、新高値）と late_breaks。
   R_held・R_now は倍率なので dd_low・dd_now を併記する。リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
+- rs_lines（v4.3b、RSライン＝銘柄÷SPY。RSIとは別物）：
+  ・1行目：SPYの52週高値からの位置、監視母集団でRSラインが21日EMAの上にある数（summary.above_ema21_count）、
+    S&P500∪監視母集団でRS新高値の件数（market.rs_new_high_count、市場情報として件数だけ）。
+  ・RS新高値（summary.rs_new_high）とそのうち先行（summary.rs_leads_price）。なければ「なし」。21日EMAの上抜け・下抜け（crossed_up／crossed_down）。
+  ・core（SOXX、SMH、XLK、IGV、NVDA、AVGO、AMD、TSM、MU、MSFT、ORCL）を短い表で：EMA21の上下、EMAとの差%、RSの52週高値からの位置%、株価の52週高値からの位置%、対QQQでEMA21の上下。
+  ・一言添える：「RSラインは強い銘柄を拾う道具で、新高値でも下落しない保証ではない。買いはピボット・ブレイクで判定する」。SOXLはSOXXで代用。
 
 ## 6. Daily Plan（F4）
 - 前提：regime_effective と適用ゲート → 新規許容度（なし／Pilot／通常）。

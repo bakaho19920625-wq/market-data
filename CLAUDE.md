@@ -21,6 +21,7 @@
 追補「03_Addendum_v4.3_SectorRS_Resilience.txt」（E7.1 セクター相対強度、E7.2 調整耐性。v4.3、ST-1.3）も正本の一部とする。
 セクター内のリーダー／ラガードと調整耐性（次の候補・後崩れ）は signals.json の sector_rs／correction_resilience から読み、
 監視候補の順番として扱う。買い判定・市場RS百分位・Tapeスコアには使わない。
+RSライン（対SPY・対QQQ、RS新高値、株価に先行、21日EMA。追補のE7.3）は signals.json の rs_lines から読む。候補の絞り込みであり買い判定ではない。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape

@@ -19,6 +19,8 @@
 v4.3 追補（03_Addendum_v4.3_SectorRS_Resilience.txt）：E7.1 セクター相対強度、E7.2 調整耐性を追加。
   screen.csv の列、signals.json の sector_rs / correction_resilience、key_events の
   sector_rs_flip / next_candidate_new / next_candidate_out / late_break_new（前回の screen.csv との差分。--prev-screen）。
+v4.3b：RSライン（E7。対SPY、補助で対QQQ）の状態を追加。signals.json の rs_lines、screen.csv の rs_line_* 列、
+  key_events の rs_line_lead（RS新高値が株価に先行）／rs_line_new_high（株価とそろった新高値。前回から20営業日以上あいた場合）。
 """
 import argparse
 import json
@@ -871,6 +873,71 @@ def jsonable(o):
 
 
 # ----------------------------------------------------------------------------
+# RSライン（E7のRSライン・RS新高値。v4.3b、P）
+# ----------------------------------------------------------------------------
+RSL = {"window": 252, "ema": 21, "lead_gap_pct": 2.0, "first_gap_days": 20}
+
+
+def rs_lines(P, i, bench):
+    """全銘柄のRSライン（P/B）の状態。RS新高値＝当日値が直近252本の過去値すべてを上回る（253本必要、E7）。
+    先行＝RS新高値の日に、株価が252本終値高値から lead_gap_pct 以上下。EMAは21日（指数平滑、RSラインに適用）。"""
+    C = P.C
+    if bench not in C.columns:
+        return None
+    w = RSL["window"]
+    R = C.div(C[bench], axis=0)
+    prior = R.shift(1).rolling(w, min_periods=w).max()
+    nh_all = R > prior
+    E = R.ewm(span=RSL["ema"], adjust=False, min_periods=RSL["ema"]).mean()
+    px_hi = C.rolling(w, min_periods=w).max()
+    px_prior = C.shift(1).rolling(w, min_periods=w).max()
+    r_i, p_i, e_i, e_y, r_y = R.iloc[i], prior.iloc[i], E.iloc[i], E.iloc[i - 1], R.iloc[i - 1]
+    nh = (r_i > p_i).where(p_i.notna())
+    px_gap = (C.iloc[i] / px_hi.iloc[i] - 1) * 100
+    above, above_y = (r_i > e_i).where(e_i.notna()), (r_y > e_y).where(e_y.notna() & r_y.notna())
+    past = nh_all.iloc[:i].to_numpy()
+    since = {}
+    for k, t in enumerate(R.columns):
+        idx = np.flatnonzero(past[:, k])
+        since[t] = int(i - idx[-1]) if len(idx) else None
+    df = pd.DataFrame({
+        "rs_new_high": nh,
+        "leads_price": (nh == True) & (px_gap <= -RSL["lead_gap_pct"]),  # noqa: E712
+        "price_new_high": (C.iloc[i] > px_prior.iloc[i]).where(px_prior.iloc[i].notna()),
+        "days_since_prev_rs_high": pd.Series(since),
+        "rs_pct_from_52w_high": (r_i / R.rolling(w, min_periods=w).max().iloc[i] - 1) * 100,
+        "price_pct_from_52w_close_high": px_gap,
+        "above_ema21": above,
+        "cross_ema21": np.where(above.isna() | above_y.isna() | (above == above_y), None, np.where(above == True, "up", "down")),  # noqa: E712
+        "dist_ema21_pct": (r_i / e_i - 1) * 100,
+        "ema21_slope_5d_pct": (e_i / E.iloc[i - 5] - 1) * 100,
+        "rs_up_vs_21d": (r_i > R.iloc[i - 21]).where(R.iloc[i - 21].notna()),  # E8 L の「RSライン > 21日前」
+    })
+    df["leads_price"] = df["leads_price"].astype(object)
+    df.loc[df["rs_new_high"].isna(), "leads_price"] = None
+    return df.drop(index=[bench], errors="ignore")
+
+
+def rs_line_row(t, s, q, group=""):
+    """signals.json 用の1行（s＝対SPY、q＝対QQQ の DataFrame）。"""
+    r = s.loc[t]
+    out = {"ticker": t, "group": group,
+           "rs_new_high": None if isnull(r["rs_new_high"]) else bool(r["rs_new_high"]),
+           "leads_price": None if isnull(r["leads_price"]) else bool(r["leads_price"]),
+           "days_since_prev_rs_high": None if isnull(r["days_since_prev_rs_high"]) else int(r["days_since_prev_rs_high"]),
+           "rs_pct_from_52w_high": fnum(r["rs_pct_from_52w_high"]), "price_pct_from_52w_close_high": fnum(r["price_pct_from_52w_close_high"]),
+           "above_ema21": None if isnull(r["above_ema21"]) else bool(r["above_ema21"]), "cross_ema21": r["cross_ema21"],
+           "dist_ema21_pct": fnum(r["dist_ema21_pct"], 2), "ema21_slope_5d_pct": fnum(r["ema21_slope_5d_pct"], 2),
+           "rs_up_vs_21d": None if isnull(r["rs_up_vs_21d"]) else bool(r["rs_up_vs_21d"])}
+    if q is not None and t in q.index:
+        rq = q.loc[t]
+        out["qqq"] = {"rs_new_high": None if isnull(rq["rs_new_high"]) else bool(rq["rs_new_high"]),
+                      "above_ema21": None if isnull(rq["above_ema21"]) else bool(rq["above_ema21"]),
+                      "rs_pct_from_52w_high": fnum(rq["rs_pct_from_52w_high"])}
+    return out
+
+
+# ----------------------------------------------------------------------------
 # メイン
 # ----------------------------------------------------------------------------
 def pct(a, b):
@@ -992,6 +1059,15 @@ def main():
     screen["late_break"] = res["late_break"].values
     screen["r_held_spy"] = res_spy["r_held"].values
     screen["r_now_spy"] = res_spy["r_now"].values
+
+    # --- v4.3b: RSライン（対SPY、補助で対QQQ）。E7のRS新高値・21日EMA ---
+    rsl_spy, rsl_qqq = rs_lines(P, i, BENCH), rs_lines(P, i, "QQQ")
+    if rsl_spy is not None:
+        rr = rsl_spy.reindex(all_stocks)
+        screen["rs_line_new_high"] = rr["rs_new_high"].values
+        screen["rs_line_leads_price"] = rr["leads_price"].values
+        screen["rs_line_above_ema21"] = rr["above_ema21"].values
+        screen["rs_line_pct_from_52w_high"] = [fnum(v) for v in rr["rs_pct_from_52w_high"]]
 
     # 前回の screen.csv との差分（key_events 用）。監視母集団だけ。
     rs_events = []
@@ -1117,6 +1193,46 @@ def main():
     if eff_regime != prev_conf:
         key_events.append({"type": "regime_change", "from": prev_conf, "to": eff_regime, "hysteresis": hyst})
 
+    # v4.3b: RSライン新高値（監視母集団の個別株と半導体・テクノロジーETF）。
+    # 先行（株価は高値の下）は毎回、株価もそろって高値のときは前回のRS新高値から20営業日以上あいた場合だけ重要イベントにする。
+    rs_line_out = {"status": "missing", "note": "SPYの日足がありません"}
+    if rsl_spy is not None:
+        rs_scope = [t for t in list(uni_stocks) + TECH_ETFS if t in rsl_spy.index]
+        rows_rs = [rs_line_row(t, rsl_spy, rsl_qqq, groups.get(t, "")) for t in rs_scope]
+        for r in rows_rs:
+            if not r["rs_new_high"]:
+                continue
+            gap = r["days_since_prev_rs_high"]
+            first = gap is None or gap >= RSL["first_gap_days"]
+            if r["leads_price"] or first:
+                key_events.append({"type": "rs_line_lead" if r["leads_price"] else "rs_line_new_high", "ticker": r["ticker"], "vs": BENCH,
+                                   "price_pct_from_52w_close_high": r["price_pct_from_52w_close_high"], "days_since_prev_rs_high": gap})
+        ok = [r for r in rows_rs if r["above_ema21"] is not None]
+        mkt = rsl_spy.reindex([t for t in all_stocks if t in rsl_spy.index])
+        spy_hi = P.C[BENCH].rolling(RSL["window"], min_periods=RSL["window"]).max().iloc[i]
+        core = [t for t in ["SOXX", "SMH", "XLK", "IGV", "NVDA", "AVGO", "AMD", "TSM", "MU", "MSFT", "ORCL"] if t in rs_scope]
+        rs_line_out = {
+            "status": "ok", "bench": BENCH, "aux_bench": "QQQ",
+            "definition": "RSライン＝終値÷SPY終値。RS新高値＝当日値が直近252本の過去値すべてを上回る（253本必要、E7）。"
+                          f"先行＝RS新高値の日に株価が252本終値高値から{RSL['lead_gap_pct']}%以上下。EMA＝RSラインの21日指数平滑。"
+                          "対QQQは補助表示。SOXLは対象外（SOXXで代用）。候補の絞り込みであり買い判定ではない。",
+            "spy_pct_from_52w_close_high": fnum((P.C[BENCH].iloc[i] / spy_hi - 1) * 100),
+            "market": {"population": int(mkt["rs_new_high"].notna().sum()),
+                       "rs_new_high_count": int((mkt["rs_new_high"] == True).sum()),  # noqa: E712
+                       "rs_leads_price_count": int((mkt["leads_price"] == True).sum()),  # noqa: E712
+                       "above_ema21_pct": fnum(100 * (mkt["above_ema21"] == True).sum() / max(1, mkt["above_ema21"].notna().sum())),  # noqa: E712
+                       "note": "S&P500∪監視母集団。市場全体の情報としてだけ使い、個別分析は監視母集団に限る"},
+            "summary": {"rs_new_high": [r["ticker"] for r in rows_rs if r["rs_new_high"]],
+                        "rs_leads_price": [r["ticker"] for r in rows_rs if r["leads_price"]],
+                        "rs_near_high_5pct": [r["ticker"] for r in rows_rs if r["rs_pct_from_52w_high"] is not None and r["rs_pct_from_52w_high"] >= -5],
+                        "above_ema21_count": f"{sum(r['above_ema21'] for r in ok)}/{len(ok)}",
+                        "crossed_up": [r["ticker"] for r in rows_rs if r["cross_ema21"] == "up"],
+                        "crossed_down": [r["ticker"] for r in rows_rs if r["cross_ema21"] == "down"],
+                        "history_short": [r["ticker"] for r in rows_rs if r["rs_new_high"] is None]},
+            "core": [r for r in rows_rs if r["ticker"] in core],
+            "rows": sorted(rows_rs, key=lambda r: (not r["rs_new_high"], -(r["rs_pct_from_52w_high"] if r["rs_pct_from_52w_high"] is not None else -999))),
+        }
+
     # --- 市場テーブル ---
     def row(t):
         c = P.C[t]
@@ -1211,6 +1327,7 @@ def main():
         "sector_rs": jsonable({"definition_version": "ST-1.3", "groups": sector_rs_groups,
                                "note": "対セクターETFの補助表示。市場RS百分位（rs_rank）・先導候補の条件・Tapeスコアには使わない（E7.1）。"}),
         "correction_resilience": jsonable(correction_resilience),
+        "rs_lines": jsonable(rs_line_out),
     }
     json.dump(signals, open(os.path.join(out, "signals.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     print(json.dumps({"as_of": tstr, "regime": eff_regime, "hysteresis": hyst, "leaders_market": len(leaders_now), "tech_leaders": len(tech_leaders),
