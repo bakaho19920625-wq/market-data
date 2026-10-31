@@ -23,6 +23,10 @@
 6. ユーザー自身の売買成績をProgressive Exposureへ接続（D5・F5）。
 7. ミネルヴィニ著書を情報源候補に追加。照合前は「原典未照合」と表示（E2・E17・F7）。
 8. checkpoint 4.1、sector_leadership schema 1.2。
+9. ［v4.3］E7.1 セクター相対強度、E7.2 調整耐性を追加（正本は 03_Addendum_v4.3_SectorRS_Resilience.txt）。
+   specification_version 4.3、sector_leadership schema 1.3／ST-1.3。checkpoint 4.1は据え置き。スコア定義の変更なし。
+   解析エンジンは screen.csv の列、signals.json の sector_rs／correction_resilience、
+   key_events の sector_rs_flip／next_candidate_new／next_candidate_out／late_break_new を出力する（2026-10-31）。
 
 v4.2で追加・変更した箇所には［v4.2］を付す。
 2026-10-25夜の改訂（v4.2b）：解析エンジン（GitHub Actionsのanalyze.py）を正本の計算系とし、C15.1を改訂、E9の閾値を校正、

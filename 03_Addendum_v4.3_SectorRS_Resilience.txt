@@ -1,0 +1,321 @@
+# 03_Addendum_v4.3_SectorRS_Resilience.txt
+# 米国株指標チェック｜追補仕様 v4.3「セクター相対強度」「調整耐性」
+# マスター仕様 00_US_Stock_Project_Master_v4.2.txt に追加する条項（E7.1、E7.2）。
+# 本ファイルが E7.1・E7.2 の正本。マスターと食い違う場合は本ファイルを優先する。
+# 作成 2026-10-31。試算データの基準日 2026-10-29。
+
+## 0. この追補の位置づけ
+
+目的：
+1. 指数（SPY）に対する強さに加えて、所属セクターのETFに対する強さを見て、
+   セクター内の「リーダー／ラガード」を機械的に分ける（E7.1）。
+2. 基準ETFが調整している間に「崩れなかった銘柄」と「戻りで先行した銘柄」を
+   機械的にリストにし、次の候補として保持する（E7.2）。
+
+変更しないもの：
+・市場RS百分位（E7）、TT8（E5）、Tapeのスコア・ゲート（C部）、readyの定義と並び順（E9）。
+・E7の原則「同業ETFとのRelは補助表示。主ランキングへ混ぜない」は維持する。
+  E7.1は主ランキングの代わりではなく、候補に付けるタグである。
+・スコアの定義は変わらないので、前回との比較はそのまま有効。
+
+版：
+・specification_version 4.3（旧4.2）。
+・sector_leadership schema 1.3、definition_version ST-1.3（旧1.2／ST-1.2）。
+・checkpoint_version 4.1 は据え置き（追加フィールドだけで既存項目は変えない）。
+
+記号：
+・P＝本プロジェクトの独自定義（ミネルヴィニ本人の公式定義ではない）。
+・dd＝52週高値からの下落率（%、マイナス値）。E7.1 は screen.csv の pct_from_52w_high と同じ（日中高値基準）、
+  E7.2 は終値基準（終値の252本最高値）で計算する。両者は少し違う値になる。
+・本数＝営業日本数。
+
+## E7.1 セクター相対強度（P）
+
+### E7.1.1 基準ETF
+
+銘柄ごとに基準ETF（B_sec）を1つ決める。
+
+監視母集団（tickers.txt のグループ）：
+| グループ | 基準ETF | 確認用 |
+|---|---|---|
+| 半導体（設計・製造・装置・メモリー・後工程） | SOXX | SMH |
+| ソフトウェア・クラウド・サイバーセキュリティ | IGV | XLK |
+| ハードウェア・ネットワーク・AI計算基盤 | XLK | VGT |
+
+S&P500構成銘柄で監視母集団に入っていないもの：GICSセクターのSPDR。
+Information Technology→XLK、Communication Services→XLC、Consumer Discretionary→XLY、
+Consumer Staples→XLP、Energy→XLE、Financials→XLF、Health Care→XLV、
+Industrials→XLI、Materials→XLB、Real Estate→XLRE、Utilities→XLU。
+
+監視母集団の所属が優先（GOOGL・AMZNは正式分類が情報技術外でも、グループのETFを使う）。
+ETF・指数・レバレッジ商品（SOXL）自身には計算しない。
+
+確認用ETFは表示だけに使い、区分には使わない。
+
+### E7.1.2 指標
+
+E7の式で、BをSPYからB_secに置き換える。k＝21、63。
+
+  Rel_sec_k = (P_t / P_(t−k)) / (B_sec_t / B_sec_(t−k)) − 1
+
+  dd差 = dd(銘柄) − dd(B_sec)　　　　　　［%ポイント。プラス＝ETFより高値に近い］
+
+  対セクターRSライン = P / B_sec
+  対セクターRSライン63本高値 = 当日値が直近63本（当日を除く）の最大値以上　［true/false］
+
+k＝126、252や百分位は作らない（E7の「半導体・テクノロジー内だけの順位は使わない」を守る）。
+
+### E7.1.3 区分
+
+  リーダー：Rel_sec_21 > 0 かつ Rel_sec_63 > 0 かつ dd差 > 0
+  ラガード：Rel_sec_21 < 0 かつ Rel_sec_63 < 0 かつ dd差 < 0
+  中立　　：それ以外（3条件の向きがそろわない）
+
+3条件がそろったときだけリーダー／ラガードにする。
+中立は「方向が定まらない」であり、弱いという意味ではない
+（例：63本では勝っているが直近21本で負け始めた銘柄）。
+
+### E7.1.4 用途と禁止
+
+用途：
+・tech_leaders、tech_watch、setups（ready／watch／forming）の各行に区分を表示する。
+・レポートのセクター・リーダーシップの節に、グループごとの
+  「リーダー上位5（Rel_sec_63降順）」「ラガード下位5（Rel_sec_63昇順）」を表にする。
+・ready同士で優先度を考えるとき、同じRS百分位帯なら区分リーダーを先に読む（補助）。
+
+禁止：
+・市場RS百分位（rs_rank）やLD1の計算に混ぜない。先導候補の条件（RS_proxy≧80かつRel_63>0）は変えない。
+・区分リーダーを買いシグナルにしない。買いは引き続きピボット・ブレイク（E9〜E12）で判定する。
+・セクター自体が指数に負けている局面では、区分リーダーでも「弱いセクターの中で相対的に強い」と書く。
+  セクターの強弱は tech_etf のSPY比（既存）で示す。
+
+### E7.1.5 欠損
+
+・銘柄またはB_secに63本の有効終値がなければ Rel_sec_63＝missing、区分＝N/A。
+・dd が計算できない（52週の履歴不足）なら区分＝N/A。
+・B_secの価格が stale なら、その銘柄の区分は前回値を使わず N/A とし、data_gaps に書く。
+
+## E7.2 調整耐性（P）
+
+### E7.2.1 考え方
+
+基準ETFが高値から下げている期間（調整窓）に、
+(a) 自分の高値近くにとどまった銘柄は「崩れなかった銘柄」、
+(b) 基準ETFより深く下げた銘柄は「一緒に崩れた銘柄」。
+戻り局面では、(a)が真っ先に新高値を取りやすく、(b)は戻りが遅く上値に戻り売りが出やすい。
+調整中にリストを作り、基準ETFが回復したときの候補に使う。
+
+### E7.2.2 基準と調整窓
+
+基準（B）は2系統で計算する。
+・セクター：E7.1.1 の B_sec（区分・候補判定に使う）。
+・市場：SPY（監視母集団だけ。表示のみ。候補判定に使わない）。
+
+調整窓：
+  T_high：Bの直近252本の終値最高値の日。
+  T_low ：T_high以降（当日まで）の終値最安値の日。
+  dd_low：B(T_low)/B(T_high) − 1
+  dd_now：B(当日)/B(T_high) − 1
+
+成立条件：
+  dd_low ≦ −5% かつ T_highからT_lowまで5本以上。
+  −5%＜dd_low≦−8% は「浅い調整（参考）」と表示する。比率が大きく出やすいため。
+
+状態：
+  調整中　　：現在の窓が成立し、dd_now ≦ −5%
+  回復中　　：現在の窓が成立し、dd_now > −5%（新高値は未更新）
+  完了（直前）：現在の窓が未成立（高値更新直後、または浅い下げしかない）とき、
+              直近252本の中で「新高値の日→谷→新高値で回復した日」のエピソードを後ろから探し、
+              成立条件を満たし、回復日が直近60本以内のものがあればその窓を使う。noteに回復日を書く。
+  なし　　　：上のどれにも当たらない。noteに現在の高値からの下げ幅を書く。リストは作らない。
+
+窓は直近252本で区切るので、1年以上前の高値は対象外になる。T_highが252本の外へ出た日に窓が切り替わり、
+値が不連続になる。その日は state の変化として扱う。
+
+### E7.2.3 銘柄ごとの指標
+
+対象：母集団（S&P500∪監視母集団）の個別株。ETF・指数・SOXLは対象外。
+T_highの120本以上前から終値がある銘柄だけ計算する（なければ「履歴不足」）。
+
+  基準高値 H0 = max( 銘柄のT_high時点の52週終値高値, 調整窓内の最高終値 )
+  own_dd_low = min_{t∈[T_high, T_low]} P(t) / H0 − 1　　　［窓の中で自分の高値からどこまで下げたか］
+  下げ耐性比 R_held = own_dd_low / dd_low
+
+  own_dd_now = P(当日) / H252c(当日) − 1　　　　　　　　　　［終値基準の52週高値。pct_from_52w_high とは少し違う］
+  戻り比 R_now = own_dd_now / dd_now　　　　　　　　　　　　［dd_now ≧ −2% のときはN/A］
+
+  新高値 new_high_after_low：T_lowより後に、終値が直近252本高値を更新した日があれば true
+  50SMA割れ日数 below_50sma_days：調整窓内で終値が50SMAを下回った日数（表示のみ）
+
+同じ日付の窓で全銘柄を測る（銘柄ごとに窓をずらさない）。
+R_heldは「基準ETFの下げを1としたとき、自分の高値から何倍下げたか」。0.5なら半分。
+
+### E7.2.4 区分
+
+下げ耐性（調整窓の中）：
+  耐えた：R_held ≦ 0.5
+  同調　：0.5 ＜ R_held ≦ 1.0
+  崩れた：R_held ＞ 1.0
+
+戻り（当日時点）：
+  先行：R_now ≦ 0.5
+  同調：0.5 ＜ R_now ≦ 1.0
+  遅れ：R_now ＞ 1.0
+  new_high_after_low が true で、かつ own_dd_now ≧ −15%（いまも高値圏）なら、同調を先行に格上げする。
+  何か月も前に新高値を付けてから崩れた銘柄を先行にしないため、新高値だけでは格上げしない。
+  R_nowがN/A（基準が高値から−2%以内）のとき：own_dd_now ≧ −5% なら先行、≦ −10% なら遅れ、それ以外は同調。
+
+### E7.2.5 次の候補と警告
+
+次の候補（next_candidates）：
+  A：耐えた かつ（先行 または 同調）
+  B：同調 かつ 先行
+  C：崩れた かつ 先行（V字で戻った銘柄。ベースが浅く失敗しやすいので参考）
+  並び：A→B→C、各枠内はR_held昇順、同値はRel_63（SPY比）降順。
+  表示列：銘柄、グループ、基準ETF、下げ耐性区分、R_held、own_dd_low、戻り区分、R_now、own_dd_now、
+          新高値、50SMA割れ日数、TT項目数、市場RS百分位、区分（E7.1）。
+
+後崩れ（late_breaks）：
+  耐えた または 同調 かつ 戻りが遅れ。
+  下げには耐えたが戻りで売られている銘柄。候補から外し、保有中なら E13.1「弱さの中での売り検討」の材料に加える。
+
+リストは「監視候補の順番」であり、買いの判定ではない。
+候補の買いは、基準ETFの回復（FTD、50日線回復など既存の市場ゲート）と
+個別のピボット・ブレイク（E9〜E12）で判定する。
+TT未達の銘柄も候補リストには載せる（TT項目数を併記）。TTはreadyの段階で効く。
+
+### E7.2.6 用途と禁止
+
+・C4 Tradability の「調整中の安値維持」「指数に勝つ先導株」の定量的な根拠として引用してよい。
+  ただしC部の点数・ゲートは変えない。
+・耐えた銘柄の比率（母集団に占める「耐えた」の割合）は参考値として表示する。閾値は設けない。
+・R_held、R_nowは倍率なので、浅い調整では大きく出る。必ずdd_lowとdd_nowを併記する。
+・基準ETFの区分「崩れた」が多いことを、そのセクター自体の弱さと混同しない
+  （半導体をQQQで測ると全銘柄が崩れたになる。セクターの強弱はtech_etfのSPY比で見る）。
+
+### E7.2.7 欠損
+
+・調整未成立、または基準ETFが履歴不足なら、その基準の列はすべてN/Aとし、理由をdata_gapsに書く。
+・銘柄が履歴不足ならR_held＝N/A。own_dd_now だけ表示する。
+・50SMAが計算できない期間はbelow_50sma_daysをN/Aにする。
+
+## 1. 出力の変更（F2解析エンジン・F3チェックポイント）
+
+### 1.1 screen.csv 追加列
+
+sector_bench, rel_sec_21_pct, rel_sec_63_pct, dd_vs_sector_pt, sector_rs_line_63h, sector_rs_class,
+res_bench, res_state, res_dd_low_pct, res_dd_now_pct, own_dd_low_pct, r_held, held_class,
+r_now, rebound_class, new_high_after_low, below_50sma_days, next_candidate（A/B/C/空）, late_break（true/false）,
+r_held_spy, r_now_spy（監視母集団のみ。他は空）
+
+既存列は変えない。
+
+### 1.2 signals.json 追加キー
+
+  sector_rs:
+    definition_version: "ST-1.3"
+    groups: { <グループ名>: { bench, confirm, bench_pct_from_52w_high, bench_rel_spy_63_pct,
+                             counts: {leader, neutral, laggard}, leaders: [上位10], laggards: [下位10],
+                             rows: [ {ticker, rel_sec_21_pct, rel_sec_63_pct, dd_vs_sector_pt, rs_line_63h, class, rs_rank, tt_count} ] } }
+  correction_resilience:
+    definition_version: "ST-1.3"
+    windows: [ {bench, state, valid, high_date, low_date, dd_low_pct, dd_now_pct, bars_high_to_low, bars_since_low, note} ]
+    next_candidates: [ {ticker, group, bench, tier, held_class, r_held, own_dd_low_pct,
+                        rebound_class, r_now, own_dd_now_pct, new_high_after_low, below_50sma_days,
+                        tt_count, rs_rank, rel_63_pct, sector_rs_class} ]     # 監視母集団。A→B→C、R_held昇順
+    late_breaks: [ 同じ列 ]                                                     # 監視母集団
+    held_ratio: { <bench>: {held, computed, ratio_pct} }
+    sp500_next_candidates_ab: {count, tickers}                                # S&P500（母集団外）のA・Bの件数と銘柄（参考）
+  tech_leaders／tech_watch／setups の各行に sector_rs_class、resilience_tier を追加。
+
+  key_events_today に追加する型（前回実行との差分。前回がなければ出さない）：
+    sector_rs_flip：区分がリーダー⇄ラガードに変わった（中立を経由した変化は出さない）
+    next_candidate_new：next_candidates に新しく入った／next_candidate_out：外れた（前回のtierを併記）
+    late_break_new：late_breaks に新しく入った
+
+### 1.3 チェックポイントYAML（schema 1.3）
+
+extensions.sector_leadership に追加する。既存フィールドは変えない。
+
+```yaml
+      schema_version: "1.3"
+      definition_version: "ST-1.3"
+      sector_rs:
+        benchmarks: {semiconductors: SOXX, software: IGV, hardware: XLK}
+        leaders: []        # {ticker, group, rel_sec_63_pct}
+        laggards: []
+      correction_resilience:
+        windows: []        # {bench, state, high_date, low_date, dd_low_pct, dd_now_pct}
+        next_candidates: [] # {ticker, tier, held_class, rebound_class, r_held, r_now}
+        late_breaks: []
+```
+
+候補レコード（candidates）に追加：sector_rs_class、resilience: {held_class, rebound_class, r_held, r_now, tier}。
+
+### 1.4 レポート
+
+週次（Standard／Full）：セクター・リーダーシップの節（tech_leaders／tech_watchの直後）に2つの表を追加する。
+  表A「セクター内の強弱」：グループごとにリーダー上位5・ラガード下位5。列＝銘柄、Rel_sec_21、Rel_sec_63、dd差、RSライン63本高値。
+  表B「調整耐性：次の候補」：基準ETFの状態行（state、T_high、T_low、dd_low、dd_now）の下に、A→B→Cの順で最大10行。
+  後崩れは表Bの下に1行で列挙する。
+  状態が「調整なし」「調整未成立」なら表Bは「該当なし（理由）」の1行。
+
+日次（daily_runbook 5節に追加する行）：
+- sector_rs：グループごとにリーダー上位3・ラガード下位3（Rel_sec_63）。前日からの flip があれば冒頭の重要ポイントに出す。
+- correction_resilience：基準ETFの状態を1行、next_candidates の上位5（tier、R_held、R_now、新高値）、late_breaks。
+  新規の next_candidate_new／next_candidate_out／late_break_new は冒頭の重要ポイントに出す。
+
+### 1.5 他ファイルへの追記（そのまま貼る）
+
+00_US_Stock_Project_Master_v4.2.txt の改訂履歴（冒頭の番号付きリスト）に追加：
+  9. ［v4.3］E7.1 セクター相対強度、E7.2 調整耐性を追加（正本は 03_Addendum_v4.3_SectorRS_Resilience.txt）。
+     specification_version 4.3、sector_leadership schema 1.3／ST-1.3。checkpoint 4.1は据え置き。スコア定義の変更なし。
+
+CLAUDE.md の「詳細仕様の正本」の行の直後に追加：
+  追補「03_Addendum_v4.3_SectorRS_Resilience.txt」（E7.1 セクター相対強度、E7.2 調整耐性）も正本の一部とする。
+
+daily_runbook.txt の「## 5. 半導体・テクノロジー」に、上記1.4「日次」の2行を追加。
+「## 2. 日次で逃さない重要ポイント」の型の一覧に sector_rs_flip、next_candidate_new、next_candidate_out、late_break_new を追加。
+
+## 2. 実装メモ（analyze.py）
+
+・新関数 sector_rs(P, stocks, bench_of, i)：E7.1.2〜E7.1.3。bench_of は銘柄→基準ETFの辞書
+  （監視グループは表で、S&P500はGICS→SPDR。SECTOR_ETFS と load_sp500_sectors を流用）。
+・新関数 correction_window(P, bench, i)：E7.2.2。戻り値は dict（state, high_date, low_date, dd_low, dd_now, bars, valid, note）。
+  高値更新時の「直前の調整（完了）」は、直近252本で dd≦−5% の山→谷→新高値回復を後ろから探し、回復日が60本以内なら採用。
+・新関数 resilience(P, stocks, window, i)：E7.2.3〜E7.2.5。
+・main：窓は基準ETFごとに1回だけ計算し（SOXX、IGV、XLK、SPY、SPDR 11本）、銘柄はその辞書を参照する。
+・key_events の差分は、前回の screen.csv を `--prev-screen out/prev/screen.csv` で受け取り比較する。
+  workflow の「Fetch previous ledger」で `git show data-prev:screen.csv > out/prev/screen.csv` を追加し、
+  Analyze の引数に `--prev-screen out/prev/screen.csv` を足す。読めなければ差分型は出さない。
+  差分イベントは台帳の day_events にも残し、同じ基準日の再実行で消えないようにする（既存の仕組みと同じ）。
+・既存の tt7／rs／leaders／setups／sell_signals の計算は変えない。出力列・キーは追加だけ。
+・計算はすべてコード実行で行い（F3）、チャートの目測や検索値で埋めない。
+
+## 3. 試算（2026-10-29終値、analyze.py v4.3 の実行結果。レポートに転記しない）
+
+E7.1 半導体グループ（基準SOXX、dd −21.7%、SOXXの対SPY 63本 −1.2%）：
+  リーダー9：SWKS、ENTG、SNPS、AMD、ADI、TXN、TSM、NVDA、ASML
+  中立9：QCOM、MRVL、MU（Rel_sec_63 +11.5 だが Rel_sec_21 と dd差 が負）、INTC、CDNS、NXPI、MCHP、ON、AVGO（Rel_sec_21 +8.7 だが Rel_sec_63 −12.9）
+  ラガード20：WDC、CRDO、TER、STX、AMKR、LSCC、AMAT、MPWR、NVMI、ONTO、LRCX、COHR、SITM、KLAC、FORM、ALAB、ARM、CAMT、RMBS、MTSI
+  ソフトウェア（基準IGV、dd −7.2%）：リーダー OKTA のみ、ラガード APP、GOOGL、FTNT、AMZN、NOW、DDOG、NET、SNOW。
+  ハードウェア（基準XLK、dd −7.1%）：リーダー AAPL のみ、ラガード CRWV、GLW、ANET。
+
+E7.2 調整窓：
+  SOXX：T_high 2026-06-22、T_low 2026-07-29、dd_low −29.0%、dd_now −21.5%、調整中（26本で急落、安値から65本）
+  IGV ：T_high 2025-11-03、T_low 2026-04-10、dd_low −35.5%、dd_now −6.7%、調整中（窓が長い。まもなく252本の外へ出る）
+  XLK ：T_high 2026-10-06、T_low 2026-10-22、dd_low −9.7%、dd_now −6.6%、調整中
+  SPY ：なし（高値から −2.5% で調整未成立）
+  XLE・XLV：完了（直前）。浅い調整（−6.7%／−5.9%）で新高値回復済み（参考）
+  耐えた（R_held≦0.5）の比率：SOXX 0/38、IGV 0/23、XLK 1/39（AAPL）。
+
+次の候補（監視母集団）：
+  A：AAPL（XLK、R_held 0.43、新高値、own_dd_now 0.0%）
+  B：TXN（SOXX、0.63、R_now 0.27）、NVDA（0.67、0.50、新高値）、ADI（0.71、0.13）、TSM（0.74、0.52、新高値で格上げ）、
+     AMD（0.90、0.59、新高値で格上げ）、MSFT（IGV、0.96、0.37、新高値）
+  C：CRWD、PLTR（IGV）、SWKS（SOXX、新高値、own_dd_now −2.2%）、OKTA（IGV）、SNPS（SOXX、R_now 0.39）
+  後崩れ：GOOGL、FTNT、ADSK、IBM、AMZN（IGV）、LSCC、MPWR、AVGO（SOXX）。
+  メモリー：MU は崩れた（1.35）×遅れ（1.07）。SNDK（S&P500側）は崩れた（1.95）×遅れ（2.0）。
+  S&P500（母集団外）のA・B候補：28銘柄（TECH、VRSN、TJX、IFF、ED、EXPD、PTC、MET など）。
+
+試算は定義の動作確認のための値で、正式値は毎日の analyze.py 出力（signals.json）。

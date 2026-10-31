@@ -39,6 +39,9 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - leader_weakness：先導株の50日線割れなど（弱さの中での売り検討）。
 - climax_watch / climax_alert：強さの中での売り検討（該当項目を書く）。
 - earnings_within_5d：決算5営業日以内（新規通常サイズは見送り、保有はイベント確認）。
+- sector_rs_flip：セクター内区分がリーダー⇄ラガードに変わった（v4.3 E7.1。基準ETFを併記）。
+- next_candidate_new / next_candidate_out：調整耐性の「次の候補」に新しく入った／外れた（v4.3 E7.2。tier A/B/C、下げ耐性・戻りの区分）。監視候補であり買いではない。
+- late_break_new：「後崩れ」（下げに耐えたが戻りで売られている）に新しく入った。保有中なら弱さの中での売り検討の材料。
 決算日は Yahoo の非公式データなので「要確認」と添える。
 
 ## 3. Tape（signals.tape）
@@ -63,6 +66,9 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - setups：ready → watch → forming の順。各行：銘柄、型、フットプリント、P、S、リスク幅、ピボットまでの距離、DRY5。
 - ledger_cohorts：setup_type別のD+3/5/10（件数が20未満なら参考値）。
 - sell_signals：先導株・母集団のクライマックス／弱さ。
+- sector_rs（v4.3）：グループごとにリーダー上位3・ラガード下位3（rel_sec_63_pct）。セクター自体が指数に負けていれば「弱いセクターの中で相対的に強い」と書く。
+- correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low、dd_now）。next_candidates の上位5（tier、R_held、R_now、新高値）と late_breaks。
+  R_held・R_now は倍率なので dd_low・dd_now を併記する。リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
 
 ## 6. Daily Plan（F4）
 - 前提：regime_effective と適用ゲート → 新規許容度（なし／Pilot／通常）。

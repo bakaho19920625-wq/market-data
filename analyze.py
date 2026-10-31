@@ -16,6 +16,9 @@
   ledger.json    台帳（セットアップ登録、ブレイク追跡、レジーム履歴）。次回に引き継ぐ
 
 定義はマスター仕様 v4.2 の C7.1 / C15.1 / E4〜E14 に対応する。閾値はすべて P（プロジェクト規則）。
+v4.3 追補（03_Addendum_v4.3_SectorRS_Resilience.txt）：E7.1 セクター相対強度、E7.2 調整耐性を追加。
+  screen.csv の列、signals.json の sector_rs / correction_resilience、key_events の
+  sector_rs_flip / next_candidate_new / next_candidate_out / late_break_new（前回の screen.csv との差分。--prev-screen）。
 """
 import argparse
 import json
@@ -27,12 +30,22 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-DEF_VERSION = "ST-1.2 / engine 1.0"
+DEF_VERSION = "ST-1.3 / engine 1.1"
 JST = timezone(timedelta(hours=9))
 INDEX_TICKERS = {"^GSPC", "^IXIC", "^VIX"}
 SECTOR_ETFS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLU"]
 TECH_ETFS = ["SOXX", "SMH", "XLK", "VGT", "IGV", "CIBR", "SKYY"]
 BENCH = "SPY"
+
+# E7.1（v4.3）: 監視グループ → (基準ETF, 確認用ETF)。tickers.txt の見出しのキーワードで照合する
+GROUP_BENCH = {"半導体": ("SOXX", "SMH"), "ソフトウェア": ("IGV", "XLK"), "ハードウェア": ("XLK", "VGT")}
+# E7.1（v4.3）: S&P500構成銘柄（監視母集団外）の GICS セクター → セクターSPDR
+GICS_BENCH = {"Information Technology": "XLK", "Communication Services": "XLC", "Consumer Discretionary": "XLY",
+              "Consumer Staples": "XLP", "Energy": "XLE", "Financials": "XLF", "Health Care": "XLV",
+              "Industrials": "XLI", "Materials": "XLB", "Real Estate": "XLRE", "Utilities": "XLU"}
+# E7.2（v4.3）: 調整窓の閾値（P）
+RES = {"min_depth": -5.0, "shallow": -8.0, "min_bars": 5, "keep_bars": 60, "min_history": 120,
+       "held_max": 0.5, "inline_max": 1.0, "now_na_above": -2.0, "newhigh_upgrade_dd": -0.15}
 
 
 # ----------------------------------------------------------------------------
@@ -101,6 +114,7 @@ class Panel:
         self.s10, self.s50, self.s150, self.s200 = C.rolling(10).mean(), C.rolling(50).mean(), C.rolling(150).mean(), C.rolling(200).mean()
         self.e21 = C.apply(lambda s: ema(s, 21))
         self.h252, self.l252 = self.H.rolling(252).max(), self.L.rolling(252).min()
+        self.h252c = C.rolling(252, min_periods=RES["min_history"]).max()  # 終値ベースの52週高値（E7.2）
         self.vavg50_prev = self.V.rolling(50).mean().shift(1)
         self.rvol50 = self.V / self.vavg50_prev
         self.dry5 = self.V.rolling(5).median() / self.V.rolling(50).mean().shift(5)
@@ -658,6 +672,205 @@ def ledger_cohorts(ledger):
 
 
 # ----------------------------------------------------------------------------
+# E7.1 セクター相対強度（v4.3、P）
+# ----------------------------------------------------------------------------
+def fnum(x, nd=1):
+    """NaN → None、それ以外は丸める（JSON・CSV出力用）。"""
+    try:
+        x = float(x)
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(x) or math.isinf(x):
+        return None
+    v = round(x, nd)
+    return 0.0 if v == 0 else v
+
+
+def sector_rs(P, stocks, bench_of, i):
+    """銘柄ごとの対セクターETF相対強度（Rel_sec_21/63、52週高値距離の差、RSライン63本高値）と区分。
+    区分（P）：3条件すべて正＝leader、すべて負＝laggard、それ以外＝neutral。"""
+    C = P.C
+    rows = []
+    for t in stocks:
+        b = bench_of(t)
+        if not b or b not in C.columns or t not in C.columns:
+            rows.append({"ticker": t, "sector_bench": b, "rel_sec_21_pct": None, "rel_sec_63_pct": None,
+                         "dd_vs_sector_pt": None, "sector_rs_line_63h": None, "sector_rs_class": None})
+            continue
+        c, bc = C[t], C[b]
+        rel = {}
+        for k in (21, 63):
+            if i - k < 0 or any(math.isnan(v) for v in (c.iloc[i], c.iloc[i - k], bc.iloc[i], bc.iloc[i - k])):
+                rel[k] = float("nan")
+            else:
+                rel[k] = ((c.iloc[i] / c.iloc[i - k]) / (bc.iloc[i] / bc.iloc[i - k]) - 1) * 100
+        dd_t, dd_b = c.iloc[i] / P.h252[t].iloc[i] - 1, bc.iloc[i] / P.h252[b].iloc[i] - 1
+        dd_diff = (dd_t - dd_b) * 100 if not (math.isnan(dd_t) or math.isnan(dd_b)) else float("nan")
+        line = (c / bc).iloc[max(0, i - 63):i + 1]
+        line_hi = bool(line.iloc[-1] >= line.iloc[:-1].max()) if len(line) == 64 and line.notna().all() else None
+        vals = (rel[21], rel[63], dd_diff)
+        if any(math.isnan(v) for v in vals):
+            cls = None
+        elif all(v > 0 for v in vals):
+            cls = "leader"
+        elif all(v < 0 for v in vals):
+            cls = "laggard"
+        else:
+            cls = "neutral"
+        rows.append({"ticker": t, "sector_bench": b, "rel_sec_21_pct": fnum(rel[21]), "rel_sec_63_pct": fnum(rel[63]),
+                     "dd_vs_sector_pt": fnum(dd_diff), "sector_rs_line_63h": line_hi, "sector_rs_class": cls})
+    return pd.DataFrame(rows).set_index("ticker")
+
+
+# ----------------------------------------------------------------------------
+# E7.2 調整耐性（v4.3、P）
+# ----------------------------------------------------------------------------
+def _episode(c, ih, il, i, state):
+    """調整窓の辞書。ih/il/i は c（Series）の位置。"""
+    dd_low = (c.iloc[il] / c.iloc[ih] - 1) * 100
+    dd_now = (c.iloc[i] / c.iloc[ih] - 1) * 100
+    valid = dd_low <= RES["min_depth"] and (il - ih) >= RES["min_bars"]
+    note = []
+    if valid and dd_low > RES["shallow"]:
+        note.append("浅い調整（参考）")
+    return {"state": state, "high_date": str(c.index[ih].date()), "low_date": str(c.index[il].date()),
+            "dd_low_pct": round(dd_low, 1), "dd_now_pct": round(dd_now, 1), "bars_high_to_low": int(il - ih),
+            "bars_since_low": int(i - il), "valid": bool(valid), "note": "、".join(note),
+            "_ih": ih, "_il": il}
+
+
+def correction_window(P, bench, i):
+    """基準ETFの調整窓（E7.2.2）。
+    現在の窓：直近252本の終値最高値の日 T_high → 以降の最安値の日 T_low。
+    状態：調整中（dd_now≦−5%）／回復中（それ以外で新高値未更新）。
+    現在の窓が未成立（dd_low>−5%、または5本未満）なら、直近60本以内に新高値で完了した調整を探して「完了（直前）」。
+    どれもなければ「なし」。"""
+    base = {"bench": bench, "state": "なし", "valid": False, "high_date": None, "low_date": None,
+            "dd_low_pct": None, "dd_now_pct": None, "bars_high_to_low": None, "bars_since_low": None, "note": ""}
+    if bench not in P.C.columns:
+        return {**base, "note": "基準ETFの価格なし"}
+    c = P.C[bench].iloc[:i + 1]
+    if c.notna().sum() < 130:
+        return {**base, "note": "基準ETFの履歴不足"}
+    ii = len(c) - 1
+    seg = c.iloc[max(0, ii - 251):ii + 1]
+    ih = int(c.index.get_loc(seg.idxmax()))
+    il = int(c.index.get_loc(c.iloc[ih:ii + 1].idxmin()))
+    cur = _episode(c, ih, il, ii, "調整中" if (c.iloc[ii] / c.iloc[ih] - 1) * 100 <= RES["min_depth"] else "回復中")
+    if cur["valid"]:
+        return {**base, **cur}
+    # 完了した調整を後ろから探す（新高値日のあいだの谷）。
+    rm = c.rolling(252, min_periods=1).max().shift(1)
+    nh = (c >= rm).to_numpy()
+    nh_idx = [k for k in range(max(1, ii - 300), ii + 1) if nh[k]]
+    # 連続する新高値の塊（run）に分け、run と run の間を1つの調整エピソードとみなす
+    runs = []
+    for k in nh_idx:
+        if runs and k == runs[-1][1] + 1:
+            runs[-1][1] = k
+        else:
+            runs.append([k, k])
+    for r in range(len(runs) - 1, 0, -1):
+        peak = runs[r - 1][1]      # 前の run の最終日＝山
+        rec = runs[r][0]           # 次の run の初日＝新高値で回復した日
+        if ii - rec > RES["keep_bars"]:
+            break
+        if rec - peak < 2:
+            continue
+        trough = int(c.index.get_loc(c.iloc[peak:rec].idxmin()))
+        ep = _episode(c, peak, trough, ii, "完了（直前）")
+        if ep["valid"]:
+            ep["note"] = "、".join(x for x in (ep["note"], f"新高値回復 {str(c.index[rec].date())}") if x)
+            return {**base, **ep}
+    note = f"現在の高値から {cur['dd_low_pct']}%（{cur['high_date']}→{cur['low_date']}）で調整未成立"
+    return {**base, "note": note, "_cur": cur}
+
+
+def resilience(P, stocks, w, i):
+    """銘柄ごとの調整耐性（E7.2.3〜E7.2.5）。w は correction_window の戻り値（valid のもの）。"""
+    cols = ["own_dd_low_pct", "r_held", "held_class", "own_dd_now_pct", "r_now", "rebound_class",
+            "new_high_after_low", "below_50sma_days", "tier", "late_break"]
+    empty = pd.DataFrame(index=pd.Index(stocks, name="ticker"), columns=cols)
+    if not w.get("valid"):
+        return empty
+    ih, il = w["_ih"], w["_il"]
+    dd_low, dd_now = w["dd_low_pct"] / 100, w["dd_now_pct"] / 100
+    C, H, S50 = P.C, P.h252c, P.s50
+    rows = []
+    for t in stocks:
+        if t not in C.columns:
+            rows.append({"ticker": t, **{k: None for k in cols}})
+            continue
+        c = C[t]
+        hist = int(c.iloc[:ih].notna().sum())
+        own_now = c.iloc[i] / H[t].iloc[i] - 1 if not math.isnan(H[t].iloc[i]) else float("nan")
+        r_now = own_now / dd_now if (dd_now * 100 < RES["now_na_above"] and not math.isnan(own_now)) else float("nan")
+        after = c.iloc[il + 1:i + 1]
+        newhi = bool((after >= H[t].shift(1).iloc[il + 1:i + 1]).any()) if len(after) else False
+        if hist < RES["min_history"] or math.isnan(H[t].iloc[ih]):
+            held, r_held, own_low, below = None, float("nan"), float("nan"), None
+        else:
+            win = c.iloc[ih:il + 1]
+            h0 = max(H[t].iloc[ih], win.max())
+            own_low = win.min() / h0 - 1
+            r_held = own_low / dd_low
+            held = "耐えた" if r_held <= RES["held_max"] else "同調" if r_held <= RES["inline_max"] else "崩れた"
+            s = S50[t].iloc[ih:il + 1]
+            below = int((win < s).sum()) if s.notna().all() else None
+        # 戻り区分：R_now が主。新高値フラグは「いまも高値圏（−15%以内）」のときだけ同調→先行に格上げする
+        # （何か月も前に新高値を付けてから崩れた銘柄を先行にしないため）。基準が高値圏で R_now が N/A のときは自分の高値距離で判定。
+        if math.isnan(own_now):
+            reb = None
+        elif not math.isnan(r_now):
+            reb = "先行" if r_now <= RES["held_max"] else "同調" if r_now <= RES["inline_max"] else "遅れ"
+            if reb == "同調" and newhi and own_now >= RES["newhigh_upgrade_dd"]:
+                reb = "先行"
+        else:
+            reb = "先行" if own_now >= -0.05 else "遅れ" if own_now <= -0.10 else "同調"
+        tier = None
+        if held == "耐えた" and reb in ("先行", "同調"):
+            tier = "A"
+        elif held == "同調" and reb == "先行":
+            tier = "B"
+        elif held == "崩れた" and reb == "先行":
+            tier = "C"
+        late = bool(held in ("耐えた", "同調") and reb == "遅れ")
+        rows.append({"ticker": t, "own_dd_low_pct": fnum(own_low * 100), "r_held": fnum(r_held, 2), "held_class": held,
+                     "own_dd_now_pct": fnum(own_now * 100), "r_now": fnum(r_now, 2), "rebound_class": reb,
+                     "new_high_after_low": newhi, "below_50sma_days": below, "tier": tier, "late_break": late})
+    return pd.DataFrame(rows).set_index("ticker")
+
+
+def public_window(w):
+    """signals.json 用（内部の位置情報を除く）。"""
+    return {k: v for k, v in w.items() if not k.startswith("_")}
+
+
+def isnull(v):
+    """None / NaN / 空文字を欠損として扱う。"""
+    if v is None:
+        return True
+    if isinstance(v, float) and math.isnan(v):
+        return True
+    return isinstance(v, str) and v.strip().lower() in ("", "nan", "none")
+
+
+def jsonable(o):
+    """NaN を None に、numpy 型を Python 型に直す（signals.json を厳密なJSONに保つ）。"""
+    if isinstance(o, dict):
+        return {k: jsonable(v) for k, v in o.items()}
+    if isinstance(o, (list, tuple)):
+        return [jsonable(v) for v in o]
+    if isinstance(o, (np.bool_,)):
+        return bool(o)
+    if isinstance(o, (np.integer,)):
+        return int(o)
+    if isinstance(o, (np.floating, float)):
+        return None if math.isnan(float(o)) or math.isinf(float(o)) else float(o)
+    return o
+
+
+# ----------------------------------------------------------------------------
 # メイン
 # ----------------------------------------------------------------------------
 def pct(a, b):
@@ -669,6 +882,7 @@ def main():
     ap.add_argument("--out", default="out")
     ap.add_argument("--tickers", default="tickers.txt")
     ap.add_argument("--prev-ledger", default=None)
+    ap.add_argument("--prev-screen", default=None, help="前回の screen.csv（v4.3 の差分イベント用。無ければ差分は出さない）")
     a = ap.parse_args()
     out = a.out
     manifest = json.load(open(os.path.join(out, "manifest.json"), encoding="utf-8")) if os.path.exists(os.path.join(out, "manifest.json")) else {}
@@ -726,6 +940,87 @@ def main():
         "rvol50": [round(float(P.rvol50[t].iloc[i]), 2) if not math.isnan(P.rvol50[t].iloc[i]) else None for t in all_stocks],
         "leader": [t in leaders_now for t in all_stocks],
     })
+
+    # --- E7.1 セクター相対強度 / E7.2 調整耐性（v4.3） ---
+    def bench_pair(t):
+        g = groups.get(t, "")
+        if t in uni_stocks:
+            for k, pair in GROUP_BENCH.items():
+                if k in g:
+                    return pair
+            return ("XLK", "VGT")
+        b = GICS_BENCH.get(sectors.get(t))
+        return (b, None) if b else (None, None)
+
+    bench_of = lambda t: bench_pair(t)[0]
+    srs = sector_rs(P, all_stocks, bench_of, i)
+    benches = sorted({b for b in (bench_of(t) for t in all_stocks) if b} | {BENCH})
+    windows = {b: correction_window(P, b, i) for b in benches}
+    res_parts = []
+    for b in benches:
+        if b == BENCH:
+            continue
+        members = [t for t in all_stocks if bench_of(t) == b]
+        if members:
+            res_parts.append(resilience(P, members, windows[b], i))
+    def clean(df):
+        """reindex で入る NaN を None に統一する（object 列）。"""
+        return df.astype(object).replace({np.nan: None})
+
+    res = pd.concat(res_parts) if res_parts else resilience(P, all_stocks, {"valid": False}, i)
+    res = clean(res.reindex(all_stocks))
+    res_spy = clean(resilience(P, uni_stocks, windows[BENCH], i).reindex(all_stocks))
+    srs = clean(srs)
+    held_ratio = {}
+    for b in benches:
+        members = [t for t in all_stocks if bench_of(t) == b] if b != BENCH else uni_stocks
+        src = res if b != BENCH else res_spy
+        hc = src.loc[[t for t in members if t in src.index], "held_class"].dropna()
+        held_ratio[b] = {"held": int((hc == "耐えた").sum()), "computed": int(len(hc)),
+                         "ratio_pct": fnum(100 * (hc == "耐えた").mean()) if len(hc) else None}
+
+    for col in ("sector_bench", "rel_sec_21_pct", "rel_sec_63_pct", "dd_vs_sector_pt", "sector_rs_line_63h", "sector_rs_class"):
+        screen[col] = [srs.loc[t, col] if t in srs.index else None for t in all_stocks]
+    screen["res_bench"] = screen["sector_bench"]
+    screen["res_state"] = [windows[b]["state"] if b in windows else None for b in screen["sector_bench"]]
+    screen["res_dd_low_pct"] = [windows[b]["dd_low_pct"] if b in windows else None for b in screen["sector_bench"]]
+    screen["res_dd_now_pct"] = [windows[b]["dd_now_pct"] if b in windows else None for b in screen["sector_bench"]]
+    for col in ("own_dd_low_pct", "r_held", "held_class", "own_dd_now_pct", "r_now", "rebound_class",
+                "new_high_after_low", "below_50sma_days"):
+        screen[col] = res[col].values
+    screen["next_candidate"] = res["tier"].values
+    screen["late_break"] = res["late_break"].values
+    screen["r_held_spy"] = res_spy["r_held"].values
+    screen["r_now_spy"] = res_spy["r_now"].values
+
+    # 前回の screen.csv との差分（key_events 用）。監視母集団だけ。
+    rs_events = []
+    if a.prev_screen and os.path.exists(a.prev_screen):
+        try:
+            prev = pd.read_csv(a.prev_screen).set_index("ticker")
+        except Exception:
+            prev = None
+        if prev is not None and "sector_rs_class" in prev.columns:
+            cur = screen.set_index("ticker")
+            for t in uni_stocks:
+                if t not in prev.index:
+                    continue
+                pc, nc = prev.loc[t, "sector_rs_class"], cur.loc[t, "sector_rs_class"]
+                if not isnull(pc) and not isnull(nc) and {pc, nc} == {"leader", "laggard"}:
+                    rs_events.append({"type": "sector_rs_flip", "ticker": t, "from": pc, "to": nc, "bench": cur.loc[t, "sector_bench"]})
+                pt = prev.loc[t, "next_candidate"] if "next_candidate" in prev.columns else None
+                nt = cur.loc[t, "next_candidate"]
+                if not isnull(nt) and isnull(pt):
+                    rs_events.append({"type": "next_candidate_new", "ticker": t, "tier": nt, "bench": cur.loc[t, "res_bench"],
+                                      "held_class": cur.loc[t, "held_class"], "rebound_class": cur.loc[t, "rebound_class"]})
+                if isnull(nt) and not isnull(pt):
+                    rs_events.append({"type": "next_candidate_out", "ticker": t, "prev_tier": pt, "bench": cur.loc[t, "res_bench"],
+                                      "held_class": cur.loc[t, "held_class"], "rebound_class": cur.loc[t, "rebound_class"], "r_now": cur.loc[t, "r_now"]})
+                pl = "late_break" in prev.columns and str(prev.loc[t, "late_break"]).strip().lower() in ("true", "1")
+                if str(cur.loc[t, "late_break"]).strip().lower() in ("true", "1") and not pl:
+                    rs_events.append({"type": "late_break_new", "ticker": t, "bench": cur.loc[t, "res_bench"],
+                                      "r_held": cur.loc[t, "r_held"], "r_now": cur.loc[t, "r_now"]})
+
     screen.sort_values(["leader", "rs_rank"], ascending=[False, False]).to_csv(os.path.join(out, "screen.csv"), index=False)
 
     # --- 市場（C7.1） ---
@@ -769,10 +1064,13 @@ def main():
         s["rs_rank"] = round(float(rank_now.get(s["ticker"], np.nan)), 1)
         s["leader"] = s["ticker"] in leaders_now
         s["group"] = groups.get(s["ticker"], "")
+        s["sector_rs_class"] = srs.loc[s["ticker"], "sector_rs_class"] if s["ticker"] in srs.index else None  # v4.3
+        s["resilience_tier"] = res.loc[s["ticker"], "tier"] if s["ticker"] in res.index else None          # v4.3
     pd.DataFrame(setups).to_csv(os.path.join(out, "setups.csv"), index=False)
 
     # --- 台帳更新 ---
     events = update_ledger(ledger, P, setups, today, i)
+    events = events + jsonable(rs_events)  # v4.3 の差分イベントも台帳の day_events に残し、同日の再実行で消えないようにする
     # 同じ基準日に先の実行で検出したイベント（ブレイク等）を引き継ぐ。再実行では同じ事象が再検出されないため
     day = ledger.get("day_events") or {}
     if day.get("date") == tstr:
@@ -835,11 +1133,57 @@ def main():
     tech_etf = {t: row(t) for t in TECH_ETFS + ["SOXL"] if t in P.C.columns}
 
     tech_leaders = [{"ticker": t, "group": groups.get(t, ""), "rs_rank": round(float(rank_now[t]), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1),
-                     "pct_from_52w_high": round(100 * float(P.C[t].iloc[i] / P.h252[t].iloc[i] - 1), 1), "tt3_5m": bool(tt_now.loc[t, "tt3_5m"])}
+                     "pct_from_52w_high": round(100 * float(P.C[t].iloc[i] / P.h252[t].iloc[i] - 1), 1), "tt3_5m": bool(tt_now.loc[t, "tt3_5m"]),
+                     "sector_rs_class": srs.loc[t, "sector_rs_class"], "resilience_tier": res.loc[t, "tier"]}
                     for t in leaders_now if t in uni_stocks]
     tech_watch = [{"ticker": t, "group": groups.get(t, ""), "tt_count": int(tt_now.loc[t, "tt_count"]) if not math.isnan(tt_now.loc[t, "tt_count"]) else None,
-                   "rs_rank": round(float(rank_now.get(t, np.nan)), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1)}
+                   "rs_rank": round(float(rank_now.get(t, np.nan)), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1),
+                   "sector_rs_class": srs.loc[t, "sector_rs_class"], "resilience_tier": res.loc[t, "tier"]}
                   for t in uni_stocks if t not in leaders_now and (rank_now.get(t, 0) >= 80 or bool(tt_now.loc[t, "tt7_pass"]))]
+
+    # --- v4.3: セクター相対強度・調整耐性の要約（監視母集団） ---
+    def srow(t):
+        r = srs.loc[t]
+        return {"ticker": t, "rel_sec_21_pct": r["rel_sec_21_pct"], "rel_sec_63_pct": r["rel_sec_63_pct"],
+                "dd_vs_sector_pt": r["dd_vs_sector_pt"], "rs_line_63h": r["sector_rs_line_63h"], "class": r["sector_rs_class"],
+                "rs_rank": fnum(rank_now.get(t, np.nan)), "tt_count": fnum(tt_now.loc[t, "tt_count"], 0)}
+
+    sector_rs_groups = {}
+    for gname, (b, confirm) in GROUP_BENCH.items():
+        members = [t for t in uni_stocks if gname in groups.get(t, "") and srs.loc[t, "sector_rs_class"] is not None]
+        rows_ = sorted((srow(t) for t in members), key=lambda r: -(r["rel_sec_63_pct"] if r["rel_sec_63_pct"] is not None else -1e9))
+        cnt = {k: sum(1 for r in rows_ if r["class"] == k) for k in ("leader", "neutral", "laggard")}
+        bdd = fnum(100 * (P.C[b].iloc[i] / P.h252[b].iloc[i] - 1)) if b in P.C.columns else None
+        sector_rs_groups[gname] = {"bench": b, "confirm": confirm, "bench_pct_from_52w_high": bdd,
+                                   "bench_rel_spy_63_pct": fnum(100 * rs_now.loc[b, "rel_63"]) if b in rs_now.index else None,
+                                   "counts": cnt,
+                                   "leaders": [r["ticker"] for r in rows_ if r["class"] == "leader"][:10],
+                                   "laggards": [r["ticker"] for r in reversed(rows_) if r["class"] == "laggard"][:10],
+                                   "rows": rows_}
+
+    def rrow(t):
+        r = res.loc[t]
+        return {"ticker": t, "group": groups.get(t, ""), "bench": bench_of(t), "tier": r["tier"],
+                "held_class": r["held_class"], "r_held": r["r_held"], "own_dd_low_pct": r["own_dd_low_pct"],
+                "rebound_class": r["rebound_class"], "r_now": r["r_now"], "own_dd_now_pct": r["own_dd_now_pct"],
+                "new_high_after_low": r["new_high_after_low"], "below_50sma_days": r["below_50sma_days"],
+                "tt_count": fnum(tt_now.loc[t, "tt_count"], 0), "rs_rank": fnum(rank_now.get(t, np.nan)),
+                "rel_63_pct": fnum(100 * rs_now.loc[t, "rel_63"]), "sector_rs_class": srs.loc[t, "sector_rs_class"]}
+
+    tier_order = {"A": 0, "B": 1, "C": 2}
+    next_candidates = sorted((rrow(t) for t in uni_stocks if not isnull(res.loc[t, "tier"])),
+                             key=lambda r: (tier_order[r["tier"]], r["r_held"] if r["r_held"] is not None else 9e9, -(r["rel_63_pct"] or 0)))
+    late_breaks = sorted((rrow(t) for t in uni_stocks if res.loc[t, "late_break"] is True), key=lambda r: -(r["r_now"] or 0))
+    sp500_next = [t for t in all_stocks if t not in uni_stocks and res.loc[t, "tier"] in ("A", "B")]
+    correction_resilience = {
+        "definition_version": "ST-1.3",
+        "windows": [public_window(windows[b]) for b in benches],
+        "next_candidates": next_candidates,
+        "late_breaks": late_breaks,
+        "held_ratio": held_ratio,
+        "sp500_next_candidates_ab": {"count": len(sp500_next), "tickers": sorted(sp500_next, key=lambda t: res.loc[t, "r_held"] if res.loc[t, "r_held"] is not None else 9e9)[:30]},
+        "note": "監視候補の順番であり買い判定ではない。R_held・R_nowは倍率なので dd_low・dd_now を併記して読む。",
+    }
 
     signals = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -864,6 +1208,9 @@ def main():
         "sell_signals": sells,
         "earnings_within_5d": earnings_soon,
         "key_events_today": key_events,
+        "sector_rs": jsonable({"definition_version": "ST-1.3", "groups": sector_rs_groups,
+                               "note": "対セクターETFの補助表示。市場RS百分位（rs_rank）・先導候補の条件・Tapeスコアには使わない（E7.1）。"}),
+        "correction_resilience": jsonable(correction_resilience),
     }
     json.dump(signals, open(os.path.join(out, "signals.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     print(json.dumps({"as_of": tstr, "regime": eff_regime, "hysteresis": hyst, "leaders_market": len(leaders_now), "tech_leaders": len(tech_leaders),

@@ -3,7 +3,7 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜02、daily_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜03、daily_runbook.txt）。
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
@@ -18,6 +18,9 @@
 米国株市場のマクロ・マルチファクター分析を本編として、市場環境、判断変更の理由、条件付き行動を示す。半導体・テクノロジー分析を追加し、元の分析を置き換えない。
 
 このリポジトリの「00_US_Stock_Project_Master_v4.2.txt」を詳細仕様の正本とする。
+追補「03_Addendum_v4.3_SectorRS_Resilience.txt」（E7.1 セクター相対強度、E7.2 調整耐性。v4.3、ST-1.3）も正本の一部とする。
+セクター内のリーダー／ラガードと調整耐性（次の候補・後崩れ）は signals.json の sector_rs／correction_resilience から読み、
+監視候補の順番として扱う。買い判定・市場RS百分位・Tapeスコアには使わない。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape

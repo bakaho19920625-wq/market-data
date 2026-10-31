@@ -47,6 +47,7 @@ jobs:
           if git fetch origin data:data-prev 2>/dev/null; then
             git show data-prev:ledger.json > out/prev/ledger.json || echo "no previous ledger"
             git show data-prev:manifest.json > out/prev/manifest.json || echo "no previous manifest"
+            git show data-prev:screen.csv > out/prev/screen.csv || echo "no previous screen"
           else
             echo "no data branch yet"
           fi
@@ -67,7 +68,7 @@ jobs:
           PY
 
       - name: Analyze
-        run: python analyze.py --out out --prev-ledger out/prev/ledger.json
+        run: python analyze.py --out out --prev-ledger out/prev/ledger.json --prev-screen out/prev/screen.csv
 
       - name: Publish to data branch
         env:
