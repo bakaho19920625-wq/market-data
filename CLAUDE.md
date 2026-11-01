@@ -63,7 +63,7 @@ F部：ユーザー設定、データ入力、計算、執行、売買ログ、�
 
 MarketSurge等のログインが必要なサービスへ自動でログイン・取得することを前提にしない。ユーザーが提供したエクスポートやスクリーンショットはF8に従って扱う。
 
-【データ取得先】日足と市場内部は、ユーザーのGitHubリポジトリから毎回コードで取得する（米国営業日の翌朝7時台JSTに自動更新、Yahoo Finance非公式。市場内部はproxy）。詳細はF2.1。
+【データ取得先】日足と市場内部は、ユーザーのGitHubリポジトリから毎回コードで取得する（米国営業日の翌朝6:35 JSTに自動更新を開始し、前営業日の足が入るまで10分おきに最大6回取り直す。12:35・15:35 JSTにも再取得。Yahoo Finance非公式。市場内部はproxy）。詳細はF2.1・F9。
 https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/manifest.json
 https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/prices_daily.csv.gz
 https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/breadth.csv

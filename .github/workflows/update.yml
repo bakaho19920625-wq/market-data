@@ -3,12 +3,17 @@ name: update-market-data
 
 on:
   schedule:
-    # 米国の取引終了後に何度か試す（GitHubの予約実行は数時間遅れることがあり、
-    # Yahooが終値を空欄のまま返して後から直すこともあるため）。
-    # 月〜金 21:45・22:45・23:45 UTC、火〜土 0:45・1:45・3:45・5:45・7:45 UTC（日本時間 6:45〜16:45）。
-    # 何度動いても同じ基準日のデータを上書きするだけ。未確定の当日分は fetch_data.py が除く。
-    - cron: "45 21,22,23 * * 1-5"
-    - cron: "45 0,1,3,5,7 * * 2-6"
+    # 実績（2026-10-27〜31の実行ログ）に合わせた時刻。
+    # ・Yahooは引け後しばらくは前日分の日足を返すが、米国東部 20:30〜21:20 ごろ（時間外取引の終了後の再計算）に
+    #   全銘柄の終値が一時的に空欄になり、21:25〜22:10 ごろに戻る。以前の予約（UTC 21:45〜）はGitHubの遅れで
+    #   ちょうどこの空欄の時間帯（日本時間 10:00〜10:20）に動いていたため、毎朝前日のままだった。
+    # ・GitHubの予約は毎時45分・00分付近で数時間遅れ、同じ時刻帯の複数行は1回にまとめられることがある。
+    # そこで、(1) 引け直後（東部 16:35＝日本 6:35。遅れても 20:00 までは安全）、(2) 空欄の時間帯が終わった後（東部 22:35＝日本 12:35）、
+    # (3) 夕方の保険（日本 15:35）の3回だけにし、各回は「前営業日の足が入るまで10分おきに最大6回取り直す」（下の Fetch data）。
+    # 分は :35 にして混雑する :00／:45 を避ける。月〜金 21:35 UTC ＝ 火〜土 6:35 JST、火〜土 3:35・6:35 UTC ＝ 12:35・15:35 JST。
+    # 米国が夏時間の間（3月中旬〜11月上旬）は東部時間が1時間ずれるが、取り直しで吸収する。
+    - cron: "35 21 * * 1-5"
+    - cron: "35 3,6 * * 2-6"
   workflow_dispatch: # 「Run workflow」ボタンで手動実行もできる
 
 permissions:
@@ -18,7 +23,7 @@ permissions:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 40
+    timeout-minutes: 110
     steps:
       - uses: actions/checkout@v6
 
@@ -53,7 +58,32 @@ jobs:
           fi
 
       - name: Fetch data
-        run: python fetch_data.py --out out
+        # 前営業日（東部16:20を過ぎた直近の平日）の足が入るまで、10分おきに最大6回取り直す。
+        # Yahooが終値を空欄で返す時間帯（東部 20:30〜21:20 ごろ）に当たった場合の対策。休場日は6回待って前回の足のまま進む。
+        run: |
+          python - <<'PY'
+          import json, subprocess, sys, time
+          from datetime import datetime, timedelta
+          from zoneinfo import ZoneInfo
+          def expected_session():
+              now = datetime.now(ZoneInfo("America/New_York"))
+              d = now.date()
+              if now.hour * 60 + now.minute < 16 * 60 + 20:
+                  d -= timedelta(days=1)
+              while d.weekday() >= 5:
+                  d -= timedelta(days=1)
+              return d.isoformat()
+          want = expected_session()
+          for attempt in range(1, 7):
+              subprocess.run([sys.executable, "fetch_data.py", "--out", "out"], check=True)
+              got = json.load(open("out/manifest.json"))["prices"]["as_of"]
+              print(f"attempt {attempt}: as_of={got} expected={want}", flush=True)
+              if got >= want or attempt == 6:
+                  if got < want:
+                      print("::warning::前営業日の足がまだ入っていません（Yahoo未確定か休場日）。前回までの足で進みます。")
+                  break
+              time.sleep(600)
+          PY
 
       - name: Do not go backwards
         # 取得に失敗して前回より古いデータになった場合は公開しない（前回のデータを残す）

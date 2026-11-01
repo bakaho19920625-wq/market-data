@@ -1,4 +1,4 @@
-# 日次レポート 実行手順書（daily_runbook v1.5、マスター仕様v4.2のD7「Daily」の実装。v4.4・v4.5追補とやさしい表記を反映）
+# 日次レポート 実行手順書（daily_runbook v1.6、マスター仕様v4.2のD7「Daily」の実装。v4.4・v4.5追補とやさしい表記を反映）
 # 日次の自動実行（火〜土 12:07 JST、データ未更新なら 18:07 に再試行）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -13,7 +13,7 @@
 - ［v1.4］書き方：状態を表す語は 05_Plain_Language_Glossary.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/05_Plain_Language_Glossary.txt。
   届かなければ保管ページの spec/plain_language.txt）の「言葉」で書き、数字と記号を括弧で後ろに付ける（例：大口が売った日が7日（IX2＝7、6日以上は危険水準））。
   記号は消さない。記号だけ・英語だけの行を作らない。表には「言葉」の列を置くか、数字の横に言葉を添える。巻末に「読み方」（使った記号だけ、1行ずつ）。
-- GitHubのリポジトリ・ワークフローは操作しない（日次の実行環境には書き込み権限がない。データが古いときの扱いは第1節）。
+- GitHubのリポジトリのファイルは変更しない。例外はデータが古いときのワークフロー起動だけ（第1節）。
 
 ## 1. 取得と確認
 1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
@@ -24,8 +24,12 @@
    - 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
    - 前日が休場日 → 「新しい取引日はありません（休場）」と短く送って終了（保存しない）。
    - signals.as_of_market_date がその取引日より古い（GitHubの予約実行は数時間遅れることがある）：
-     ・日本時間15時より前の実行（12:07の1回目）→ ユーザーには何も送らず終了（保存しない）。18:07の再試行に任せる。
-     ・日本時間15時以降の実行（18:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない）。
+     ・［v1.6］まず自分でデータ更新を起動して待つ：mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）のあと
+       `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`、`gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId --jq '.[0].databaseId'` でIDを取り、
+       `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト12分）で完了を待ってから取り直す。
+       （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
+     ・それでも古く、日本時間15時より前の実行（12:07の1回目）→ ユーザーには何も送らず終了（保存しない）。18:07の再試行に任せる。
+     ・それでも古く、日本時間15時以降の実行（18:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない）。
        manifest.prices.yahoo_incomplete に基準日より新しい日付があれば、原因として「Yahooが○○日の終値を未確定（空欄）のまま配信しているため。修正されしだい自動で取り込みます」と添える。
    - 同じ基準日の日次がすでに保存済み（state/latest_daily の as_of_market_et が一致）なら、1回目でも再試行でも何も送らず終了する。
 4. リポジトリの活動（60日停止の予防）：
