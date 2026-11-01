@@ -1,9 +1,9 @@
 # 米国株指標チェック：統合仕様 v4.2
 
-改訂日：2026-10-25 JST
-仕様版：PROJECT-4.2
+改訂日：2026-10-25 JST（本文）。現行の仕様版は 4.5（本文v4.2＋追補03・04・06、2026-11-01）。版の読み方は下の「版の読み方」
+仕様版：PROJECT-4.2（本文）／現行 4.5
 継続状態：checkpoint 4.1（checkpoint 4.0の状態も読込可）
-半導体・テクノロジー定義：ST-1.2
+半導体・テクノロジー定義：ST-1.2（本文）／解析エンジン ST-1.4・engine 1.3
 登録名：00_US_Stock_Project_Master_v4.2.txt
 前版：00_US_Stock_Project_Master_v4.1.txt（本書で置き換える）
 
@@ -11,7 +11,7 @@
 
 重複説明を整理しているが、既存のマクロ分析、二層判定、統合マトリクス、個別分析定義を維持する。市場価格、スコア、銘柄、個人ポジションの固定資料ではない。
 
-本書の作成・保存だけでプロジェクト設定の変更完了とは扱わない。プロジェクトの情報源へ登録し、対応するプロジェクト指示v4.2を設定して使用する。旧版v4.1は情報源から外す。
+本書の作成・保存だけでプロジェクト設定の変更完了とは扱わない。プロジェクト指示（CLAUDE.md）とともに使用する。旧版v4.1は情報源から外す（済）。
 
 ## v4.2 改訂の要点
 
@@ -38,7 +38,7 @@
     （正本は 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも観察専用で、Tapeレジーム・L/H・買い判定は変えない。
     specification_version 4.5、engine 1.3。signals.json の leadership／hedge／spy_model、key_events の leadership_shift／hedge_setup／hedge_cover／spy_model_signal（2026-11-01）。
 
-版の読み方（A7・03・04）：
+版の読み方（A7・03・04・06）：
 ・report.specification_version＝仕様全体の版。本書v4.2＋追補03＋追補04＋追補06で 4.5。
 ・checkpoint_version＝状態YAMLの形。4.1 のまま（追補はフィールドの追加だけ）。
 ・signals.json の definition_version＝解析エンジン全体の定義版（ST-1.4／engine 1.3）。
@@ -1587,13 +1587,13 @@ FOMC、CPI、雇用、急落・急騰等の臨時更新。
 簡易でもチェックポイントを更新。
 
 ［v4.2］Daily（日次レポート）：
-自動配信の既定（F9、火〜土の朝）。ユーザーが「日次レポート」と依頼した場合も同じ。
+自動配信の既定（F9、火〜土の12:07。データ未更新なら18:07に再試行）。ユーザーが「日次レポート」と依頼した場合も同じ。
 Tape中心の短い更新とDaily Planを1本にまとめる。本文は2〜3画面以内とし、27項目は出さない。
-1. 冒頭（1画面）：一文結論、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
+1. 冒頭（1画面）：［v4.4］冒頭ブロック（今日のひとこと・やること・なぜその判断か。形は05の0節、内容は daily_runbook.txt 第1.5節）、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
    種類ごとの書き方の正本は daily_runbook.txt 第2節。ここには一覧を重複して置かない）、
    Tapeレジームと前日比、有効分配日・FTD、適用ゲート、L/Hと新規許容度、データ状態（基準日・欠損）。
    ［v4.2b］日次の詳細手順はdaily_runbook.txtに従う。
-2. Broad：日々動く項目だけを再確認する（S&P500・NASDAQ100・SOX、VIX、2年・10年金利、
+2. Broad：日々動く項目だけを再確認する（S&P500・NASDAQ・SOX（SOXはsignals.marketに無いのでSOXXで代用）、VIX、2年・10年金利、
    HY OAS、ドル円、原油、当日〜翌営業日のイベント）。Broad点は週次で確定し、日次では据置を基本とする。
    判定帯をまたぐ明確な変化がある場合だけ暫定値を示し、理由を書く。
 3. 半導体・テクノロジー：SOXX・SMH・IGV等の動き、候補状態の変化
@@ -1645,14 +1645,14 @@ UNIFIED_MARKET_STATE:
   checkpoint_version: "4.1"
   report:
     id: null
-    mode: standard            # standard / full / event / daily_plan
+    mode: standard            # weekly_standard / weekly_full / daily / event / daily_plan（F9のreportsのmodeと同じ語。standard／fullは旧表記）
     as_of_market_et: null
     created_jst: null
     previous_id: null
     supersedes_id: null
     revision_kind: null
     based_on_report_id: null  # daily_planが前提とした確定レポート
-    specification_version: "4.2"
+    specification_version: "4.5"   # A7の現行値を入れる（本文v4.2＋追補）
   input_data:                 # v4.2
     files: []                 # name, as_of, rows, tickers, source_type, issues
     connectors: []
@@ -1759,7 +1759,7 @@ D9の全項目に以下を追加する。
 ・jpy_investor_context
 ・portfolio_context
 ・history_summary
-・extensions.sector_leadership
+・extensions.sector_leadership（03）、extensions.breadth_ext（04）、extensions.spy_model・extensions.hedge（06）
 ・［v4.2］user_settings（F1。未設定項目はnull）
 ・［v4.2］daily_plan（直近のDaily Planを参照する場合のID）
 
@@ -3417,6 +3417,7 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
   breakout_followthrough_market（FB1）、market／sector_etf／tech_etf、leaders_market、tech_leaders、tech_watch、
   setups（ready／watch／forming）、ledger_cohorts（E14.3）、ledger_open、sell_signals（E13.1）、earnings_within_5d、
   key_events_today（日次で逃さない重要ポイント）。
+  追補で追加：sector_rs／correction_resilience／rs_lines（03）、breadth_ext と tape.checklist の拡張（04）、leadership／hedge／spy_model（06）。
 ・screen.csv：S&P500∪監視母集団の全銘柄（TT項目数、市場RS百分位、52週高値比、50SMA比、先導フラグ）。
 ・setups.csv：監視母集団のセットアップ一覧。
 ・ledger.json：台帳（E14。セットアップ登録、ブレイク追跡、D+3／5／10、レジーム履歴）。前回分を引き継いで更新する。
@@ -3590,7 +3591,7 @@ MarketSurge等のログインが必要なサービスについて、
 ## F9. ［v4.2］自動配信と保存先
 
 スケジュールタスクが、毎回新しいセッションでレポートを作成・配信する。
-各回は会話の記憶を持たないため、仕様と前回の状態は保管ページから読む。
+各回は会話の記憶を持たないため、仕様はGitHubのmain（届かなければ保管ページの予備コピー）、前回の状態は保管ページのデータベースから読む。
 
 配信スケジュール（日本時間）：
 ・日次レポート（D7のDaily）：火〜土の12:07（データ未更新なら18:07に再試行）。前営業日の米国通常取引の終値を基準とする。手順はdaily_runbook.txt。
@@ -3629,15 +3630,13 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
   本文が200KBを超える場合はbody_mdを要約にしてtruncated=trueとし、完全版はファイルで配信する。
 ・state/latest_daily、state/latest_weekly：{report_id, as_of_market_et, created_jst, yaml}
   yamlはそのモードの最新のUNIFIED_MARKET_STATE。
-・state/ledger：{updated_jst, setups_yaml}
-  E14の前向き追跡台帳（setup_record、breakout_event、集計）。直近120米国営業日分を保持し、
-  それより古いものは集計値に畳んで削除する。
+・state/ledger：［v4.2b］廃止。台帳の正本はGitHubの ledger.json（F2.1）。保管ページには置かない。
 ・state/scenarios：{updated_jst, items}
   itemsは [{report_id, as_of_market_et, due_date_et, bull, base, bear, outcome, realized_return_pct, brier}]、直近60件。
   期日到来分はF6で採点して更新する。
 
-手順（各回）：
-1. 保管ページの公開ファイルで仕様を読む。
+手順（各回。詳細は daily_runbook.txt／weekly_runbook.txt）：
+1. 仕様をGitHubのmainで読む（届かなければ保管ページの予備コピー spec/）。
 2. F2.1のデータを取得し、manifestを確認する。
 3. stateの前回状態、台帳、シナリオ履歴を読む（無ければ初回として扱い、前回比較不能と明記）。
 4. 計算と判定を行い、レポートを作る。

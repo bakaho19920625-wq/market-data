@@ -119,7 +119,7 @@ key_events_today に追加（前営業日との比較だけで決めるので、
 ・index_breakdown_guard：IX3が on／off に変わった（分配日数、SPY・QQQの50日線の上下、megacap_led）。
 ・breakout_stalling：FB1_stalling が on／off に変わった（D+5維持率、D+5・D+10平均リターン）。
 
-## レポートでの書き方
+## レポートでの書き方（正本は daily_runbook／weekly_runbook。ここは要点だけ）
 
 日次（daily_runbook 第2・3・5節）・週次（weekly_runbook 第5節）とも：
 1. Tape のチェックリスト表に、FB1 の行を「維持率／平均リターン（D+5・D+10）／伸び判定」の3つで書く。

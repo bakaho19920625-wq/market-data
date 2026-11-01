@@ -664,8 +664,8 @@ def hedge_rules(P, chk, regime, idx_state, i):
     成立（SPY・QQQ各）：直近10日に3日以上の反発（終値が3日連続で前日より高い区間）があり、今日が
       21EMA または 50SMA の下抜け（前日は上）で、出来高が50日平均の1.2倍以上、52週高値から10%以内。
     損切り：52週高値が3%以内ならその高値、そうでなければ直近10日の高値。
-    水準：D・Fで200SMAの下ならH2、それ以外はH1。
-    解除：FTD成立（30営業日以内・未失敗）またはレジームがA・B・Eに確定。"""
+    水準（setup_level）：D・Fで200SMAの下ならH2、それ以外はH1。D部の最終 hedge_level とは別。
+    解除：FTD成立（30営業日以内・未失敗）またはレジームがA・B・Eに確定（損切り到達による解除は建玉を知らないので出さない）。"""
     allowed = regime in ("C", "D", "F") or bool(chk.get("IX3_index_breakdown_guard"))
     setups = []
     for s in ("SPY", "QQQ"):
@@ -690,7 +690,7 @@ def hedge_rules(P, chk, regime, idx_state, i):
             h10 = float(P.H[s].iloc[i - HEDGE["lookback_hi"] + 1:i + 1].max())
             stop = h52 if 100 * (c / h52 - 1) >= -HEDGE["stop_ath_within_pct"] else h10
             level = "H2" if (regime in ("D", "F") and not chk[s]["above_200"]) else "H1"
-            setups.append({"instrument": s, "level": level, "trigger": "21EMA割れ" if cross21 else "50日線割れ", "close": round(c, 2),
+            setups.append({"instrument": s, "setup_level": level, "trigger": "21EMA割れ" if cross21 else "50日線割れ", "close": round(c, 2),
                            "stop": round(stop, 2), "stop_kind": "52週高値" if stop == h52 else "直近10日高値", "risk_to_stop_pct": fnum(100 * (stop / c - 1)),
                            "rvol50": fnum(rv, 2), "pct_from_52w_high": chk[s]["pct_from_52w_high"]})
     ftd_ok = any(idx_state[k]["ftd_date"] and not idx_state[k]["ftd_failed"] and (idx_state[k]["ftd_days_ago"] or 99) <= 30 for k in idx_state)
@@ -702,9 +702,9 @@ def hedge_rules(P, chk, regime, idx_state, i):
         reasons.append(f"レジームが{regime}")
     level_max = "H2" if regime in ("D", "F") else ("H1" if allowed else "H0")
     status = "setup_today" if setups else ("allowed" if allowed else "not_allowed")
-    return {"definition_version": "HG-1.0", "allowed": allowed, "status": status, "level_max": level_max, "setups": setups,
+    return {"definition_version": "HG-1.0", "allowed": allowed, "status": status, "setup_level_max": level_max, "setups": setups,
             "cover_signal": bool(cover), "cover_reasons": reasons,
-            "note": "C10.1（P）。ヘッジは自動設定しない。目的（方向性かベータ低下か）・損切り・解除条件を付けて検討する。"}
+            "note": "C10.1（P）。ヘッジは自動設定しない。setup_level は条件がそろった場合の上限で、D部の最終 hedge_level とは別。損切りに達した場合の解除は自分で管理する。"}
 
 
 # ----------------------------------------------------------------------------
