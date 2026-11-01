@@ -28,6 +28,9 @@
    解析エンジンは screen.csv の列、signals.json の sector_rs／correction_resilience、
    key_events の sector_rs_flip／next_candidate_new／next_candidate_out／late_break_new を出力する（2026-10-31）。
 10. ［v4.3b］E7.3 RSラインの状態（対SPY、補助で対QQQ。RS新高値・先行・EMA21）を追加（正本は03の追補）。
+11. ［v4.4］C15.1a〜d を追加・変更：ブレイクの伸び（FB1_stalling）、市場内部の拡張（BR4・BR5＝高値から−20%以上の銘柄比率、
+    隠れ弱気のラベル、大型株主導の下落 megacap_led）、指数の崩れガード（IX3）。C・E・Aの条件が変わる
+    （正本は 04_Addendum_v4.4_Breadth_FollowThrough.txt）。
     signals.json の rs_lines、screen.csv の rs_line_* 列、key_events の rs_line_lead／rs_line_new_high（2026-10-31）。
 
 v4.2で追加・変更した箇所には［v4.2］を付す。
@@ -1169,6 +1172,8 @@ F 弱気・高リスク：
 例：L0、条件が明確な場合のみH1／H2。
 
 ### C15.1 ［v4.2b］最低条件チェックリスト P（改訂版）
+［v4.4］本条項は 04_Addendum_v4.4_Breadth_FollowThrough.txt の C15.1a〜d で追加・変更されている（FB1_stalling、BR4・BR5、IX3、
+C・E・Aの条件）。食い違う場合は04を優先する。以下はv4.2bの本文。
 
 目的：週ごと・日ごとの判定のブレを減らす。閾値はすべてPであり、本人公式でも検証済みでもない。
 計算と判定は解析エンジン（F2.1）が毎回行い、signals.json の tape に出力する。レポートはその値を使い、再計算しない。

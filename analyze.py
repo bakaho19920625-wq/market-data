@@ -21,6 +21,13 @@ v4.3 追補（03_Addendum_v4.3_SectorRS_Resilience.txt）：E7.1 セクター相
   sector_rs_flip / next_candidate_new / next_candidate_out / late_break_new（前回の screen.csv との差分。--prev-screen）。
 v4.3b：RSライン（E7。対SPY、補助で対QQQ）の状態を追加。signals.json の rs_lines、screen.csv の rs_line_* 列、
   key_events の rs_line_lead（RS新高値が株価に先行）／rs_line_new_high（株価とそろった新高値。前回から20営業日以上あいた場合）。
+v4.4 追補（04_Addendum_v4.4_Breadth_FollowThrough.txt）：
+  (1) FB1の「伸び」：維持率が高くてもD+5・D+10の平均リターンがともにマイナスなら「伸びない」（FB1_stalling）とし、
+      E・Aの支持に数えず、Cの支持に数える。
+  (2) 市場内部の拡張 BR4・BR5：52週高値から−20%以上の銘柄比率と50日線上比率を、S&P500全体・IT＋通信・それ以外で計算。
+      隠れ弱気（ステルス・ベア）のラベル、大型株主導の下落（megacap_led）。signals.json の breadth_ext。
+  (3) 指数の崩れガード（IX3）：SPYかQQQが50日線の下、かつ有効分配日5以上なら、内部回復入口のEにしない（高値圏ならC）。
+  key_events の breadth_label_change／index_breakdown_guard／breakout_stalling（前営業日との差分）。
 """
 import argparse
 import json
@@ -32,7 +39,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-DEF_VERSION = "ST-1.3 / engine 1.1"
+DEF_VERSION = "ST-1.4 / engine 1.2"
 JST = timezone(timedelta(hours=9))
 INDEX_TICKERS = {"^GSPC", "^IXIC", "^VIX"}
 SECTOR_ETFS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLU"]
@@ -48,6 +55,19 @@ GICS_BENCH = {"Information Technology": "XLK", "Communication Services": "XLC", 
 # E7.2（v4.3）: 調整窓の閾値（P）
 RES = {"min_depth": -5.0, "shallow": -8.0, "min_bars": 5, "keep_bars": 60, "min_history": 120,
        "held_max": 0.5, "inline_max": 1.0, "now_na_above": -2.0, "newhigh_upgrade_dd": -0.15}
+# v4.4（04追補）: 市場内部の拡張・ブレイクの伸び・指数の崩れガードの閾値（すべてP）
+BRX = {"down_pct": 20.0,        # 52週高値（日中高値）から何%下を「−20%以上」とするか
+       "watch": 40.0,           # −20%以上の銘柄比率がこれ以上 → 警戒
+       "stealth": 50.0,         # 同じく過半 → 隠れ弱気（指数が高値圏のとき）／全面下落（指数も−10%超のとき）
+       "near_high": -10.0,      # 指数・基準ETFが52週高値からこの%以内なら「高値圏」（C15.1のCと同じ）
+       "min_cov": 0.8,          # グループの8割以上に52週高値・50日線の値がそろわなければ計算しない
+       "megacap_qqq_rel_1m": -3.0,   # QQQのSPY比1か月がこれ以下
+       "megacap_rsp_spy_4w": 2.0,    # かつRSP/SPYの4週変化がこれ以上 → 大型株主導の下落
+       "guard_dist_min": 5,     # 指数の崩れガード：有効分配日数の下限
+       "fb_min_matured": 20}    # FB1の伸び判定に使う最小標本（D+5成熟件数）
+TECH_SECTORS = ("Information Technology", "Communication Services")
+BX_LABEL_JA = {"stealth": "隠れ弱気（指数は高値圏なのに過半が−20%以上）", "watch": "隠れ弱気の警戒（−20%以上が4割超）",
+               "broad_decline": "全面的な下落（指数・基準ETFも−10%超）"}
 
 
 # ----------------------------------------------------------------------------
@@ -276,6 +296,76 @@ def breakout_followthrough(P, stocks, i, window=60):
     return res
 
 
+def fb_quality(fb):
+    """v4.4 (1): FB1の「伸び」。維持率だけでなく、ブレイク当日の終値からの平均リターンを見る（P）。
+    stalling＝標本20件以上で、D+5とD+10の平均リターンがともにマイナス（水準は守っても伸びない）。"""
+    d5r, d10r = fb.get("d5_avg_ret_pct"), fb.get("d10_avg_ret_pct")
+    ok = fb.get("d5_matured", 0) >= BRX["fb_min_matured"]
+    stalling = bool(ok and d5r is not None and d10r is not None and d5r < 0 and d10r < 0)
+    extends = bool(ok and d5r is not None and d5r >= 0 and (d10r is None or d10r >= 0))
+    return {"sample_ok": bool(ok), "extends": extends, "stalling": stalling}
+
+
+# ----------------------------------------------------------------------------
+# v4.4 (2): 市場内部の拡張（BR4・BR5）と隠れ弱気のラベル
+# ----------------------------------------------------------------------------
+def breadth_ext(P, sectors, i):
+    """S&P500構成銘柄（現在の構成、proxy）を 全体・IT＋通信・それ以外 に分け、i時点の
+    52週高値から−20%以上の銘柄比率と50日線上比率、4週前（i−20）の値、基準ETFの位置とラベルを返す。"""
+    mem = [t for t in P.C.columns if t in sectors]
+    tech = [t for t in mem if sectors[t] in TECH_SECTORS]
+    rest = [t for t in mem if t not in tech]
+    cut = 1 - BRX["down_pct"] / 100
+
+    def snap(g, k):
+        if not g or k < 0:
+            return None, None, 0
+        C, H, M = P.C[g].iloc[k], P.h252[g].iloc[k], P.s50[g].iloc[k]
+        vh, vm = C.notna() & H.notna(), C.notna() & M.notna()
+        need = BRX["min_cov"] * len(g)
+        d20 = round(100 * float(((C <= cut * H) & vh).sum()) / float(vh.sum()), 1) if vh.sum() >= need else None
+        a50 = round(100 * float(((C > M) & vm).sum()) / float(vm.sum()), 1) if vm.sum() >= need else None
+        return d20, a50, int(vh.sum())
+
+    def bench_dd(b, k):
+        if b is None or b not in P.C.columns or k < 0:
+            return None
+        h = P.h252[b].iloc[k]
+        return None if math.isnan(h) else round(100 * float(P.C[b].iloc[k] / h - 1), 1)
+
+    def label(d20, bdd):
+        if d20 is None or bdd is None:
+            return None
+        if d20 >= BRX["stealth"]:
+            return "stealth" if bdd >= BRX["near_high"] else "broad_decline"
+        if d20 >= BRX["watch"] and bdd >= BRX["near_high"]:
+            return "watch"
+        return None
+
+    out = {}
+    for name, g, b in (("sp500", mem, "SPY"), ("tech", tech, "XLK"), ("ex_tech", rest, None)):
+        d20, a50, n_ok = snap(g, i)
+        d20p, a50p, _ = snap(g, i - 20)
+        bdd = bench_dd(b, i)
+        out[name] = {"members": len(g), "with_52w_high": n_ok,
+                     "pct_down20": d20, "pct_down20_4w_ago": d20p,
+                     "pct_above_50sma": a50, "pct_above_50sma_4w_ago": a50p,
+                     "bench": b, "bench_pct_from_52w_high": bdd,
+                     "label": label(d20, bdd) if b else None}
+    t, r = out["tech"]["pct_down20"], out["ex_tech"]["pct_down20"]
+    C = P.C
+    q_rel = None
+    if "QQQ" in C.columns and i >= 21:
+        q_rel = round(100 * float((C["QQQ"].iloc[i] / C["QQQ"].iloc[i - 21]) / (C[BENCH].iloc[i] / C[BENCH].iloc[i - 21]) - 1), 2)
+    rsp4 = None
+    if "RSP" in C.columns and i >= 20:
+        rsp4 = round(100 * float((C["RSP"].iloc[i] / C[BENCH].iloc[i]) / (C["RSP"].iloc[i - 20] / C[BENCH].iloc[i - 20]) - 1), 2)
+    mega = None if q_rel is None or rsp4 is None else bool(q_rel <= BRX["megacap_qqq_rel_1m"] and rsp4 >= BRX["megacap_rsp_spy_4w"])
+    return {"definition_version": "BX-1.0", "as_of_index": int(i), "groups": out,
+            "tech_minus_ex_tech_down20_pt": round(t - r, 1) if t is not None and r is not None else None,
+            "megacap_led": mega, "megacap_inputs": {"qqq_rel_spy_1m_pct": q_rel, "rsp_spy_4w_pct": rsp4}}
+
+
 # ----------------------------------------------------------------------------
 # セットアップ検出（E9: VCP / Power Play / 早期エントリー）
 # ----------------------------------------------------------------------------
@@ -478,7 +568,7 @@ def sell_signals(P, t, i):
 # ----------------------------------------------------------------------------
 # Tapeチェックリスト（C15.1 改訂版）
 # ----------------------------------------------------------------------------
-def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i):
+def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i, bx=None):
     C = P.C
     items = {}
     for s in ("SPY", "QQQ"):
@@ -504,6 +594,20 @@ def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i):
     spy, qqq = items["SPY"], items["QQQ"]
     fb5 = fb.get("d5_hold_rate")
     fb_ok = fb.get("d5_matured", 0) >= 20
+    # v4.4 (1) ブレイクの伸び
+    fq = fb_quality(fb)
+    fb_stall = fq["stalling"]
+    items["FB1_extends"], items["FB1_stalling"] = fq["extends"], fb_stall
+    # v4.4 (2) 市場内部の拡張（表示用の要約。Cの支持に使うのは S&P500 の隠れ弱気だけ）
+    g = (bx or {}).get("groups", {})
+    sp, tg = g.get("sp500", {}), g.get("tech", {})
+    items["BR4_pct_down20"], items["BR4_4w_ago"], items["BR4_label"] = sp.get("pct_down20"), sp.get("pct_down20_4w_ago"), sp.get("label")
+    items["BR5_tech_pct_down20"], items["BR5_tech_4w_ago"], items["BR5_tech_label"] = tg.get("pct_down20"), tg.get("pct_down20_4w_ago"), tg.get("label")
+    items["BR5_tech_pct_above_50sma"] = tg.get("pct_above_50sma")
+    items["megacap_led"] = (bx or {}).get("megacap_led")
+    # v4.4 (3) 指数の崩れガード IX3
+    guard = bool((not spy["above_50"] or not qqq["above_50"]) and items["IX2"] >= BRX["guard_dist_min"])
+    items["IX3_index_breakdown_guard"] = guard
     unverified = []
     if br1 is None or br2 is None:
         unverified.append("breadth")
@@ -516,18 +620,25 @@ def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i):
     if regime is None:
         c_core = spy["pct_from_52w_high"] >= -10 or qqq["pct_from_52w_high"] >= -10
         c_sup = sum([items["IX2"] >= 5, br1 is not None and br1p is not None and br1 <= br1p - 10, br2 is not None and br2p is not None and br2 < 0 and br2 < br2p,
-                     (fb5 or 100) < 40, (items["BR3_rsp_spy_4w_pct"] or 0) <= -2])
-        if c_core and c_sup >= 2:
+                     (fb5 or 100) < 40 or fb_stall,                      # v4.4: 抜けても伸びない場合も数える
+                     (items["BR3_rsp_spy_4w_pct"] or 0) <= -2,
+                     items["BR4_label"] == "stealth"])                   # v4.4: 指数は高値圏なのに過半が−20%以上
+        items["C_support_met"] = int(c_sup)
+        if c_core and guard:
+            who = "大型株主導の崩れ" if items["megacap_led"] else "指数の崩れ"
+            regime, reasons = "C", ["高値圏", f"{who}（SPY/QQQの50日線割れ＋分配日{items['IX2']}）", f"分配・内部悪化の支持{c_sup}件"]
+        elif c_core and c_sup >= 2:
             regime, reasons = "C", ["高値圏", f"分配・内部悪化の支持{c_sup}件"]
     e_ftd = ftd_ok and spy["above_21ema"] and spy["above_50"] and qqq["above_21ema"] and qqq["above_50"]
     recov_items = [br1 is not None and br1p is not None and br1 >= br1p + 15,
                    br2 is not None and br2p is not None and br2 > 0 and br2 > br2p,
                    len(leaders_now) >= len(leaders_4w),
                    (items["BR3_rsp_spy_4w_pct"] or 0) > 0]
-    e_recov = spy["above_200"] and qqq["above_200"] and spy["ma200_rising"] and qqq["ma200_rising"] and sum(recov_items) >= 2
+    # v4.4 (3): 指数の崩れガードが出ている間は、内部回復入口でEにしない
+    e_recov = spy["above_200"] and qqq["above_200"] and spy["ma200_rising"] and qqq["ma200_rising"] and sum(recov_items) >= 2 and not guard
     items["E_recovery_items_met"] = int(sum(recov_items))
     e_sup = sum([br1 is not None and br1p is not None and br1 >= br1p + 10, len(leaders_now) > len(leaders_4w), (items["BR3_rsp_spy_4w_pct"] or 0) > 0,
-                 fb.get("d5_hold_rate") is not None and fb5 >= 50])
+                 fb.get("d5_hold_rate") is not None and fb5 >= 50 and not fb_stall])  # v4.4: 伸びないブレイクは支持に数えない
     if regime is None:
         d_core = spy["pct_from_52w_high"] < -10 or qqq["pct_from_52w_high"] < -10 or not spy["above_200"] or not qqq["above_200"]
         if d_core and not (e_ftd or e_recov):
@@ -535,7 +646,8 @@ def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i):
     if regime is None and ((e_ftd and e_sup >= 1) or e_recov) and not (spy["IX1"] and qqq["IX1"]):
         regime, reasons = "E", ["FTD成立" if e_ftd else f"FTDなしの内部回復（回復項目{sum(recov_items)}/4）", f"支持{e_sup}件"]
     a_core = (spy["IX1"] and qqq["IX1"] and items["IX2"] <= 3 and br1 is not None and br1 >= 60 and br1 >= (br1p or 0) and (br2 or -1) > 0
-              and len(leaders_now) >= len(leaders_4w) and len(leaders_now) >= 10 and len(leader_sectors) >= 3 and fb_ok and fb5 >= 50)
+              and len(leaders_now) >= len(leaders_4w) and len(leaders_now) >= 10 and len(leader_sectors) >= 3 and fb_ok and fb5 >= 50
+              and not fb_stall)  # v4.4
     if regime is None and a_core:
         regime, reasons = "A", ["指数配置・内部・先導・追随率がすべて充足"]
     if regime is None and ((spy["IX1b"] and spy["above_50"]) or (qqq["IX1b"] and qqq["above_50"])) and items["IX2"] <= 5 and len(leaders_now) >= 1:
@@ -1105,12 +1217,16 @@ def main():
     fb = breakout_followthrough(P, all_stocks, i)
     fb_4w = breakout_followthrough(P, all_stocks, i - 20)
     fb["d5_hold_rate_4w_ago"] = fb_4w.get("d5_hold_rate")
+    fq, fq_4w = fb_quality(fb), fb_quality(fb_4w)
+    fb["extends"], fb["stalling"] = fq["extends"], fq["stalling"]                    # v4.4 (1)
+    fb["d5_avg_ret_pct_4w_ago"], fb["stalling_4w_ago"] = fb_4w.get("d5_avg_ret_pct"), fq_4w["stalling"]
+    bx, bx_y = breadth_ext(P, sectors, i), breadth_ext(P, sectors, i - 1)          # v4.4 (2)
 
     # --- チェックリスト（今日と昨日） ---
-    chk_today = checklist(P, bw, leaders_now, leaders_4w, sec_counts, fb, idx_state, i)
+    chk_today = checklist(P, bw, leaders_now, leaders_4w, sec_counts, fb, idx_state, i, bx)
     idx_y = {s: distribution_state(P.C[s], P.V[s], P.H[s], P.L[s], i - 1) for s in idx_state}
     l_y, l_y4 = leaders(P.tt7(i - 1), rs_rank(P.rs(i - 1)), P.rs(i - 1)), leaders(P.tt7(i - 21), rs_rank(P.rs(i - 21)), P.rs(i - 21))
-    chk_y = checklist(P, bw, l_y, l_y4, {}, breakout_followthrough(P, all_stocks, i - 1), idx_y, i - 1)
+    chk_y = checklist(P, bw, l_y, l_y4, {}, breakout_followthrough(P, all_stocks, i - 1), idx_y, i - 1, bx_y)
 
     ledger = {}
     if a.prev_ledger and os.path.exists(a.prev_ledger):
@@ -1192,6 +1308,21 @@ def main():
         key_events.append({"type": "earnings_within_5d", **e})
     if eff_regime != prev_conf:
         key_events.append({"type": "regime_change", "from": prev_conf, "to": eff_regime, "hysteresis": hyst})
+    # v4.4: 前営業日からの変化（同じ基準日の再実行でも同じ結果になるよう、i と i−1 の比較だけで決める）
+    for gname in ("sp500", "tech"):
+        a_, b_ = bx_y["groups"][gname], bx["groups"][gname]
+        if a_.get("label") != b_.get("label") and not (a_.get("pct_down20") is None or b_.get("pct_down20") is None):
+            key_events.append({"type": "breadth_label_change", "group": gname, "from": a_.get("label"), "to": b_.get("label"),
+                               "to_ja": BX_LABEL_JA.get(b_.get("label"), "ラベルなし"), "pct_down20": b_.get("pct_down20"),
+                               "bench": b_.get("bench"), "bench_pct_from_52w_high": b_.get("bench_pct_from_52w_high")})
+    if chk_today.get("IX3_index_breakdown_guard") != chk_y.get("IX3_index_breakdown_guard"):
+        key_events.append({"type": "index_breakdown_guard", "state": "on" if chk_today["IX3_index_breakdown_guard"] else "off",
+                           "distribution_days": chk_today["IX2"], "spy_above_50": chk_today["SPY"]["above_50"],
+                           "qqq_above_50": chk_today["QQQ"]["above_50"], "megacap_led": chk_today.get("megacap_led")})
+    if chk_today.get("FB1_stalling") != chk_y.get("FB1_stalling"):
+        key_events.append({"type": "breakout_stalling", "state": "on" if chk_today["FB1_stalling"] else "off",
+                           "d5_hold_rate": fb.get("d5_hold_rate"), "d5_avg_ret_pct": fb.get("d5_avg_ret_pct"),
+                           "d10_avg_ret_pct": fb.get("d10_avg_ret_pct")})
 
     # v4.3b: RSライン新高値（監視母集団の個別株と半導体・テクノロジーETF）。
     # 先行（株価は高値の下）は毎回、株価もそろって高値のときは前回のRS新高値から20営業日以上あいた場合だけ重要イベントにする。
@@ -1314,6 +1445,15 @@ def main():
                  "unverified": chk_today["unverified"]},
         "index_state": idx_state,
         "breakout_followthrough_market": fb,
+        "breadth_ext": jsonable({**bx,
+                                 "labels_1d_ago": {k: bx_y["groups"][k].get("label") for k in ("sp500", "tech")},
+                                 "label_ja": BX_LABEL_JA,
+                                 "definition": f"pct_down20＝終値が52週高値（日中高値）の{100 - BRX['down_pct']:.0f}%以下の銘柄の比率。"
+                                               "グループはS&P500の現在の構成銘柄（proxy、生存者バイアスあり）。tech＝IT＋通信、ex_tech＝それ以外。"
+                                               f"ラベル：過半（{BRX['stealth']:.0f}%以上）かつ基準ETFが52週高値から{BRX['near_high']:.0f}%以内→stealth、"
+                                               f"基準ETFも{BRX['near_high']:.0f}%超→broad_decline、{BRX['watch']:.0f}%以上かつ高値圏→watch。"
+                                               f"megacap_led＝QQQのSPY比1か月<={BRX['megacap_qqq_rel_1m']}%かつRSP/SPY 4週>=+{BRX['megacap_rsp_spy_4w']}%。"
+                                               "Tapeレジームに使うのはS&P500のstealthだけ（Cの支持）。techは半導体・テクノロジー節の環境認識に使う。"}),
         "market": market, "sector_etf": sector_etf, "tech_etf": tech_etf,
         "leaders_market": {"count": len(leaders_now), "count_4w_ago": len(leaders_4w), "by_sector": sec_counts, "tickers": leaders_now[:60]},
         "tech_leaders": sorted(tech_leaders, key=lambda x: -x["rs_rank"]),
