@@ -1,0 +1,80 @@
+# 週次レポート 実行手順書（weekly_runbook v1.0、マスター仕様v4.2のD7「週次」の実装。v4.3・v4.4追補を反映）
+# 週次の自動実行（日曜 9:07 JST）はこの手順書に従う。ユーザーがチャットで「レポートして」「Fullで」と頼んだときも同じ。
+# 定期実行の本文には手順を書かず、この手順書を読む指示と実行環境の前提だけを置く。手順を変えるときはこのファイルを直す。
+# 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの。内容の変更は第4節のv4.4のFull条件だけ）。
+
+## 0. 原則
+- 計算はGitHubの解析エンジン（analyze.py）が済ませている。Tapeチェックリスト、先導候補、セットアップ、ブレイク追跡、売りシグナル、
+  セクター相対強度・調整耐性・RSライン、市場内部の拡張（breadth_ext）は signals.json・ledger.json の値を使い、再計算しない
+  （検証目的は可。食い違いは signals.json を優先して報告）。それ以外の時系列計算（週足Stage、SMA、HV等）はPythonで行う。
+- マクロ、金融政策、金利、景気・雇用・物価、企業利益・EPS修正、評価、信用・ボラ、心理・フロー・FINRA、ドル・商品・地政学、
+  セクター、季節性、次週のイベントはWeb検索で取得し、出典・基準日・単位・データ状態を付ける。
+- 推測で埋めない。未確認の値は missing とし、D4のデータゲートを適用する。
+- ユーザーの口座・保有は未提供として扱い、数量は出さない（チャットで示された範囲だけ使う）。
+- 個別分析は半導体・テクノロジーの監視銘柄だけ。市場全体の先導候補はTape判定とセクター分布の表示にだけ使う。
+- GitHubのリポジトリのファイルは変更しない。例外は第2節のワークフロー起動だけ。
+
+## 1. 仕様を読む
+main ブランチから次を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<ファイル名>）：
+- CLAUDE.md（プロジェクト指示。どこに何があるかの案内）
+- 00_US_Stock_Project_Master_v4.2.txt（本文）
+- 01_Minervini_Source_Notes.txt（原典メモ）
+- 02_User_Settings.txt（ユーザー設定）
+- 03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）
+- 04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d。C15.1と食い違えば04を優先）
+届かなければ、保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）の予備コピーを
+Artifactツールの read（paths）で読む：spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、
+spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
+A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）、B10（Fullの27項目）、C15.1（改訂版）と04の C15.1a〜d、
+D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
+
+## 2. データを取得する
+1. data ブランチから manifest.json、signals.json、screen.csv、setups.csv、ledger.json、breadth.csv、prices_daily.csv.gz を取得する
+   （https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>。
+   届かなければ git clone --depth 1 -b data https://github.com/bakaho19920625-wq/market-data.git）。
+2. signals.as_of_market_date が直近の米国取引日（通常は金曜。NYSE休場日を除く）より古ければ、データ更新を自分で起動する：
+   - mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）でリポジトリを追加する
+     （結果の指示どおりクローンしてよい）。
+   - `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`
+   - `gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId,createdAt` でIDを取り、
+     `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト10分）で完了を待ってから取り直す。
+   - それでも古ければ、基準日を明記してレポートを作り、冒頭で「GitHubのデータが最新ではありません」と警告する。
+3. manifest.repo_last_commit_main から45日以上経過していれば、冒頭で「GitHubのリポジトリを更新してください
+   （tickers.txt に1行コメントを足して保存）」と警告する。manifest.keepalive が failed でも同様。
+4. 読込時はファイル名、基準日、行数、銘柄数、欠損・重複・分割疑義、出典種別を示す（CLAUDE.md 3節）。
+
+## 3. 前回状態を読む
+- ArtifactData で保管ページのデータベースの state/latest_weekly、state/latest_daily、state/scenarios を読む（collection: "state"）。
+- reports を query で新しい順に読み（order_by created_jst desc、limit 10）、今週の日次レポートの判断変化を把握する。
+- 前回の週次が無ければ初回として Full にし、「前回比較不能」と明記する。
+
+## 4. モードを決める
+- Standard を基本とし、D7の Full 条件（その月の最初の週次、前回の Full から4週以上、Broad判定帯やTapeレジームの変更、重大イベント後、
+  定義変更、前回の週次なし）に当たれば Full。
+- ［v4.4］追補04の適用後で最初の週次は「定義変更」として Full にし、前回のレジームとの比較には「定義変更（v4.4）」と明記する
+  （判定条件が変わったため、前回のEと今回のCは同じ定義での変化ではない）。
+- どちらにしたかと理由を、レポートの冒頭に書く。
+
+## 5. レポートを作る
+- report_id は YYYYMMDD-WEEKLY（YYYYMMDD は signals.as_of_market_date）。previous_id は前回の週次。
+- 前回の週次と比較し、今週の日次レポートの判断変化を要約に含める。期日到来したシナリオを F6 で採点する（Brier）。
+- Tape の表（C15.1）には、SPY/QQQ の配置、IX2、BR1〜BR3、LD1、index_state に加え、追補04の書き方どおり次を入れる：
+  FB1（D+5維持率／平均リターン D+5・D+10／伸び判定 FB1_extends・FB1_stalling）、IX3（指数の崩れガード。成立なら理由：大型株主導の崩れ／指数の崩れ）、
+  BR4（S&P500で高値から−20%以上の銘柄比率と4週前、ラベル）、C_support_met。市場内部とFB1は現在の構成銘柄からのproxy（生存者バイアス）と注記する。
+- 半導体・テクノロジー節の冒頭に「テック内部」：signals.breadth_ext の tech（pct_down20 と4週前、pct_above_50sma、ラベル、XLKの位置）、
+  ex_tech との差、megacap_led。stealth／broad_decline／megacap_led の書き方は追補04「レポートでの書き方」。
+- セクター相対強度・調整耐性・RSライン（追補03）は signals.sector_rs／correction_resilience／rs_lines から転記する。監視候補の順番であり買い判定ではない。
+- Full は B10 の27項目すべてと D10 のフルYAML（UNIFIED_MARKET_STATE、checkpoint_version 4.1、specification_version 4.4、
+  extensions.sector_leadership schema 1.3、extensions.breadth_ext BX-1.0）。Standard は D9 の簡易YAML。
+- 出力前に CLAUDE.md 8節の点検（構成、根拠、日付、基準日、計算ログ、Tapeチェックリスト、配分、確率合計100%、トリガー、本文とYAMLの一致）を行う。
+
+## 6. 配信する
+- SendUserMessage で冒頭サマリを1〜2画面：一文結論、モードと理由、Broad点とレジーム、Tapeレジーム（前回比。定義変更があればその旨）、
+  テック内部のラベル、Alignment、L/H、強気3点・弱気3点、判断変更条件、来週のイベント、データ状態。
+- 本文全体を「YYYYMMDD-WEEKLY.md」として書き、SendUserFile で送る。1回に収まらなければ分割し、途中までのものを完成版と表示しない。
+
+## 7. 保存する
+- ArtifactData の batch で、F9の形式どおり reports/<report_id>（mode: "weekly_standard" または "weekly_full"）、
+  report_bodies/<report_id>（200KB超なら要約にして truncated=true）、state/latest_weekly、state/scenarios を書く。
+- state/ledger は使わない（台帳はGitHubの ledger.json）。既存ドキュメントは読んだ version を if_version に指定する。
+- 保存に失敗したら、その旨をユーザーに伝える。

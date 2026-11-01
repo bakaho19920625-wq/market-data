@@ -1,9 +1,16 @@
-# 米国株指標チェック｜プロジェクト指示 v4.2（CLAUDE.md）
+# 米国株指標チェック｜プロジェクト指示（CLAUDE.md）
+# 仕様版 4.4（本文 00 v4.2 ＋ 追補03 ＋ 追補04）
 
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜04、daily_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜04、daily_runbook.txt、weekly_runbook.txt）。
+- どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
+  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04 の追補が上書きする。
+  ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
+  ・週次の手順と出力の形：weekly_runbook.txt。
+  ・定期実行（スケジュールタスク）の本文：手順書を読む指示と実行環境の前提だけ。手順を変えるときは手順書を直し、定期実行の本文は変えない。
+  ・保管ページ（Artifact）の spec/ は予備コピー。仕様・手順書を変えたら同じ内容に差し替える（F9）。
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
@@ -29,9 +36,9 @@ A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
-E部：半導体・テクノロジーの詳細定義ST-1.2
+E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、日次の手順書「daily_runbook.txt」、追補「03」「04」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 
@@ -45,7 +52,7 @@ F部：ユーザー設定、データ入力、計算、執行、売買ログ、�
 【3. データ入力と計算（v4.2）】
 入力ルートは、接続済みの市場データコネクタ、ユーザー提供ファイル（F2の標準CSV）、Web検索の個別値の順。Web検索の個別値は指数終値・経済指標・イベント等に限る。
 
-時系列の計算（TT、RS、Tapeチェックリスト、分配日、セットアップ、ブレイク追跡、売りシグナル）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
+時系列の計算（TT、RS、Tapeチェックリスト、分配日、セットアップ、ブレイク追跡、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
 
 読込時はファイル名、基準日、行数、銘柄数、欠損・重複・分割疑義、出典種別を示す。
 
@@ -113,7 +120,7 @@ NVDA・TSM・MUは固定推奨ではない。SOXLは明示依頼、保有情報�
 
 BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱いを示す。Confidenceは別判定する。
 
-状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.2とし、extensions.sector_leadershipにschema1.2／ST-1.2を併合する。checkpoint 4.0の状態は読込可とし、追加項目はnullとして前回比を作らない。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
+状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.4とし、extensions.sector_leadershipはschema1.3／ST-1.3（追補03）、extensions.breadth_extはBX-1.0（追補04）とする。checkpoint 4.0〜4.1の旧状態は読込可とし、追加項目はnullとして前回比を作らない。版の読み方は00の冒頭「版の読み方」。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
 
 前回基準は今回明示されたものを優先し、それ以外は今回アクセスできる確定資料の最新市場基準日を使う。同日訂正版はsupersedes_idで区別し、訂正を新しい相場変化にしない。Daily Planは比較基準にしない。復元不能ならprevious_id=null、前回比較不能とする。
 
@@ -122,6 +129,6 @@ BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱�
 仕様書の作成・保存を、プロジェクト設定変更、外部データ契約、全市場走査、自動実行、履歴DB稼働の完了と表現しない。
 
 【9. 自動配信（v4.2）】
-スケジュールタスクが、火〜土の12:07に日次レポート（データ未更新なら18:07に再試行）、日曜の9:07に週次レポートを配信する（F9）。日次はdaily_runbook.txtに従い、signals.jsonのkey_events_today（レジーム変更、新規ready、ブレイク、スクワット、ピボット失敗、ストップ抵触、先導株の弱化、クライマックス警戒、決算接近、［v4.4］隠れ弱気ラベルの変化、指数の崩れガード、ブレイクの伸びの変化）を必ず冒頭に列挙する。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
+スケジュールタスクが、火〜土の12:07に日次レポート（データ未更新なら18:07に再試行）、日曜の9:07に週次レポートを配信する（F9）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次はsignals.jsonのkey_events_todayを必ず冒頭にすべて列挙する（種類と書き方は daily_runbook.txt 第2節）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
 保管ページ：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 このプロジェクトのチャットで最新レポートや前回比較を求められたら、保管ページのデータベース（reports、report_bodies、state）を読む。口座残高・保有数量・売買明細は保管ページに保存しない。
