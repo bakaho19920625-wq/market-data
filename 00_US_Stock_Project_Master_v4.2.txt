@@ -34,12 +34,16 @@
     （正本は 04_Addendum_v4.4_Breadth_FollowThrough.txt）。specification_version 4.4、definition_version ST-1.4／engine 1.2。
     signals.json の breadth_ext、key_events の breadth_label_change／index_breakdown_guard／breakout_stalling（2026-11-01）。
     週次の実行手順を weekly_runbook.txt に分離（定期実行の本文には手順を置かない）。
+12. ［v4.5］E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデルを追加
+    （正本は 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも観察専用で、Tapeレジーム・L/H・買い判定は変えない。
+    specification_version 4.5、engine 1.3。signals.json の leadership／hedge／spy_model、key_events の leadership_shift／hedge_setup／hedge_cover／spy_model_signal（2026-11-01）。
 
 版の読み方（A7・03・04）：
-・report.specification_version＝仕様全体の版。本書v4.2＋追補03＋追補04で 4.4。
+・report.specification_version＝仕様全体の版。本書v4.2＋追補03＋追補04＋追補06で 4.5。
 ・checkpoint_version＝状態YAMLの形。4.1 のまま（追補はフィールドの追加だけ）。
-・signals.json の definition_version＝解析エンジン全体の定義版（ST-1.4／engine 1.2）。
-  sector_rs・correction_resilience の definition_version は ST-1.3、breadth_ext は BX-1.0 で、それぞれ自分の定義が最後に変わった版を示す。
+・signals.json の definition_version＝解析エンジン全体の定義版（ST-1.4／engine 1.3）。
+  sector_rs・correction_resilience の definition_version は ST-1.3、breadth_ext は BX-1.0、leadership は LR-1.0、hedge は HG-1.0、spy_model は SM-1.0 で、
+  それぞれ自分の定義が最後に変わった版を示す。
 
 v4.2で追加・変更した箇所には［v4.2］を付す。
 2026-10-25夜の改訂（v4.2b）：解析エンジン（GitHub Actionsのanalyze.py）を正本の計算系とし、C15.1を改訂、E9の閾値を校正、
@@ -192,9 +196,10 @@ ConfidenceはCoverageと別に判断する。
 
 状態のルートはUNIFIED_MARKET_STATEに統一する。
 ［v4.2］checkpoint_versionは4.1。
-［v4.2］report.specification_versionは4.2。［v4.3］4.3。［v4.4］4.4（現行）。
+［v4.2］report.specification_versionは4.2。［v4.3］4.3。［v4.4］4.4。［v4.5］4.5（現行）。
 ［v4.2］extensions.sector_leadershipにschema1.2／ST-1.2を併合する。［v4.3］schema1.3／ST-1.3（現行。03の1.3節）。
 ［v4.4］extensions.breadth_ext（BX-1.0）に signals.json の breadth_ext と tape.checklist の FB1_stalling・IX3・BR4・BR5・megacap_led を写す。追加フィールドだけで既存項目は変えない。
+［v4.5］extensions.spy_model（SM-1.0）に signal・composite・signal_since を、extensions.hedge（HG-1.0）に allowed・status・level_max を写す。
 
 ［v4.2］checkpoint 4.0の状態は読込可。4.1で追加された項目はnullとして移行し、追加項目について前回比を作らない。
 
@@ -1056,6 +1061,7 @@ Pilot失敗を市場からの否定として扱う。
 D部のゲートを解除しない。
 
 ## C10. 指数ショート・ヘッジ
+［v4.5］価格セットアップ・損切り・解除の具体条件は追補06の C10.1（P）。
 
 目的：
 方向性ショート＝下落を狙う。
@@ -1475,7 +1481,7 @@ Dは売られ過ぎを買い許可とせず原則L1まで。
 ヘッジは自動設定しない。
 方向性ショートかBeta低下かを明示する。
 エントリー、損切り、解除条件を付ける。
-CはH1、FはH1〜H2を検討できるが価格セットアップが必要。
+CはH1、FはH1〜H2を検討できるが価格セットアップが必要。［v4.5］セットアップの定義は追補06の C10.1（signals.json の hedge）。
 
 ## D4. ハードゲートの適用順
 
@@ -3602,13 +3608,14 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・00_US_Stock_Project_Master_v4.2.txt（本書）
 ・01_Minervini_Source_Notes.txt（原典メモ）
 ・02_User_Settings.txt（F1のユーザー設定。リポジトリは公開のため、口座情報は書かない）
-・03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）、04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d）
+・03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）、04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d）、
+  06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4、C10.1、F10）
 ・daily_runbook.txt（日次の実行手順書）、weekly_runbook.txt（週次の実行手順書）
 ・05_Plain_Language_Glossary.txt（やさしい表記の対応表。4本のレポート共通。定義は変えず書き方だけを決める）
 取得：https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<ファイル名>
 保管ページの公開ファイル spec/〜 は、リポジトリに届かない場合の予備のコピーとする
 （spec/master_v4.2.txt、spec/instructions_v4.2.txt＝CLAUDE.md、spec/source_notes.txt、spec/user_settings.txt、
-  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt、spec/plain_language.txt）。
+  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt、spec/plain_language.txt）。
 仕様を変えるときはリポジトリのファイルを更新する（更新はリポジトリの活動にもなり、Actionsの60日停止の予防にもなる）。
 ［v4.4］定期実行（スケジュールタスク）の本文には手順を置かず、手順書（daily_runbook.txt／weekly_runbook.txt）を読む指示と
 実行環境の前提だけを書く。手順を変えるときはリポジトリの手順書と保管ページの予備コピーを更新し、定期実行の本文は変えない。
@@ -3678,5 +3685,9 @@ v4.4：2026-11-01 JST
 specification_version 4.4、definition_version ST-1.4／engine 1.2。checkpoint 4.1 据え置き。
 重複の整理：key_events の種類一覧は daily_runbook.txt 第2節だけに置く。週次の手順を weekly_runbook.txt に分離し、
 定期実行の本文から手順を外す（F9）。A7の版表記を現行に更新。
+
+v4.5：2026-11-01 JST
+追補06（E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデル）。観察専用で判定は不変。
+specification_version 4.5、engine 1.3。レポートの言葉づかいを 05_Plain_Language_Glossary.txt に統一（冒頭ブロック）。
 
 以上。

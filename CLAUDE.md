@@ -1,12 +1,12 @@
 # 米国株指標チェック｜プロジェクト指示（CLAUDE.md）
-# 仕様版 4.4（本文 00 v4.2 ＋ 追補03 ＋ 追補04）
+# 仕様版 4.5（本文 00 v4.2 ＋ 追補03 ＋ 追補04 ＋ 追補06）
 
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜05、daily_runbook.txt、weekly_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜06、daily_runbook.txt、weekly_runbook.txt）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
-  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04 の追補が上書きする。
+  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06 の追補が上書きする。
   ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
   ・週次の手順と出力の形：weekly_runbook.txt。
   ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
@@ -33,13 +33,15 @@ RSライン（対SPY・対QQQ、RS新高値、株価に先行、21日EMA。追�
 追補「04_Addendum_v4.4_Breadth_FollowThrough.txt」（C15.1a〜d：ブレイクの伸び FB1_stalling、市場内部の拡張 BR4・BR5＝高値から−20%以上の銘柄比率と隠れ弱気のラベル、
 指数の崩れガード IX3。v4.4、ST-1.4）も正本の一部とし、C15.1 と食い違う場合は04を優先する。値は signals.json の tape.checklist と breadth_ext から読む。
 テック内部（BR5）は市場全体のレジームには使わず、半導体・テクノロジー節の環境認識として毎回表示する。
+追補「06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt」（E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデル。v4.5、engine 1.3）も正本の一部とする。
+値は signals.json の leadership／hedge／spy_model から読む。3つとも観察専用で、Tapeレジーム・L/H・買い判定・Broadの点数には使わない。ヘッジはエンジンが条件の成立を出すだけで、置くかどうかはその都度判断する（C10）。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
 E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」、やさしい表記の対応表「05」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」「06」、やさしい表記の対応表「05」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 
@@ -53,7 +55,7 @@ F部：ユーザー設定、データ入力、計算、執行、売買ログ、�
 【3. データ入力と計算（v4.2）】
 入力ルートは、接続済みの市場データコネクタ、ユーザー提供ファイル（F2の標準CSV）、Web検索の個別値の順。Web検索の個別値は指数終値・経済指標・イベント等に限る。
 
-時系列の計算（TT、RS、Tapeチェックリスト、分配日、セットアップ、ブレイク追跡、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
+時系列の計算（TT、RS、Tapeチェックリスト、分配日、セットアップ、ブレイク追跡、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張、先導セクターの推移、ヘッジ条件、長期SPY配分モデル）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
 
 読込時はファイル名、基準日、行数、銘柄数、欠損・重複・分割疑義、出典種別を示す。
 
@@ -121,7 +123,7 @@ NVDA・TSM・MUは固定推奨ではない。SOXLは明示依頼、保有情報�
 
 BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱いを示す。Confidenceは別判定する。
 
-状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.4とし、extensions.sector_leadershipはschema1.3／ST-1.3（追補03）、extensions.breadth_extはBX-1.0（追補04）とする。checkpoint 4.0〜4.1の旧状態は読込可とし、追加項目はnullとして前回比を作らない。版の読み方は00の冒頭「版の読み方」。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
+状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.5とし、extensions.sector_leadershipはschema1.3／ST-1.3（追補03）、extensions.breadth_extはBX-1.0（追補04）、extensions.spy_model／hedge（追補06）とする。checkpoint 4.0〜4.1の旧状態は読込可とし、追加項目はnullとして前回比を作らない。版の読み方は00の冒頭「版の読み方」。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
 
 前回基準は今回明示されたものを優先し、それ以外は今回アクセスできる確定資料の最新市場基準日を使う。同日訂正版はsupersedes_idで区別し、訂正を新しい相場変化にしない。Daily Planは比較基準にしない。復元不能ならprevious_id=null、前回比較不能とする。
 

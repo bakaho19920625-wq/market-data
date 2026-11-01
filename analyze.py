@@ -28,6 +28,11 @@ v4.4 追補（04_Addendum_v4.4_Breadth_FollowThrough.txt）：
       隠れ弱気（ステルス・ベア）のラベル、大型株主導の下落（megacap_led）。signals.json の breadth_ext。
   (3) 指数の崩れガード（IX3）：SPYかQQQが50日線の下、かつ有効分配日5以上なら、内部回復入口のEにしない（高値圏ならC）。
   key_events の breadth_label_change／index_breakdown_guard／breakout_stalling（前営業日との差分）。
+v4.5 追補（06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも観察専用で、Tapeレジーム・買い判定は変えない：
+  (A) 先導セクターの推移 E7.4：signals.json の leadership（セクター別・監視グループ別の先導株数 今／4週前、新規・脱落、セクターETFの順位）。
+      key_events の leadership_shift。
+  (B) ヘッジ・指数ショートの条件 C10.1：signals.json の hedge（許可、今日の価格セットアップ、損切り、解除）。key_events の hedge_setup／hedge_cover。
+  (C) 長期SPY配分モデル F10：signals.json の spy_model（5項目、配分%、buy／sell）。key_events の spy_model_signal。
 """
 import argparse
 import json
@@ -39,7 +44,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-DEF_VERSION = "ST-1.4 / engine 1.2"
+DEF_VERSION = "ST-1.4 / engine 1.3"
 JST = timezone(timedelta(hours=9))
 INDEX_TICKERS = {"^GSPC", "^IXIC", "^VIX"}
 SECTOR_ETFS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLU"]
@@ -563,6 +568,208 @@ def sell_signals(P, t, i):
         out["weakness"].append("21EMAと50日線を同日に割り込み（出来高増）")
     out["level"] = "climax_alert" if len(out["climax"]) >= 3 else "climax_watch" if len(out["climax"]) == 2 else None
     return out
+
+
+# ----------------------------------------------------------------------------
+# v4.5 (A) 先導セクターの推移（E7.4）。観察専用。Tapeレジームには使わない
+# ----------------------------------------------------------------------------
+ETF_SECTOR_JA = {"XLK": "情報技術", "XLC": "通信", "XLY": "一般消費財", "XLP": "生活必需品", "XLE": "エネルギー", "XLF": "金融",
+                 "XLV": "ヘルスケア", "XLI": "資本財", "XLB": "素材", "XLRE": "不動産", "XLU": "公益"}
+SECTOR_JA = {"Information Technology": "情報技術", "Communication Services": "通信", "Consumer Discretionary": "一般消費財",
+             "Consumer Staples": "生活必需品", "Energy": "エネルギー", "Financials": "金融", "Health Care": "ヘルスケア",
+             "Industrials": "資本財", "Materials": "素材", "Real Estate": "不動産", "Utilities": "公益", "other": "その他"}
+LEAD = {"tech_halved": 0.5, "top_n": 3, "list_max": 15}
+
+
+def group_of(t, groups):
+    g = groups.get(t, "")
+    for k in GROUP_BENCH:
+        if k in g:
+            return k
+    return None
+
+
+def leadership_rotation(P, uni_stocks, groups, sector_of, leaders_now, leaders_4w, leaders_y, leaders_y4, rank_now, rs_now, rs_4w, i):
+    """先導候補（市場全体）の分布の変化：セクター別・監視グループ別の数（今／4週前）、新規・脱落、セクターETFの強さの順位。
+    key_event leadership_shift＝最多セクター上位3の顔ぶれが前日から変わった、またはテックの先導株数が4週前の半分を初めて割った。"""
+    def counts(lst):
+        d = {}
+        for t in lst:
+            s = sector_of(t)
+            d[s] = d.get(s, 0) + 1
+        return d
+    now, w4 = counts(leaders_now), counts(leaders_4w)
+    secs = sorted(set(now) | set(w4), key=lambda s: (-now.get(s, 0), s))
+    by_sector = [{"sector": s, "sector_ja": SECTOR_JA.get(s, s), "now": now.get(s, 0), "w4_ago": w4.get(s, 0), "change": now.get(s, 0) - w4.get(s, 0)} for s in secs]
+    top_now = [s for s in secs[:LEAD["top_n"]] if now.get(s, 0) > 0]
+    y_counts = counts(leaders_y)
+    top_y = [s for s in sorted(y_counts, key=lambda s: (-y_counts[s], s))[:LEAD["top_n"]] if y_counts[s] > 0]
+    tech_now = [t for t in leaders_now if t in uni_stocks]
+    tech_4w = [t for t in leaders_4w if t in uni_stocks]
+    tech_y, tech_y4 = [t for t in leaders_y if t in uni_stocks], [t for t in leaders_y4 if t in uni_stocks]
+    by_group = []
+    for g in GROUP_BENCH:
+        n_now, n_4w = sum(1 for t in tech_now if group_of(t, groups) == g), sum(1 for t in tech_4w if group_of(t, groups) == g)
+        by_group.append({"group": g, "now": n_now, "w4_ago": n_4w, "change": n_now - n_4w,
+                         "tickers": sorted([t for t in tech_now if group_of(t, groups) == g])})
+    s4w = set(leaders_4w)
+    new = [t for t in leaders_now if t not in s4w]
+    dropped = [t for t in leaders_4w if t not in set(leaders_now)]
+    def row(t, now_leader):
+        return {"ticker": t, "sector": sector_of(t), "sector_ja": SECTOR_JA.get(sector_of(t), sector_of(t)), "in_universe": t in uni_stocks,
+                "rs_rank": fnum(rank_now.get(t, np.nan)),
+                "pct_from_52w_high": fnum(100 * (P.C[t].iloc[i] / P.h252[t].iloc[i] - 1)) if t in P.C.columns and not math.isnan(P.h252[t].iloc[i]) else None}
+    new_rows = sorted((row(t, True) for t in new), key=lambda r: -(r["rs_rank"] or 0))
+    drop_rows = sorted((row(t, False) for t in dropped), key=lambda r: (r["pct_from_52w_high"] if r["pct_from_52w_high"] is not None else 0))
+    # セクターETFの市場比の強さの順位（3か月＝rel_63。4週前と比較）
+    etfs = [e for e in SECTOR_ETFS if e in rs_now.index and e in rs_4w.index]
+    r63 = {e: float(rs_now.loc[e, "rel_63"]) for e in etfs}
+    r63p = {e: float(rs_4w.loc[e, "rel_63"]) for e in etfs}
+    order_now = sorted(etfs, key=lambda e: -r63[e])
+    order_4w = sorted(etfs, key=lambda e: -r63p[e])
+    etf_rows = [{"etf": e, "sector_ja": ETF_SECTOR_JA.get(e, e), "rel_21_pct": fnum(100 * rs_now.loc[e, "rel_21"]), "rel_63_pct": fnum(100 * r63[e]),
+                 "rank_63": order_now.index(e) + 1, "rank_63_4w_ago": order_4w.index(e) + 1,
+                 "rank_change": (order_4w.index(e) + 1) - (order_now.index(e) + 1)} for e in order_now]
+    halved_now = len(tech_4w) >= 4 and len(tech_now) <= LEAD["tech_halved"] * len(tech_4w)
+    halved_y = len(tech_y4) >= 4 and len(tech_y) <= LEAD["tech_halved"] * len(tech_y4)
+    events = []
+    if set(top_now) != set(top_y) and top_y:
+        events.append({"type": "leadership_shift", "kind": "top_sectors", "from": [SECTOR_JA.get(s, s) for s in top_y], "to": [SECTOR_JA.get(s, s) for s in top_now],
+                       "counts": {SECTOR_JA.get(s, s): now.get(s, 0) for s in top_now}})
+    if halved_now and not halved_y:
+        events.append({"type": "leadership_shift", "kind": "tech_halved", "tech_now": len(tech_now), "tech_4w_ago": len(tech_4w),
+                       "semi_now": next((g["now"] for g in by_group if g["group"] == "半導体"), None)})
+    out = {"definition_version": "LR-1.0",
+           "market": {"now": len(leaders_now), "w4_ago": len(leaders_4w), "top_sectors_now": [SECTOR_JA.get(s, s) for s in top_now],
+                      "top_sectors_yesterday": [SECTOR_JA.get(s, s) for s in top_y]},
+           "by_sector": by_sector,
+           "tech": {"now": len(tech_now), "w4_ago": len(tech_4w), "change": len(tech_now) - len(tech_4w), "halved_vs_4w": bool(halved_now), "by_group": by_group},
+           "new_leaders_vs_4w": new_rows[:LEAD["list_max"]], "new_count": len(new_rows),
+           "dropped_leaders_vs_4w": drop_rows[:LEAD["list_max"]], "dropped_count": len(drop_rows),
+           "sector_etf_rank": etf_rows,
+           "note": "観察専用（E7.4）。先導候補の定義はE7（TT価格7項目＋市場RS百分位80以上＋SPY比63日>0）。"
+                   "セクターはS&P500構成銘柄のGICS、監視母集団の非構成銘柄はIT扱い。Tapeレジーム・買い判定には使わない。"}
+    return out, events
+
+
+# ----------------------------------------------------------------------------
+# v4.5 (B) ヘッジ・指数ショートの条件（C10.1）。自動でヘッジを設定しない。条件の成立だけを出す
+# ----------------------------------------------------------------------------
+HEDGE = {"rvol_min": 1.2, "near_high_pct": -10.0, "stop_ath_within_pct": 3.0, "lookback_hi": 10, "rally_min_days": 3}
+
+
+def hedge_rules(P, chk, regime, idx_state, i):
+    """ヘッジ（H1／H2）の価格セットアップ（P）。
+    許可：レジームがC・D・F、または指数の崩れガード（IX3）成立。
+    成立（SPY・QQQ各）：直近10日に3日以上の反発（終値が3日連続で前日より高い区間）があり、今日が
+      21EMA または 50SMA の下抜け（前日は上）で、出来高が50日平均の1.2倍以上、52週高値から10%以内。
+    損切り：52週高値が3%以内ならその高値、そうでなければ直近10日の高値。
+    水準：D・Fで200SMAの下ならH2、それ以外はH1。
+    解除：FTD成立（30営業日以内・未失敗）またはレジームがA・B・Eに確定。"""
+    allowed = regime in ("C", "D", "F") or bool(chk.get("IX3_index_breakdown_guard"))
+    setups = []
+    for s in ("SPY", "QQQ"):
+        if s not in P.C.columns:
+            continue
+        c, cp = float(P.C[s].iloc[i]), float(P.C[s].iloc[i - 1])
+        e21, e21p, s50, s50p = P.e21[s].iloc[i], P.e21[s].iloc[i - 1], P.s50[s].iloc[i], P.s50[s].iloc[i - 1]
+        rv = P.rvol50[s].iloc[i]
+        if any(math.isnan(x) for x in (e21, e21p, s50, s50p, rv)):
+            continue
+        cross21, cross50 = (c < e21 and cp >= e21p), (c < s50 and cp >= s50p)
+        seg = P.C[s].iloc[i - HEDGE["lookback_hi"]:i + 1]
+        ups = (seg.diff() > 0).astype(int)
+        run, best = 0, 0
+        for u in ups.iloc[1:]:
+            run = run + 1 if u else 0
+            best = max(best, run)
+        rally = best >= HEDGE["rally_min_days"]
+        near = chk[s]["pct_from_52w_high"] >= HEDGE["near_high_pct"]
+        if allowed and (cross21 or cross50) and rv >= HEDGE["rvol_min"] and near and rally:
+            h52 = float(P.h252[s].iloc[i])
+            h10 = float(P.H[s].iloc[i - HEDGE["lookback_hi"] + 1:i + 1].max())
+            stop = h52 if 100 * (c / h52 - 1) >= -HEDGE["stop_ath_within_pct"] else h10
+            level = "H2" if (regime in ("D", "F") and not chk[s]["above_200"]) else "H1"
+            setups.append({"instrument": s, "level": level, "trigger": "21EMA割れ" if cross21 else "50日線割れ", "close": round(c, 2),
+                           "stop": round(stop, 2), "stop_kind": "52週高値" if stop == h52 else "直近10日高値", "risk_to_stop_pct": fnum(100 * (stop / c - 1)),
+                           "rvol50": fnum(rv, 2), "pct_from_52w_high": chk[s]["pct_from_52w_high"]})
+    ftd_ok = any(idx_state[k]["ftd_date"] and not idx_state[k]["ftd_failed"] and (idx_state[k]["ftd_days_ago"] or 99) <= 30 for k in idx_state)
+    cover = ftd_ok or regime in ("A", "B", "E")
+    reasons = []
+    if ftd_ok:
+        reasons.append("FTD成立（30営業日以内）")
+    if regime in ("A", "B", "E"):
+        reasons.append(f"レジームが{regime}")
+    level_max = "H2" if regime in ("D", "F") else ("H1" if allowed else "H0")
+    status = "setup_today" if setups else ("allowed" if allowed else "not_allowed")
+    return {"definition_version": "HG-1.0", "allowed": allowed, "status": status, "level_max": level_max, "setups": setups,
+            "cover_signal": bool(cover), "cover_reasons": reasons,
+            "note": "C10.1（P）。ヘッジは自動設定しない。目的（方向性かベータ低下か）・損切り・解除条件を付けて検討する。"}
+
+
+# ----------------------------------------------------------------------------
+# v4.5 (C) 長期SPY配分モデル（F10、P）。本人の長期モデルの代替（中身は非公開のため独自）。観察専用
+# ----------------------------------------------------------------------------
+SPYM = {"breadth_min": 50.0, "vix_max": 25.0, "buy_min": 60, "sell_max": 20, "confirm_days": 3, "hist_days": 300}
+
+
+def spy_model(P, sectors, i):
+    """5項目（各0/1、合計×20＝配分%）：(1) SPY終値>200SMA、(2) 200SMAが21日前より上、(3) S&P500構成銘柄の200SMA上比率>=50%、
+    (4) 52週新高値−新安値の5日平均>0、(5) VIX<25 かつ HYG>50SMA。
+    シグナル：60%以上が3日続けば buy、20%以下が3日続けば sell（ヒステリシス。過去1年の試算で往復を減らすため）。配分%は合計点そのもの。"""
+    C = P.C
+    if "SPY" not in C.columns:
+        return {"status": "missing", "note": "SPYなし"}
+    mem = [t for t in C.columns if t in sectors]
+    lo = max(0, i - SPYM["hist_days"])
+    idx = C.index[lo:i + 1]
+    spy, s200 = C["SPY"].loc[idx], P.s200["SPY"].loc[idx]
+    c1 = (spy > s200)
+    c2 = (P.s200["SPY"].loc[idx] > P.s200["SPY"].shift(21).loc[idx])
+    Cm, S200m = C[mem].loc[idx], P.s200[mem].loc[idx]
+    valid = Cm.notna() & S200m.notna()
+    pct200 = 100 * (Cm > S200m)[valid].sum(axis=1) / valid.sum(axis=1).replace(0, np.nan)
+    c3 = pct200 >= SPYM["breadth_min"]
+    Hm, Lm = P.H[mem].loc[idx], P.L[mem].loc[idx]
+    h252, l252 = P.h252[mem].loc[idx], P.l252[mem].loc[idx]
+    nh = ((Hm >= h252) & h252.notna()).sum(axis=1)
+    nl = ((Lm <= l252) & l252.notna()).sum(axis=1)
+    nhnl = (nh - nl).where(h252.notna().sum(axis=1) >= 0.8 * len(mem)).rolling(5).mean()
+    c4 = nhnl > 0
+    vix = C["^VIX"].loc[idx] if "^VIX" in C.columns else pd.Series(np.nan, index=idx)
+    hyg = C["HYG"].loc[idx] if "HYG" in C.columns else pd.Series(np.nan, index=idx)
+    hyg50 = P.s50["HYG"].loc[idx] if "HYG" in C.columns else pd.Series(np.nan, index=idx)
+    c5 = (vix < SPYM["vix_max"]) & (hyg > hyg50)
+    comps = pd.DataFrame({"spy_above_200": c1, "sma200_rising": c2, "breadth_200_ok": c3, "nhnl_positive": c4, "vix_credit_ok": c5})
+    ok = pd.concat([s200, pct200, nhnl, vix, hyg50], axis=1).notna().all(axis=1)
+    comps = comps[ok]
+    if len(comps) < SPYM["confirm_days"] + 1:
+        return {"status": "missing", "note": "履歴不足"}
+    score = 20 * comps.astype(int).sum(axis=1)
+    sig, changes = None, []
+    for d, v in score.items():
+        if sig is None:
+            sig = "buy" if v >= SPYM["buy_min"] else "sell"
+            changes.append({"date": str(d.date()), "signal": sig, "composite": int(v), "initial": True})
+            continue
+        recent = score.loc[:d].iloc[-SPYM["confirm_days"]:]
+        if sig == "buy" and (recent <= SPYM["sell_max"]).all():
+            sig = "sell"
+            changes.append({"date": str(d.date()), "signal": "sell", "composite": int(v)})
+        elif sig == "sell" and (recent >= SPYM["buy_min"]).all():
+            sig = "buy"
+            changes.append({"date": str(d.date()), "signal": "buy", "composite": int(v)})
+    last = comps.index[-1]
+    cur = {k: bool(comps.loc[last, k]) for k in comps.columns}
+    prev_score = int(score.iloc[-2]) if len(score) >= 2 else None
+    s20 = int(score.iloc[-21]) if len(score) >= 21 else None
+    return {"definition_version": "SM-1.0", "status": "ok", "as_of": str(last.date()), "composite": int(score.iloc[-1]), "composite_1d_ago": prev_score,
+            "composite_4w_ago": s20, "allocation_pct": int(score.iloc[-1]), "components": cur,
+            "inputs": {"pct_above_200sma": fnum(pct200.loc[last]), "nhnl_5d": fnum(nhnl.loc[last]), "vix": fnum(vix.loc[last]),
+                       "hyg_vs_50sma_pct": fnum(100 * (hyg.loc[last] / hyg50.loc[last] - 1))},
+            "signal": sig, "signal_since": changes[-1]["date"], "signal_changes_recent": changes[-8:],
+            "history_days": int(len(score)), "history_from": str(comps.index[0].date()),
+            "note": "F10（P）。本人の長期SPYモデルの代替として独自に定義。観察専用で、Tapeレジーム・L/H・買い判定には使わない。"}
 
 
 # ----------------------------------------------------------------------------
@@ -1239,6 +1446,12 @@ def main():
     prev_conf = hist_before[-1].get("confirmed_regime") if hist_before else None
     eff_regime, hyst = apply_hysteresis(chk_today, chk_y, prev_conf)
 
+    # --- v4.5: 先導セクターの推移（A）、ヘッジ条件（B）、長期SPY配分モデル（C）。いずれも観察専用でレジームには使わない ---
+    lead_rot, lead_events = leadership_rotation(P, uni_stocks, groups, sector_of, leaders_now, leaders_4w, l_y, l_y4, rank_now, rs_now, rs_4w, i)
+    hedge = hedge_rules(P, chk_today, eff_regime, idx_state, i)
+    hedge_y = hedge_rules(P, chk_y, prev_conf or chk_y["regime"], idx_y, i - 1)
+    spym = spy_model(P, sectors, i)
+
     # --- セットアップ（テック・半導体のみ） ---
     setups = []
     for t in uni_stocks:
@@ -1323,6 +1536,14 @@ def main():
         key_events.append({"type": "breakout_stalling", "state": "on" if chk_today["FB1_stalling"] else "off",
                            "d5_hold_rate": fb.get("d5_hold_rate"), "d5_avg_ret_pct": fb.get("d5_avg_ret_pct"),
                            "d10_avg_ret_pct": fb.get("d10_avg_ret_pct")})
+    # v4.5: 先導セクターの入れ替わり、ヘッジ条件の成立・解除、長期SPYモデルのシグナル変化
+    key_events.extend(lead_events)
+    for s in hedge["setups"]:
+        key_events.append({"type": "hedge_setup", **s, "regime": eff_regime, "cover_conditions": "FTD成立またはレジームがA・B・E"})
+    if hedge["cover_signal"] and not hedge_y["cover_signal"]:
+        key_events.append({"type": "hedge_cover", "reasons": hedge["cover_reasons"]})
+    if spym.get("status") == "ok" and spym["signal_since"] == tstr:
+        key_events.append({"type": "spy_model_signal", "signal": spym["signal"], "composite": spym["composite"], "components": spym["components"]})
 
     # v4.3b: RSライン新高値（監視母集団の個別株と半導体・テクノロジーETF）。
     # 先行（株価は高値の下）は毎回、株価もそろって高値のときは前回のRS新高値から20営業日以上あいた場合だけ重要イベントにする。
@@ -1456,6 +1677,9 @@ def main():
                                                "Tapeレジームに使うのはS&P500のstealthだけ（Cの支持）。techは半導体・テクノロジー節の環境認識に使う。"}),
         "market": market, "sector_etf": sector_etf, "tech_etf": tech_etf,
         "leaders_market": {"count": len(leaders_now), "count_4w_ago": len(leaders_4w), "by_sector": sec_counts, "tickers": leaders_now[:60]},
+        "leadership": jsonable(lead_rot),   # v4.5 (A)
+        "hedge": jsonable(hedge),           # v4.5 (B)
+        "spy_model": jsonable(spym),        # v4.5 (C)
         "tech_leaders": sorted(tech_leaders, key=lambda x: -x["rs_rank"]),
         "tech_watch": sorted(tech_watch, key=lambda x: -(x["rs_rank"] or 0))[:25],
         "setups": sorted(setups, key=lambda s: ({"ready": 0, "watch": 1, "forming": 2}.get(s["status"], 3), -(s.get("rs_rank") or 0))),

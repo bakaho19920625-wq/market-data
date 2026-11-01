@@ -1,11 +1,12 @@
-# 週次レポート 実行手順書（weekly_runbook v1.1、マスター仕様v4.2のD7「週次」の実装。v4.3・v4.4追補とやさしい表記を反映）
+# 週次レポート 実行手順書（weekly_runbook v1.2、マスター仕様v4.2のD7「週次」の実装。v4.3〜v4.5追補とやさしい表記を反映）
 # 週次の自動実行（日曜 9:07 JST）はこの手順書に従う。ユーザーがチャットで「レポートして」「Fullで」と頼んだときも同じ。
 # 定期実行の本文には手順を書かず、この手順書を読む指示と実行環境の前提だけを置く。手順を変えるときはこのファイルを直す。
 # 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの。内容の変更は第4節のv4.4のFull条件だけ）。
 
 ## 0. 原則
 - 計算はGitHubの解析エンジン（analyze.py）が済ませている。Tapeチェックリスト、先導候補、セットアップ、ブレイク追跡、売りシグナル、
-  セクター相対強度・調整耐性・RSライン、市場内部の拡張（breadth_ext）は signals.json・ledger.json の値を使い、再計算しない
+  セクター相対強度・調整耐性・RSライン、市場内部の拡張（breadth_ext）、先導セクターの推移（leadership）、ヘッジ条件（hedge）、
+  長期SPY配分モデル（spy_model）は signals.json・ledger.json の値を使い、再計算しない
   （検証目的は可。食い違いは signals.json を優先して報告）。それ以外の時系列計算（週足Stage、SMA、HV等）はPythonで行う。
 - マクロ、金融政策、金利、景気・雇用・物価、企業利益・EPS修正、評価、信用・ボラ、心理・フロー・FINRA、ドル・商品・地政学、
   セクター、季節性、次週のイベントはWeb検索で取得し、出典・基準日・単位・データ状態を付ける。
@@ -25,9 +26,10 @@ main ブランチから次を読む（https://raw.githubusercontent.com/bakaho19
 - 02_User_Settings.txt（ユーザー設定）
 - 03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）
 - 04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d。C15.1と食い違えば04を優先）
+- 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4 先導セクターの推移、C10.1 ヘッジの価格セットアップ、F10 長期SPY配分モデル。観察専用）
 届かなければ、保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）の予備コピーを
 Artifactツールの read（paths）で読む：spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、
-spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
+spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
 A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）、B10（Fullの27項目）、C15.1（改訂版）と04の C15.1a〜d、
 D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 
@@ -61,7 +63,9 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 ## 5. レポートを作る
 - 先頭は冒頭ブロック（05の0節の形）：
   - 「今日のひとこと」3行：相場（Broad の点数と判定帯＋Tape レジームを05の1節の言葉で。例「土台は普通（Broad 52点）だが、値動きは高値圏で売りが増えている（C、確定）」）、
-    半導体・テクノロジー（テック内部のラベルと SOXX の位置）、やること（05の5節。L/H を言葉で：例「買い持ちは控えめ（L2）、ヘッジは一部（H1）。新規は原則見送り」）。
+    半導体・テクノロジー（テック内部のラベルと SOXX の位置）、やること（05の5節。L/H を言葉で：例「買い持ちは控えめ（L2）、ヘッジは一部（H1）。新規は原則見送り」。
+    ［v4.5］signals.hedge.allowed が真なら「ヘッジ：条件成立／未成立（損切り）」を同じ行に）。
+    ［v4.5］4行目に「長く持つ分の目安 ○%（buy／sell、○月○日から）」（signals.spy_model）。短期の「やること」と混ぜない。
   - 「なぜその判断か」3〜5行：Tape の判定理由（signals.tape.reasons）を言葉にしたものを最初に、押し上げた要因・抑えた要因を分けて、Broad と Tape の値から1行ずつ。
     一段強気・弱気にしなかった理由を1行。最後の1行は「判断が変わる条件」を数値で（upgrade／downgrade の条件）。
   - モードがFullの理由（第4節）は冒頭ブロックの直後に1行。
@@ -72,14 +76,26 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
   BR4（S&P500で高値から−20%以上の銘柄比率と4週前、ラベル）、C_support_met。市場内部とFB1は現在の構成銘柄からのproxy（生存者バイアス）と注記する。
 - 半導体・テクノロジー節の冒頭に「テック内部」：signals.breadth_ext の tech（pct_down20 と4週前、pct_above_50sma、ラベル、XLKの位置）、
   ex_tech との差、megacap_led。stealth／broad_decline／megacap_led の書き方は追補04「レポートでの書き方」。
+  ［v4.5］同じ行に監視グループ別の先導株数（signals.leadership.tech.by_group、今／4週前）。
+- ［v4.5］「先導セクターの推移」の小節（signals.leadership。Tape表の直後）：
+  ・表：セクター別の先導株数（今／4週前／増減、多い順）と、セクターETFの市場比の強さ（3か月）の順位（今／4週前／変化）。
+  ・新しく先導株になった銘柄の上位5と外れた銘柄の上位5（セクター、RS百分位、高値からの位置）。半導体・テクノロジーの先導株数（今／4週前。半分以下なら明記）。
+  ・読み方を2行：どこに資金が向かっているか、半導体・テクノロジーは引っ張られているか置いていかれているか。
+  ・B部（マクロ）の「セクター」項目は、定量部分をこの小節から引く（Webで別に集計しない。Webは業種ニュースの補足だけ）。
+- ［v4.5］「ヘッジ」（signals.hedge）：許可・今日の成立・解除の状態と、週内に成立した日（日次の key_events から）。目的（方向性かベータ低下か）と
+  D部の上限（H1＝5〜15%、H2＝15〜30%）を添える。置くかどうかは判断であり、エンジンは条件を出すだけ、と一言。
+- ［v4.5］「長期SPY配分モデル」（signals.spy_model）：配分%、buy／sell、いつから、5項目の内訳、4週前の合計点、直近の変化。
+  Tapeとの組み合わせの読み方を1行（例「長期は買い持ちのまま、短期は守り」）。SOXL等の段階売り・積立の配分の目安であり、短期の売買判断には使わない。
 - セクター相対強度・調整耐性・RSライン（追補03）は signals.sector_rs／correction_resilience／rs_lines から転記する。監視候補の順番であり買い判定ではない。
 - Full は B10 の27項目すべてと D10 のフルYAML（UNIFIED_MARKET_STATE、checkpoint_version 4.1、specification_version 4.4、
-  extensions.sector_leadership schema 1.3、extensions.breadth_ext BX-1.0）。Standard は D9 の簡易YAML。
+  extensions.sector_leadership schema 1.3、extensions.breadth_ext BX-1.0、extensions.spy_model SM-1.0、extensions.hedge HG-1.0）。Standard は D9 の簡易YAML。
 - 出力前に CLAUDE.md 8節の点検（構成、根拠、日付、基準日、計算ログ、Tapeチェックリスト、配分、確率合計100%、トリガー、本文とYAMLの一致）を行う。
 
 ## 6. 配信する
 - SendUserMessage で冒頭サマリを1〜2画面：冒頭ブロック（第5節と同じ文：今日のひとこと3行＋なぜその判断か）、モードと理由、
-  前回比（Tape・Broad の変化。定義変更があればその旨）、土台と値動きの一致（Alignment）、強気3点・弱気3点、来週のイベント、データ状態。すべて05の言葉で、記号は括弧。
+  前回比（Tape・Broad の変化。定義変更があればその旨）、先導セクター（上位3と半導体・テクノロジーの先導株数、4週前比）、
+  土台と値動きの一致（Alignment）、ヘッジ（許可・成立）、長く持つ分の目安（%とbuy／sell）、強気3点・弱気3点、来週のイベント、データ状態。
+  すべて05の言葉で、記号は括弧。
 - 本文全体を「YYYYMMDD-WEEKLY.md」として書き、SendUserFile で送る。1回に収まらなければ分割し、途中までのものを完成版と表示しない。
 
 ## 7. 保存する
