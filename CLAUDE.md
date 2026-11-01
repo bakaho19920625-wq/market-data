@@ -4,11 +4,12 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜04、daily_runbook.txt、weekly_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜05、daily_runbook.txt、weekly_runbook.txt）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
   ・定義（判定の条件・閾値・計算）：00 の本文を 03・04 の追補が上書きする。
   ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
   ・週次の手順と出力の形：weekly_runbook.txt。
+  ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
   ・定期実行（スケジュールタスク）の本文：手順書を読む指示と実行環境の前提だけ。手順を変えるときは手順書を直し、定期実行の本文は変えない。
   ・保管ページ（Artifact）の spec/ は予備コピー。仕様・手順書を変えたら同じ内容に差し替える（F9）。
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
@@ -38,7 +39,7 @@ C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
 E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」、やさしい表記の対応表「05」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 

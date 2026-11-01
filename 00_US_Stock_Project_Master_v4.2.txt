@@ -3604,10 +3604,11 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・02_User_Settings.txt（F1のユーザー設定。リポジトリは公開のため、口座情報は書かない）
 ・03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）、04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d）
 ・daily_runbook.txt（日次の実行手順書）、weekly_runbook.txt（週次の実行手順書）
+・05_Plain_Language_Glossary.txt（やさしい表記の対応表。4本のレポート共通。定義は変えず書き方だけを決める）
 取得：https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<ファイル名>
 保管ページの公開ファイル spec/〜 は、リポジトリに届かない場合の予備のコピーとする
 （spec/master_v4.2.txt、spec/instructions_v4.2.txt＝CLAUDE.md、spec/source_notes.txt、spec/user_settings.txt、
-  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt）。
+  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt、spec/plain_language.txt）。
 仕様を変えるときはリポジトリのファイルを更新する（更新はリポジトリの活動にもなり、Actionsの60日停止の予防にもなる）。
 ［v4.4］定期実行（スケジュールタスク）の本文には手順を置かず、手順書（daily_runbook.txt／weekly_runbook.txt）を読む指示と
 実行環境の前提だけを書く。手順を変えるときはリポジトリの手順書と保管ページの予備コピーを更新し、定期実行の本文は変えない。
