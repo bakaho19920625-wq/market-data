@@ -3,7 +3,7 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜03、daily_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜04、daily_runbook.txt）。
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
