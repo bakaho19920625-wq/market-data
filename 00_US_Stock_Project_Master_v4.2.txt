@@ -3421,7 +3421,8 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
 ・［v4.5b］history_signals.csv（F2.2）：判定結果の日次履歴。1日1行（基準日、レジーム、チェックリストの主要値、隠れ弱気ラベル、先導セクター上位3、
   テック・半導体の先導株数、FB1、ヘッジの許可・成立、長期SPYモデルの合計点とシグナル、候補数、イベント種類）。前回分を引き継いで追記し、
   同じ基準日の再実行は上書き。初回は main の history_seed.csv（現行エンジンで2025-11-03から計算した backfill。source=backfill）から始める。
-  用途：閾値の校正と「前回との比較」の長期版（週次の推移表）。judgment には使わない。
+  用途：閾値の校正と「前回との比較」の長期版（週次の推移表）。判定には使わない。
+  増え方：1行約335バイト（年83KB）。3,000行（約12年）を超えたら年ごとのファイルに分割する（それまでは1ファイル）。
 ・screen.csv：S&P500∪監視母集団の全銘柄（TT項目数、市場RS百分位、52週高値比、50SMA比、先導フラグ）。
 ・setups.csv：監視母集団のセットアップ一覧。
 ・ledger.json：台帳（E14。セットアップ登録、ブレイク追跡、D+3／5／10、レジーム履歴）。前回分を引き継いで更新する。
@@ -3638,6 +3639,9 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・state/latest_daily、state/latest_weekly：{report_id, as_of_market_et, created_jst, yaml}
   yamlはそのモードの最新のUNIFIED_MARKET_STATE。
 ・state/ledger：［v4.2b］廃止。台帳の正本はGitHubの ledger.json（F2.1）。保管ページには置かない。
+・［v4.5b］保存の役割分担：レポート本文の全履歴は GitHub main の reports/daily/・reports/weekly/（定期実行が保存。口座・保有・数量は書かない）。
+  保管ページの report_bodies は直近180日だけ残し、それより前は週次が削除して reports/<id> に body_pruned・body_archive を付ける（見出しは残す）。
+  これで無期限に増える保存場所をなくす。
 ・state/scenarios：{updated_jst, items}
   itemsは [{report_id, as_of_market_et, due_date_et, bull, base, bear, outcome, realized_return_pct, brier}]、直近60件。
   期日到来分はF6で採点して更新する。

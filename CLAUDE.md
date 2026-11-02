@@ -4,7 +4,8 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜06、daily_runbook.txt、weekly_runbook.txt）。
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜06、daily_runbook.txt、weekly_runbook.txt）、
+  レポート本文の全履歴 reports/daily/・reports/weekly/（定期実行が手順書どおり保存する。保管ページの本文は直近180日だけ）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
   ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06 の追補が上書きする。
   ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
@@ -15,7 +16,7 @@
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv＝判定結果の日次履歴、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
-- プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う。data ブランチには書き込まない（Actionsが上書きする）。
+- プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う（reports/ へのレポート保存だけは定期実行が手順書どおり行う）。data ブランチには書き込まない（Actionsが上書きする）。
 - 「レポートして」は週次Standard、「Fullで」は全27項目、「日次レポート」はdaily_runbook.txtの日次、「デイリー」「明日のプラン」「発注プラン」はDaily Plan（D7・F4）。
 
 

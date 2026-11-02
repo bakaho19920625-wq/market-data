@@ -1,4 +1,4 @@
-# 日次レポート 実行手順書（daily_runbook v1.6、マスター仕様v4.2のD7「Daily」の実装。v4.4・v4.5追補とやさしい表記を反映）
+# 日次レポート 実行手順書（daily_runbook v1.7、マスター仕様v4.2のD7「Daily」の実装。v4.4・v4.5追補とやさしい表記を反映）
 # 日次の自動実行（火〜土 12:07 JST、データ未更新なら 18:07 に再試行）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -13,7 +13,7 @@
 - ［v1.4］書き方：状態を表す語は 05_Plain_Language_Glossary.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/05_Plain_Language_Glossary.txt。
   届かなければ保管ページの spec/plain_language.txt）の「言葉」で書き、数字と記号を括弧で後ろに付ける（例：大口が売った日が7日（IX2＝7、6日以上は危険水準））。
   記号は消さない。記号だけ・英語だけの行を作らない。表には「言葉」の列を置くか、数字の横に言葉を添える。巻末に「読み方」（使った記号だけ、1行ずつ）。
-- GitHubのリポジトリのファイルは変更しない。例外はデータが古いときのワークフロー起動だけ（第1節）。
+- GitHubのリポジトリのファイルは変更しない。例外は、データが古いときのワークフロー起動（第1節）と、レポート本文の reports/ への保存（第7節）だけ。
 
 ## 1. 取得と確認
 1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
@@ -154,6 +154,11 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
   Daily Planの候補数、データ状態。すべて05の言葉で、記号は括弧。
 - 本文の巻末に「読み方」：そのレポートで使った記号だけを05から1行ずつ転記。
 - 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
-- 保存（ArtifactData batch、F9の形式）：reports/<id>、report_bodies/<id>、state/latest_daily（yamlにはTape、L/H、候補、key_events、データ状態）。
+- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）でリポジトリを追加し
+  （第1節で済んでいれば不要）、結果の指示どおり /home/claude/market-data にクローン（あれば `git -C /home/claude/market-data pull -q --ff-only`）。
+  本文を reports/daily/YYYYMMDD-DAILY.md に書き（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md` →
+  `git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "report YYYYMMDD-DAILY"` → `git push origin main`。
+  push が拒否されたら配信にその旨を書く。reports/ 以外のファイルは変更しない。data ブランチには書かない。公開リポジトリなので口座・保有・数量は本文に書かない（第0節の原則どおり）。
+- 保存（ArtifactData batch、F9の形式）：reports/<id>、report_bodies/<id>、state/latest_daily（yamlにはTape、L/H、候補、key_events、データ状態）。保管ページは直近180日の置き場（整理は週次が行う）。
   state/ledger は使わない（台帳はGitHubの ledger.json が正本）。state/scenarios は週次が更新する。
   既存ドキュメントは読んだ version を if_version に指定する。失敗したらユーザーに伝える。
