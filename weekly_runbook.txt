@@ -1,7 +1,7 @@
 # 週次レポート 実行手順書（weekly_runbook v1.3、マスター仕様v4.2のD7「週次」の実装。v4.3〜v4.5追補とやさしい表記を反映）
 # 週次の自動実行（日曜 9:07 JST）はこの手順書に従う。ユーザーがチャットで「レポートして」「Fullで」と頼んだときも同じ。
 # 定期実行の本文には手順を書かず、この手順書を読む指示と実行環境の前提だけを置く。手順を変えるときはこのファイルを直す。
-# 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの）。v1.1 でやさしい表記、v1.2 で v4.5（先導セクター・ヘッジ・長期モデル）を追加。
+# 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの）。v1.1 でやさしい表記、v1.2 で v4.5（先導セクター・ヘッジ・長期モデル）、v1.3 で reports/ への保存と保管ページ本文の180日整理を追加。
 
 ## 0. 原則
 - 計算はGitHubの解析エンジン（analyze.py）が済ませている。Tapeチェックリスト、先導候補、セットアップ、ブレイク追跡、売りシグナル、
@@ -41,8 +41,8 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
    - mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）でリポジトリを追加する
      （結果の指示どおりクローンしてよい）。
    - `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`
-   - `gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId,createdAt` でIDを取り、
-     `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト10分）で完了を待ってから取り直す。
+   - `gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId --jq '.[0].databaseId'` でIDを取り、
+     `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト12分。日次と同じ）で完了を待ってから取り直す。
    - それでも古ければ、基準日を明記してレポートを作り、冒頭で「GitHubのデータが最新ではありません」と警告する。
 3. manifest.repo_last_commit_main から45日以上経過していれば、冒頭で「GitHubのリポジトリを更新してください
    （tickers.txt に1行コメントを足して保存）」と警告する。manifest.keepalive が failed でも同様。
@@ -79,7 +79,7 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
   ［v4.5］同じ行に監視グループ別の先導株数（signals.leadership.tech.by_group、今／4週前）。
 - ［v4.5b］Tape表の直後に「4週間の推移」の小表（history_signals.csv の直近20営業日から、週ごとの最終日4行＋当日）：レジーム（確定）、大口の売り（IX2）、上向き銘柄の割合（BR1）、
   テック内部（BR5とラベル）、テック・半導体の先導株数、ヘッジ条件の成立日、長期モデルの合計点。値は転記し、再計算しない。
-- ［v4.5］「先導セクターの推移」の小節（signals.leadership。Tape表の直後）：
+- ［v4.5］「先導セクターの推移」の小節（signals.leadership。「4週間の推移」の次）：
   ・表：セクター別の先導株数（今／4週前／増減、多い順）と、セクターETFの市場比の強さ（3か月）の順位（今／4週前／変化）。
   ・新しく先導株になった銘柄の上位5と外れた銘柄の上位5（セクター、RS百分位、高値からの位置）。半導体・テクノロジーの先導株数（今／4週前。半分以下なら明記）。
   ・読み方を2行：どこに資金が向かっているか、半導体・テクノロジーは引っ張られているか置いていかれているか。
@@ -109,7 +109,7 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 - ArtifactData の batch で、F9の形式どおり reports/<report_id>（mode: "weekly_standard" または "weekly_full"）、
   report_bodies/<report_id>（200KB超なら要約にして truncated=true）、state/latest_weekly、state/scenarios を書く。
 - ［v1.3］保管ページの本文の整理（180日）：ArtifactData の query で reports を読み（where [["as_of_market_et", "<", "<基準日の180日前 YYYY-MM-DD>"]]、limit 1000）、
-  該当する各 id について report_bodies/<id> を get → delete（if_version はその version）し、reports/<id> を update で {body_pruned: true, body_archive: "reports/<daily|weekly>/<id>.md"} にする
-  （reports/<id> の見出し等はそのまま残す。if_version を付ける）。削除件数を配信に1行添える。本文はGitHubの reports/ にあるので失われない。
+  該当する各 id のうち body_pruned が真でないものについて report_bodies/<id> を get → delete（if_version はその version）し、reports/<id> を update で {body_pruned: true, body_archive: "reports/<daily|weekly>/<id>.md"} にする
+  （reports/<id> の見出し等はそのまま残す。if_version を付ける。body_pruned が真のものは前週までに整理済みなので飛ばす）。削除件数を配信に1行添える。本文はGitHubの reports/ にあるので失われない。
 - state/ledger は使わない（台帳はGitHubの ledger.json）。既存ドキュメントは読んだ version を if_version に指定する。
 - 保存に失敗したら、その旨をユーザーに伝える。

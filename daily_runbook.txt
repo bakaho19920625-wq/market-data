@@ -1,4 +1,5 @@
-# 日次レポート 実行手順書（daily_runbook v1.7、マスター仕様v4.2のD7「Daily」の実装。v4.4・v4.5追補とやさしい表記を反映）
+# 日次レポート 実行手順書（daily_runbook v1.7、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.5追補とやさしい表記を反映）
+# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存。
 # 日次の自動実行（火〜土 12:07 JST、データ未更新なら 18:07 に再試行）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -59,7 +60,7 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - new_ready：新しいセットアップready（銘柄、型、P、S、リスク幅）。決算5営業日以内なら「見送り」。
 - near_pivot：ピボットまで3%以内。Daily Planの候補。
 - breakout：価格ブレイク。rvol50と出来高確認、weak（弱いブレイク）を併記。
-- squat：ブレイク未達で押し戻し。「1〜2日、最長10日の回復待ち」と書く（E11.1）。
+- squat：ブレイク未達で押し戻し。「5営業日以内の回復待ち（原典メモでは最長10日程度）」と書く（E11.1）。
 - pivot_failure / stop_touched：追跡中のブレイクの失敗・ストップ抵触。
 - setup_failed：登録セットアップの崩れ。
 - leader_weakness：先導株の50日線割れなど（弱さの中での売り検討）。
@@ -123,8 +124,8 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 - ledger_cohorts：setup_type別のD+3/5/10（件数が20未満なら参考値）。
 - sell_signals：先導株・母集団のクライマックス／弱さ。
 - sector_rs（v4.3）：グループごとにリーダー上位3・ラガード下位3（rel_sec_63_pct）。セクター自体が指数に負けていれば「弱いセクターの中で相対的に強い」と書く。
-- correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low、dd_now）。next_candidates の上位5（tier、R_held、R_now、新高値）と late_breaks。
-  R_held・R_now は倍率なので dd_low・dd_now を併記する。リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
+- correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low_pct、dd_now_pct）。next_candidates の上位5（tier、r_held、r_now、new_high_after_low）と late_breaks。
+  r_held・r_now は倍率なので dd_low_pct・dd_now_pct を併記する。リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
 - rs_lines（v4.3b、RSライン＝銘柄÷SPY。RSIとは別物）：
   ・1行目：SPYの52週高値からの位置、監視母集団でRSラインが21日EMAの上にある数（summary.above_ema21_count）、
     S&P500∪監視母集団でRS新高値の件数（market.rs_new_high_count、市場情報として件数だけ）。
@@ -134,7 +135,7 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 
 ## 6. Daily Plan（F4）
 - 前提：regime_effective と適用ゲート → 新規許容度（なし／Pilot／通常）。
-  F・D・Transition（provisional）は新規なし。Cは原則なし（例外はE12）。E・BはPilot〜選別。Aは通常。
+  F・D・Transition（provisional）は新規なし。Cは原則なし（例外は弱い市場でのPilot＝C9）。E・BはPilot〜選別。Aは通常。
 - 候補：ready と near_pivot の銘柄。各行：P、E_plan（=1.001P、注文トリガー未設定時）、E_max（=min(1.05P, S/0.93)）、
   S、リスク幅、決算日（要確認）、許容サイズ区分、無効化条件。決算5営業日以内は見送り。
 - ［v4.4］signals.tape.checklist.FB1_stalling が真なら、全候補に「ブレイク後D+3〜5の続き（水準維持と出来高）を確認してから」の条件を添える。

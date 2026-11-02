@@ -4,16 +4,20 @@
 入力（--out フォルダ内、fetch_data.py の出力）:
   prices_daily.csv.gz   監視母集団（テック・半導体＋指数・ETF）の日足 約3年
   prices_sp500.csv.gz   S&P500構成銘柄の日足 約2年（市場全体のRS・先導株・ブレイク統計用）
+  sp500_constituents.csv  S&P500構成銘柄とGICSセクター（先導セクターの集計に使う）
   breadth.csv           市場内部（proxy）
   events.csv            決算予定日（取得できた分）
   manifest.json
   prev/ledger.json      前回の台帳（workflowが前回のdataブランチから持ってくる。無ければ初回）
+  prev/screen.csv       前回のスクリーン（--prev-screen。セクター区分の flip など差分イベント用）
+  prev/history_signals.csv  前回までの判定履歴（--prev-history。無ければ main の history_seed.csv）
 
 出力（--out フォルダ）:
   signals.json   日次・週次レポートが読む要約（市場、Tapeチェックリスト、先導株、セットアップ、当日の重要イベント）
   screen.csv     母集団＋S&P500の全銘柄スクリーン（TT、RS順位、位置）
   setups.csv     テック・半導体のセットアップ一覧
   ledger.json    台帳（セットアップ登録、ブレイク追跡、レジーム履歴）。次回に引き継ぐ
+  history_signals.csv  判定結果の日次履歴（1日1行。F2.2）
 
 定義はマスター仕様 v4.2 の C7.1 / C15.1 / E4〜E14 に対応する。閾値はすべて P（プロジェクト規則）。
 v4.3 追補（03_Addendum_v4.3_SectorRS_Resilience.txt）：E7.1 セクター相対強度、E7.2 調整耐性を追加。
@@ -887,13 +891,14 @@ def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i, 
     f_sup = sum([items["IX2"] >= 6, (br1 or 100) < 30, (br2 or 1) < 0, len(leaders_now) == 0 or len(leaders_now) < len(leaders_4w), (fb5 or 100) < 30])
     if f_core and f_sup >= 2:
         regime, reasons = "F", ["下降中の200日線下", f"支持{f_sup}件"]
+    # Cの支持項目の充足数は、F判定の日も表示用に出す（手順書は毎回書く前提）
+    c_core = spy["pct_from_52w_high"] >= -10 or qqq["pct_from_52w_high"] >= -10
+    c_sup = sum([items["IX2"] >= 5, br1 is not None and br1p is not None and br1 <= br1p - 10, br2 is not None and br2p is not None and br2 < 0 and br2 < br2p,
+                 (fb5 or 100) < 40 or fb_stall,                          # v4.4: 抜けても伸びない場合も数える
+                 (items["BR3_rsp_spy_4w_pct"] or 0) <= -2,
+                 items["BR4_label"] == "stealth"])                       # v4.4: 指数は高値圏なのに過半が−20%以上
+    items["C_support_met"] = int(c_sup)
     if regime is None:
-        c_core = spy["pct_from_52w_high"] >= -10 or qqq["pct_from_52w_high"] >= -10
-        c_sup = sum([items["IX2"] >= 5, br1 is not None and br1p is not None and br1 <= br1p - 10, br2 is not None and br2p is not None and br2 < 0 and br2 < br2p,
-                     (fb5 or 100) < 40 or fb_stall,                      # v4.4: 抜けても伸びない場合も数える
-                     (items["BR3_rsp_spy_4w_pct"] or 0) <= -2,
-                     items["BR4_label"] == "stealth"])                   # v4.4: 指数は高値圏なのに過半が−20%以上
-        items["C_support_met"] = int(c_sup)
         if c_core and guard:
             who = "大型株主導の崩れ" if items["megacap_led"] else "指数の崩れ"
             regime, reasons = "C", ["高値圏", f"{who}（SPY/QQQの50日線割れ＋分配日{items['IX2']}）", f"分配・内部悪化の支持{c_sup}件"]

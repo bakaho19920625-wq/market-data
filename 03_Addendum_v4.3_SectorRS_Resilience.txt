@@ -1,7 +1,7 @@
 # 03_Addendum_v4.3_SectorRS_Resilience.txt
 # 米国株指標チェック｜追補仕様 v4.3「セクター相対強度」「調整耐性」
-# マスター仕様 00_US_Stock_Project_Master_v4.2.txt に追加する条項（E7.1、E7.2）。
-# 本ファイルが E7.1・E7.2 の正本。マスターと食い違う場合は本ファイルを優先する。
+# マスター仕様 00_US_Stock_Project_Master_v4.2.txt に追加する条項（E7.1、E7.2。v4.3b で E7.3 RSラインを追加）。
+# 本ファイルが E7.1〜E7.3 の正本。マスターと食い違う場合は本ファイルを優先する。
 # 作成 2026-10-31。試算データの基準日 2026-10-29。
 
 ## 0. この追補の位置づけ
@@ -289,7 +289,7 @@ extensions.sector_leadership に追加する。既存フィールドは変えな
 - correction_resilience：基準ETFの状態を1行、next_candidates の上位5（tier、R_held、R_now、新高値）、late_breaks。
   新規の next_candidate_new／next_candidate_out／late_break_new は冒頭の重要ポイントに出す。
 
-### 1.5 他ファイルへの追記（そのまま貼る）
+### 1.5 他ファイルへの追記（2026-11-01 までに反映済み。記録として残す）
 
 00_US_Stock_Project_Master_v4.2.txt の改訂履歴（冒頭の番号付きリスト）に追加：
   9. ［v4.3］E7.1 セクター相対強度、E7.2 調整耐性を追加（正本は 03_Addendum_v4.3_SectorRS_Resilience.txt）。

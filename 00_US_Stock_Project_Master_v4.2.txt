@@ -199,7 +199,8 @@ ConfidenceはCoverageと別に判断する。
 ［v4.2］report.specification_versionは4.2。［v4.3］4.3。［v4.4］4.4。［v4.5］4.5（現行）。
 ［v4.2］extensions.sector_leadershipにschema1.2／ST-1.2を併合する。［v4.3］schema1.3／ST-1.3（現行。03の1.3節）。
 ［v4.4］extensions.breadth_ext（BX-1.0）に signals.json の breadth_ext と tape.checklist の FB1_stalling・IX3・BR4・BR5・megacap_led を写す。追加フィールドだけで既存項目は変えない。
-［v4.5］extensions.spy_model（SM-1.0）に signal・composite・signal_since を、extensions.hedge（HG-1.0）に allowed・status・level_max を写す。
+［v4.5］extensions.spy_model（SM-1.0）に signal・composite・signal_since を、extensions.hedge（HG-1.0）に allowed・status・setup_level_max を写す（06の C10.1「出すもの」）。
+追補による extensions の新設・項目追加は、B11・E16 の「schemaの変更」に含めない（schema_version を上げたときだけ該当。v4.4・v4.5 は据え置き）。
 
 ［v4.2］checkpoint 4.0の状態は読込可。4.1で追加された項目はnullとして移行し、追加項目について前回比を作らない。
 
@@ -1201,13 +1202,14 @@ BR1  S&P500構成銘柄の50日線上比率（%）と4週前の値。
 BR2  52週新高値数−新安値数の5営業日平均と4週前の値。
 BR3  RSP／SPYの4週変化率。
 LD1  市場全体の先導候補数（TT価格7項目met かつ 市場RS百分位80以上 かつ SPY比63日 > 0）と4週前、所属セクター数。
-LD2  テック・半導体の標準ready件数（E12）。
+LD2  テック・半導体の標準ready件数（E12）。エンジンは別項目として出さない（signals.setups の ready 件数で読む）。
 FB1  市場全体のブレイク追随率（P）：直近60営業日に「終値が過去50日高値を上抜け、RVOL50 >= 1.5」となった事象の
      D+5で終値がブレイク水準以上を維持した比率。標本20件以上で有効。
 FB2  ユーザー売買ログの指標（F5、提供時のみ）。
-回復項目（E用）：BR1が4週で+15pt以上／BR2がプラスかつ4週前より改善／LD1が4週前以上／BR3 > 0 の4つ。
+回復項目（E用）：BR1が4週で+15pt以上／BR2がプラスかつ4週前より改善／LD1が4週前以上／BR3 > 0 の4つ（充足数は tape.checklist.E_recovery_items_met）。
 
 判定順：F → C → D → E → A → B。最初に必須条件を満たしたレジームを採用。
+補足：Eの入口が成立していても、SPY・QQQがともにIX1なら E を飛ばして A／B を先に判定する（下の「AまたはBを優先」の意味。エンジンの実装も同じ）。
 
 F 弱気・高リスク
 必須：SPYまたはQQQが、下降中（21日前より低い）の200SMAの下で引けている。
@@ -1481,7 +1483,7 @@ Dは売られ過ぎを買い許可とせず原則L1まで。
 ヘッジは自動設定しない。
 方向性ショートかBeta低下かを明示する。
 エントリー、損切り、解除条件を付ける。
-CはH1、FはH1〜H2を検討できるが価格セットアップが必要。［v4.5］セットアップの定義は追補06の C10.1（signals.json の hedge）。
+CはH1、FはH1〜H2を検討できるが価格セットアップが必要。［v4.5］セットアップの定義は追補06の C10.1（signals.json の hedge。許可は C・D・F とIX3成立時で、D も含む）。
 
 ## D4. ハードゲートの適用順
 
@@ -1589,12 +1591,11 @@ FOMC、CPI、雇用、急落・急騰等の臨時更新。
 ［v4.2］Daily（日次レポート）：
 自動配信の既定（F9、火〜土の12:07。データ未更新なら18:07に再試行）。ユーザーが「日次レポート」と依頼した場合も同じ。
 Tape中心の短い更新とDaily Planを1本にまとめる。本文は2〜3画面以内とし、27項目は出さない。
-1. 冒頭（1画面）：［v4.4］冒頭ブロック（今日のひとこと・やること・なぜその判断か。形は05の0節、内容は daily_runbook.txt 第1.5節）、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
+1. 冒頭（1画面）：［v4.5］冒頭ブロック（今日のひとこと・やること・なぜその判断か。形は05の0節、内容は daily_runbook.txt 第1.5節）、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
    種類ごとの書き方の正本は daily_runbook.txt 第2節。ここには一覧を重複して置かない）、
    Tapeレジームと前日比、有効分配日・FTD、適用ゲート、L/Hと新規許容度、データ状態（基準日・欠損）。
    ［v4.2b］日次の詳細手順はdaily_runbook.txtに従う。
-2. Broad：日々動く項目だけを再確認する（S&P500・NASDAQ・SOX（SOXはsignals.marketに無いのでSOXXで代用）、VIX、2年・10年金利、
-   HY OAS、ドル円、原油、当日〜翌営業日のイベント）。Broad点は週次で確定し、日次では据置を基本とする。
+2. Broad：日々動く項目だけを再確認する（項目の一覧と代用の注記は daily_runbook.txt 第4節）。Broad点は週次で確定し、日次では据置を基本とする。
    判定帯をまたぐ明確な変化がある場合だけ暫定値を示し、理由を書く。
 3. 半導体・テクノロジー：SOXX・SMH・IGV等の動き、候補状態の変化
    （新規ready、ブレイク、スクワット、失敗・脱落、売り検討シグナル）、D+3／5／10の更新。
@@ -1645,7 +1646,7 @@ UNIFIED_MARKET_STATE:
   checkpoint_version: "4.1"
   report:
     id: null
-    mode: standard            # weekly_standard / weekly_full / daily / event / daily_plan（F9のreportsのmodeと同じ語。standard／fullは旧表記）
+    mode: null                # daily / weekly_standard / weekly_full（F9のreportsのmodeと同じ語）。Event Updateは event。Daily Planは保存しない。standard／fullは旧表記
     as_of_market_et: null
     created_jst: null
     previous_id: null
@@ -1696,6 +1697,9 @@ UNIFIED_MARKET_STATE:
     net_pct: null
     cash_pct: null
   hard_gates: []
+  daily:                      # v4.5b 日次（state/latest_daily）だけが使う。週次は null のまま
+    key_events_today: []      # signals.key_events_today をそのまま（種類と書き方は daily_runbook 第2節）
+    candidates: []            # ready／near_pivot の銘柄（P、S、E_plan、E_max。Daily Plan と同じ値）
   key_changes:
     positive: []
     negative: []
@@ -3013,8 +3017,8 @@ FullとフルYAML。
 UNIFIED_MARKET_STATE:
   extensions:
     sector_leadership:
-      schema_version: "1.2"
-      definition_version: "ST-1.2"
+      schema_version: "1.3"       # A7の現行値を入れる（03の1.3節）
+      definition_version: "ST-1.3"
       scope:
         - semiconductors
         - technology
@@ -3082,7 +3086,7 @@ setup_record:
   pattern: null
   setup_type: null            # v4.2 standard / power_play / early_entry / late_stage / pocket_pivot / undercut_rally
   base_count: null            # v4.2
-  definition_version: "ST-1.2"
+  definition_version: "ST-1.3"   # A7の現行値
   pattern_anchors: []
   contraction_depths: []
   dry5: null
@@ -3310,6 +3314,7 @@ USER_SETTINGS:
     official_rs_source: null   # MarketSurge等の契約有無と名称
     export_available: null     # 画面のエクスポート可否
     connectors: []             # 接続済みの市場データコネクタ
+    github_pipeline: null      # 自動取得のリポジトリ（F2.1）。02では設定済み
     code_execution: null       # このプロジェクトでコード実行を使えるか
   rs_route: null               # official / proxy
   account:
@@ -3387,8 +3392,8 @@ Web上の断片値、記憶、チャート画像の目測で埋めない。
 ### F2.1 ［v4.2］GitHub自動取得（運用中）
 
 ユーザーのGitHubリポジトリ bakaho19920625-wq/market-data で、
-GitHub Actionsが米国営業日の翌朝（JST 7時台）にYahoo Financeから日足を取得し、
-「data」ブランチに最新版だけを保存している（過去版は残らない）。
+GitHub Actionsが米国営業日の翌朝（6:35 JST。12:35・15:35にも取り直す。詳細はF9）にYahoo Financeから日足を取得し、
+「data」ブランチに最新版を保存している（過去版は残らない。例外は history_signals.csv＝F2.2 で、日次履歴を追記していく）。
 
 取得先（data ブランチ）：
 ・manifest.json：生成日時、基準日（prices.as_of）、取得件数、取得失敗（tickers_failed）、
@@ -3418,11 +3423,7 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
   setups（ready／watch／forming）、ledger_cohorts（E14.3）、ledger_open、sell_signals（E13.1）、earnings_within_5d、
   key_events_today（日次で逃さない重要ポイント）。
   追補で追加：sector_rs／correction_resilience／rs_lines（03）、breadth_ext と tape.checklist の拡張（04）、leadership／hedge／spy_model（06）。
-・［v4.5b］history_signals.csv（F2.2）：判定結果の日次履歴。1日1行（基準日、レジーム、チェックリストの主要値、隠れ弱気ラベル、先導セクター上位3、
-  テック・半導体の先導株数、FB1、ヘッジの許可・成立、長期SPYモデルの合計点とシグナル、候補数、イベント種類）。前回分を引き継いで追記し、
-  同じ基準日の再実行は上書き。初回は main の history_seed.csv（現行エンジンで2025-11-03から計算した backfill。source=backfill）から始める。
-  用途：閾値の校正と「前回との比較」の長期版（週次の推移表）。判定には使わない。
-  増え方：1行約335バイト（年83KB）。3,000行（約12年）を超えたら年ごとのファイルに分割する（それまでは1ファイル）。
+・history_signals.csv：判定結果の日次履歴（F2.2）。
 ・screen.csv：S&P500∪監視母集団の全銘柄（TT項目数、市場RS百分位、52週高値比、50SMA比、先導フラグ）。
 ・setups.csv：監視母集団のセットアップ一覧。
 ・ledger.json：台帳（E14。セットアップ登録、ブレイク追跡、D+3／5／10、レジーム履歴）。前回分を引き継いで更新する。
@@ -3431,6 +3432,14 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
 ・events.csv：監視銘柄の次回決算予定日（Yahoo非公式。要確認と表示）。
 レポート側はこれらの値を再計算しない（検証目的の再計算は可。食い違いはsignals.jsonを優先し報告する）。
 定義の変更はanalyze.pyの変更を伴う。変更時はdefinition_version（signals.json）を上げる。
+
+### F2.2 ［v4.5b］判定結果の日次履歴（history_signals.csv）
+
+1日1行（基準日、レジーム、チェックリストの主要値、隠れ弱気ラベル、先導セクター上位3、テック・半導体の先導株数、FB1、
+ヘッジの許可・成立、長期SPYモデルの合計点とシグナル、候補数、イベント種類。列は analyze.py の HIST_COLS）。
+前回分を引き継いで追記し、同じ基準日の再実行は上書き。初回は main の history_seed.csv（現行エンジンで2025-11-03から計算した backfill。source=backfill）から始める。
+用途：閾値の校正と「前回との比較」の長期版（週次の推移表、weekly_runbook 第5節）。判定には使わない。
+増え方：1行約335バイト（年83KB）。3,000行（約12年）を超えたら年ごとのファイルに分割する（それまでは1ファイル）。
 
 範囲と限界：
 ・個別分析の対象はリポジトリのtickers.txtにある監視銘柄（半導体・テクノロジー）。市場全体の判定にはS&P500構成銘柄も使う。
@@ -3607,8 +3616,8 @@ MarketSurge等のログインが必要なサービスについて、
   米国の取引開始（日本時間22:30、冬時間23:30）より前に届くので、当日の発注計画には間に合う。
   月曜は新しい米国取引日がないため配信しない。
 ・週次レポート：日曜の9:07。直近の米国取引日（通常は金曜）の終値を基準とする。
-・米国の休場日などで新しい取引日がない場合（manifestの基準日が前回の日次と同じ）は、
-  短い通知だけを送り、保存しない。
+・米国の休場日で新しい取引日がない場合は短い通知だけを送り、保存しない。同じ基準日の日次がすでに保存済みの場合
+  （18:07の再試行で12:07が成功しているときなど）は何も送らない（daily_runbook 第1節）。
 
 保管ページ（Artifact「米国株指標チェック」、ユーザー専用・非公開）：
 URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
@@ -3649,7 +3658,7 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 手順（各回。詳細は daily_runbook.txt／weekly_runbook.txt）：
 1. 仕様をGitHubのmainで読む（届かなければ保管ページの予備コピー spec/）。
 2. F2.1のデータを取得し、manifestを確認する。
-3. stateの前回状態、台帳、シナリオ履歴を読む（無ければ初回として扱い、前回比較不能と明記）。
+3. stateの前回状態とシナリオ履歴（保管ページ）、台帳（data ブランチの ledger.json）を読む（無ければ初回として扱い、前回比較不能と明記）。
 4. 計算と判定を行い、レポートを作る。
 5. 配信：冒頭サマリをユーザーへ送り、本文全体をファイル（.md）としても送る。
 6. 保存：reports、report_bodies、stateを更新する。保存に失敗した場合は配信の中でその旨を伝える。
