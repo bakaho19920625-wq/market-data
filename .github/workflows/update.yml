@@ -53,6 +53,7 @@ jobs:
             git show data-prev:ledger.json > out/prev/ledger.json || echo "no previous ledger"
             git show data-prev:manifest.json > out/prev/manifest.json || echo "no previous manifest"
             git show data-prev:screen.csv > out/prev/screen.csv || echo "no previous screen"
+            git show data-prev:history_signals.csv > out/prev/history_signals.csv || echo "no previous history"
           else
             echo "no data branch yet"
           fi
@@ -98,7 +99,7 @@ jobs:
           PY
 
       - name: Analyze
-        run: python analyze.py --out out --prev-ledger out/prev/ledger.json --prev-screen out/prev/screen.csv
+        run: python analyze.py --out out --prev-ledger out/prev/ledger.json --prev-screen out/prev/screen.csv --prev-history out/prev/history_signals.csv --history-seed history_seed.csv
 
       - name: Publish to data branch
         env:

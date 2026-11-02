@@ -12,7 +12,7 @@
   ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
   ・定期実行（スケジュールタスク）の本文：手順書を読む指示と実行環境の前提だけ。手順を変えるときは手順書を直し、定期実行の本文は変えない。
   ・保管ページ（Artifact）の spec/ は予備コピー。仕様・手順書を変えたら同じ内容に差し替える（F9）。
-- data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
+- data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv＝判定結果の日次履歴、prices_daily.csv.gz、prices_sp500.csv.gz、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
 - プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う。data ブランチには書き込まない（Actionsが上書きする）。

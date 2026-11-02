@@ -3418,6 +3418,10 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
   setups（ready／watch／forming）、ledger_cohorts（E14.3）、ledger_open、sell_signals（E13.1）、earnings_within_5d、
   key_events_today（日次で逃さない重要ポイント）。
   追補で追加：sector_rs／correction_resilience／rs_lines（03）、breadth_ext と tape.checklist の拡張（04）、leadership／hedge／spy_model（06）。
+・［v4.5b］history_signals.csv（F2.2）：判定結果の日次履歴。1日1行（基準日、レジーム、チェックリストの主要値、隠れ弱気ラベル、先導セクター上位3、
+  テック・半導体の先導株数、FB1、ヘッジの許可・成立、長期SPYモデルの合計点とシグナル、候補数、イベント種類）。前回分を引き継いで追記し、
+  同じ基準日の再実行は上書き。初回は main の history_seed.csv（現行エンジンで2025-11-03から計算した backfill。source=backfill）から始める。
+  用途：閾値の校正と「前回との比較」の長期版（週次の推移表）。judgment には使わない。
 ・screen.csv：S&P500∪監視母集団の全銘柄（TT項目数、市場RS百分位、52週高値比、50SMA比、先導フラグ）。
 ・setups.csv：監視母集団のセットアップ一覧。
 ・ledger.json：台帳（E14。セットアップ登録、ブレイク追跡、D+3／5／10、レジーム履歴）。前回分を引き継いで更新する。

@@ -34,7 +34,7 @@ A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）
 D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 
 ## 2. データを取得する
-1. data ブランチから manifest.json、signals.json、screen.csv、setups.csv、ledger.json、breadth.csv、prices_daily.csv.gz を取得する
+1. data ブランチから manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv、breadth.csv、prices_daily.csv.gz を取得する
    （https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>。
    届かなければ git clone --depth 1 -b data https://github.com/bakaho19920625-wq/market-data.git）。
 2. signals.as_of_market_date が直近の米国取引日（通常は金曜。NYSE休場日を除く）より古ければ、データ更新を自分で起動する：
@@ -77,6 +77,8 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 - 半導体・テクノロジー節の冒頭に「テック内部」：signals.breadth_ext の tech（pct_down20 と4週前、pct_above_50sma、ラベル、XLKの位置）、
   ex_tech との差、megacap_led。stealth／broad_decline／megacap_led の書き方は追補04「レポートでの書き方」。
   ［v4.5］同じ行に監視グループ別の先導株数（signals.leadership.tech.by_group、今／4週前）。
+- ［v4.5b］Tape表の直後に「4週間の推移」の小表（history_signals.csv の直近20営業日から、週ごとの最終日4行＋当日）：レジーム（確定）、大口の売り（IX2）、上向き銘柄の割合（BR1）、
+  テック内部（BR5とラベル）、テック・半導体の先導株数、ヘッジ条件の成立日、長期モデルの合計点。値は転記し、再計算しない。
 - ［v4.5］「先導セクターの推移」の小節（signals.leadership。Tape表の直後）：
   ・表：セクター別の先導株数（今／4週前／増減、多い順）と、セクターETFの市場比の強さ（3か月）の順位（今／4週前／変化）。
   ・新しく先導株になった銘柄の上位5と外れた銘柄の上位5（セクター、RS百分位、高値からの位置）。半導体・テクノロジーの先導株数（今／4週前。半分以下なら明記）。

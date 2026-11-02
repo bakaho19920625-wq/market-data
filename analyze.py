@@ -33,6 +33,8 @@ v4.5 追補（06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも�
       key_events の leadership_shift。
   (B) ヘッジ・指数ショートの条件 C10.1：signals.json の hedge（許可、今日の価格セットアップ、損切り、解除）。key_events の hedge_setup／hedge_cover。
   (C) 長期SPY配分モデル F10：signals.json の spy_model（5項目、配分%、buy／sell）。key_events の spy_model_signal。
+v4.5b（F2.2）：判定結果の日次履歴 history_signals.csv（1日1行。レジーム、チェックリスト、先導セクター、ヘッジ、長期モデル、候補数、イベント種類）を
+  data ブランチに追記する（--prev-history で前回分を引き継ぎ、無ければ main の history_seed.csv＝backfill から始める）。
 """
 import argparse
 import json
@@ -773,6 +775,67 @@ def spy_model(P, sectors, i):
 
 
 # ----------------------------------------------------------------------------
+# v4.5b 判定結果の日次履歴（F2.2）。1日1行を data ブランチの history_signals.csv に追記（同じ基準日は上書き）
+# ----------------------------------------------------------------------------
+HIST_COLS = ["as_of", "generated_utc", "definition_version", "source",
+             "regime_checklist", "regime_effective", "hysteresis", "provisional", "C_support_met",
+             "spy_close", "spy_pct_from_52w_high", "spy_above_21ema", "spy_above_50", "spy_above_200",
+             "qqq_close", "qqq_pct_from_52w_high", "qqq_above_21ema", "qqq_above_50", "qqq_above_200",
+             "IX2", "IX3_guard", "ftd_valid", "BR1", "BR1_4w", "BR2", "BR2_4w", "BR3", "BR4", "BR4_label", "BR5_tech", "BR5_tech_label",
+             "tech_pct_above_50sma", "megacap_led", "LD1", "LD1_4w", "LD1_sectors", "top_sectors", "tech_leaders", "tech_leaders_4w", "semi_leaders",
+             "FB1_events", "FB1_d5_hold", "FB1_d5_ret", "FB1_d10_ret", "FB1_stalling",
+             "hedge_allowed", "hedge_status", "hedge_setups", "hedge_cover",
+             "spy_model_composite", "spy_model_signal", "spy_model_since",
+             "soxx_close", "soxx_pct_from_52w_high", "vix_close",
+             "setups_ready", "setups_watch", "key_events_n", "key_event_types"]
+
+
+def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine"):
+    """履歴1行。値は signals.json と同じ（再計算しない）。backfill では setups・key_events を空にする。"""
+    g = lambda d, k: d.get(k) if isinstance(d, dict) else None
+    ftd_ok = any(idx_state[k]["ftd_date"] and not idx_state[k]["ftd_failed"] and (idx_state[k]["ftd_days_ago"] or 99) <= 30 for k in idx_state)
+    spy, qqq = chk["SPY"], chk["QQQ"]
+    tech = lead["tech"]
+    semi = next((x["now"] for x in tech["by_group"] if x["group"] == "半導体"), None)
+    def px(t):
+        return round(float(P.C[t].iloc[i]), 2) if t in P.C.columns else None
+    def dd(t):
+        return fnum(100 * (P.C[t].iloc[i] / P.h252[t].iloc[i] - 1)) if t in P.C.columns and not math.isnan(P.h252[t].iloc[i]) else None
+    row = {"as_of": tstr, "generated_utc": gen, "definition_version": DEF_VERSION, "source": source,
+           "regime_checklist": chk["regime"], "regime_effective": eff, "hysteresis": hyst, "provisional": chk["provisional"], "C_support_met": chk.get("C_support_met"),
+           "spy_close": spy["close"], "spy_pct_from_52w_high": spy["pct_from_52w_high"], "spy_above_21ema": spy["above_21ema"], "spy_above_50": spy["above_50"], "spy_above_200": spy["above_200"],
+           "qqq_close": qqq["close"], "qqq_pct_from_52w_high": qqq["pct_from_52w_high"], "qqq_above_21ema": qqq["above_21ema"], "qqq_above_50": qqq["above_50"], "qqq_above_200": qqq["above_200"],
+           "IX2": chk["IX2"], "IX3_guard": chk.get("IX3_index_breakdown_guard"), "ftd_valid": ftd_ok,
+           "BR1": chk.get("BR1_pct_above_50sma"), "BR1_4w": chk.get("BR1_4w_ago"), "BR2": chk.get("BR2_nhnl_5d"), "BR2_4w": chk.get("BR2_4w_ago"), "BR3": chk.get("BR3_rsp_spy_4w_pct"),
+           "BR4": chk.get("BR4_pct_down20"), "BR4_label": chk.get("BR4_label"), "BR5_tech": chk.get("BR5_tech_pct_down20"), "BR5_tech_label": chk.get("BR5_tech_label"),
+           "tech_pct_above_50sma": chk.get("BR5_tech_pct_above_50sma"), "megacap_led": chk.get("megacap_led"),
+           "LD1": chk.get("LD1_leaders_market"), "LD1_4w": chk.get("LD1_4w_ago"), "LD1_sectors": len(chk.get("LD1_sectors") or {}),
+           "top_sectors": "/".join(lead["market"]["top_sectors_now"]), "tech_leaders": tech["now"], "tech_leaders_4w": tech["w4_ago"], "semi_leaders": semi,
+           "FB1_events": g(chk.get("FB1"), "events"), "FB1_d5_hold": g(chk.get("FB1"), "d5_hold_rate"), "FB1_d5_ret": g(chk.get("FB1"), "d5_avg_ret_pct"),
+           "FB1_d10_ret": g(chk.get("FB1"), "d10_avg_ret_pct"), "FB1_stalling": chk.get("FB1_stalling"),
+           "hedge_allowed": hedge["allowed"], "hedge_status": hedge["status"],
+           "hedge_setups": ";".join(f"{x['instrument']}:{x['setup_level']}@{x['stop']}" for x in hedge["setups"]), "hedge_cover": hedge["cover_signal"],
+           "spy_model_composite": spym.get("composite"), "spy_model_signal": spym.get("signal"), "spy_model_since": spym.get("signal_since"),
+           "soxx_close": px("SOXX"), "soxx_pct_from_52w_high": dd("SOXX"), "vix_close": px("^VIX"),
+           "setups_ready": (sum(1 for x in setups if x.get("status") == "ready") if setups is not None else None),
+           "setups_watch": (sum(1 for x in setups if x.get("status") == "watch") if setups is not None else None),
+           "key_events_n": (len(key_events) if key_events is not None else None),
+           "key_event_types": ("/".join(sorted({e["type"] for e in key_events})) if key_events is not None else None)}
+    return {k: row.get(k) for k in HIST_COLS}
+
+
+def write_history(out, prev_path, seed_path, row):
+    """前回の履歴（data ブランチ）に今日の行を追記して保存。無ければ main の seed（backfill）から始める。同じ基準日は上書き。"""
+    src = prev_path if prev_path and os.path.exists(prev_path) and os.path.getsize(prev_path) > 0 else (seed_path if seed_path and os.path.exists(seed_path) else None)
+    hist = pd.read_csv(src, dtype=str) if src else pd.DataFrame(columns=HIST_COLS)
+    hist = hist.reindex(columns=HIST_COLS)
+    hist = hist[hist["as_of"] != row["as_of"]]
+    hist = pd.concat([hist, pd.DataFrame([row])], ignore_index=True).sort_values("as_of")
+    hist.to_csv(os.path.join(out, "history_signals.csv"), index=False)
+    return len(hist), src
+
+
+# ----------------------------------------------------------------------------
 # Tapeチェックリスト（C15.1 改訂版）
 # ----------------------------------------------------------------------------
 def checklist(P, bw, leaders_now, leaders_4w, leader_sectors, fb, idx_state, i, bx=None):
@@ -1269,6 +1332,8 @@ def main():
     ap.add_argument("--tickers", default="tickers.txt")
     ap.add_argument("--prev-ledger", default=None)
     ap.add_argument("--prev-screen", default=None, help="前回の screen.csv（v4.3 の差分イベント用。無ければ差分は出さない）")
+    ap.add_argument("--prev-history", default=None, help="前回の history_signals.csv（data ブランチ）。無ければ --history-seed から始める")
+    ap.add_argument("--history-seed", default="history_seed.csv", help="初回用の履歴（main の backfill）")
     a = ap.parse_args()
     out = a.out
     manifest = json.load(open(os.path.join(out, "manifest.json"), encoding="utf-8")) if os.path.exists(os.path.join(out, "manifest.json")) else {}
@@ -1694,6 +1759,10 @@ def main():
         "rs_lines": jsonable(rs_line_out),
     }
     json.dump(signals, open(os.path.join(out, "signals.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
+    # v4.5b: 判定結果の日次履歴（閾値の検証用。同じ基準日の再実行は上書き）
+    hrow = history_row(tstr, signals["generated_utc"], chk_today, eff_regime, hyst, idx_state, lead_rot, hedge, spym, P, i, setups, key_events)
+    n_hist, hist_src = write_history(out, a.prev_history, a.history_seed, hrow)
+    print(json.dumps({"history_signals_rows": n_hist, "history_from": hist_src}, ensure_ascii=False))
     print(json.dumps({"as_of": tstr, "regime": eff_regime, "hysteresis": hyst, "leaders_market": len(leaders_now), "tech_leaders": len(tech_leaders),
                       "setups_ready": sum(s["status"] == "ready" for s in setups), "key_events": len(key_events)}, ensure_ascii=False))
 
