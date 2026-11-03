@@ -1,6 +1,6 @@
 # reports/ — 米国株指標チェックのレポート本文（全履歴）
 
-- `daily/YYYYMMDD-DAILY.md`：日次レポート（火〜土 12:07 JST の定期実行が保存）
+- `daily/YYYYMMDD-DAILY.md`：日次レポート（火〜土 7:07 JST の定期実行が保存）
 - `weekly/YYYYMMDD-WEEKLY.md`：週次レポート（日曜 9:07 JST の定期実行が保存。Full は完全版）
 
 保管ページ（Artifact「米国株指標チェック」）には直近180日の本文だけを置き、それより前の本文はここが正本。

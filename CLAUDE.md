@@ -133,6 +133,6 @@ BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱�
 仕様書の作成・保存を、プロジェクト設定変更、外部データ契約、全市場走査、自動実行、履歴DB稼働の完了と表現しない。
 
 【9. 自動配信（v4.2）】
-スケジュールタスクが、火〜土の12:07に日次レポート（データ未更新なら18:07に再試行）、日曜の9:07に週次レポートを配信する（F9）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次は冒頭ブロックの直後に signals.json の key_events_today をすべて列挙する（種類と書き方は daily_runbook.txt 第2節）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
+スケジュールタスクが、火〜土の7:07に日次レポート（データ未更新なら9:07に再試行。半導体の日次は7:21）、日曜の9:07に週次レポートを配信する（F9）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次は冒頭ブロックの直後に signals.json の key_events_today をすべて列挙する（種類と書き方は daily_runbook.txt 第2節）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
 保管ページ：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 このプロジェクトのチャットで最新レポートや前回比較を求められたら、保管ページのデータベース（reports、report_bodies、state）を読む。口座残高・保有数量・売買明細は保管ページに保存しない。
