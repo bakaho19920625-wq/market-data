@@ -24,6 +24,11 @@ permissions:
   contents: write
   actions: write
 
+# 予備の予約実行や手動起動が重なっても直列に動かす（data ブランチの push が競合しないように）
+concurrency:
+  group: update-market-data
+  cancel-in-progress: false
+
 jobs:
   update:
     runs-on: ubuntu-latest
