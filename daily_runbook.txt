@@ -1,5 +1,5 @@
-# 日次レポート 実行手順書（daily_runbook v1.7、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.5追補とやさしい表記を反映）
-# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存。
+# 日次レポート 実行手順書（daily_runbook v1.8、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.5追補とやさしい表記を反映）
+# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）。
 # 日次の自動実行（火〜土 7:07 JST、データ未更新なら 9:07 に再試行。半導体の日次は 7:21）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -17,6 +17,12 @@
 - GitHubのリポジトリのファイルは変更しない。例外は、データが古いときのワークフロー起動（第1節）と、レポート本文の reports/ への保存（第7節）だけ。
 
 ## 1. 取得と確認
+0. ［v1.8］最初に GitHub への書き込みを準備する（データ更新の起動と reports/ への保存に要る。データが新しくても先に行う）：
+   - ツール mcp__claude-code-remote__add_repo が一覧に見当たらなければ、ToolSearch（query: "select:mcp__claude-code-remote__add_repo"）で読み込む。
+     接続先の一覧が要るときは ToolSearch（query: "claude-code-remote"）で探す。「ツールが無い」と判断する前に必ずこの検索を行う。
+   - add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼び、結果の指示どおり /home/claude/market-data にクローンする。
+   - `gh auth status` で認証を確かめる（add_repo の後でないと gh は認証エラーになる）。
+   - それでも add_repo を読み込めない・拒否される場合は、エラー文をそのまま控え、レポートの「データ状態」と配信に1行で書く（推測で原因を書かない）。
 1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
 2. GitHub data ブランチから manifest.json、signals.json、setups.csv を取得する。
    https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>
@@ -25,7 +31,7 @@
    - 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
    - 前日が休場日 → 7:07 の1回目は「新しい取引日はありません（休場）」と短く送って終了（保存しない）。9:07 の再試行では何も送らない。
    - signals.as_of_market_date がその取引日より古い（GitHubの予約実行は数時間遅れることがある）：
-     ・［v1.6］まず自分でデータ更新を起動して待つ：mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）のあと
+     ・［v1.6］まず自分でデータ更新を起動して待つ（GitHub の予約実行は数時間遅れたり来なかったりするので、これが主な経路）：手順0の準備のあと
        `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`、`gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId --jq '.[0].databaseId'` でIDを取り、
        `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト12分）で完了を待ってから取り直す。
        （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
@@ -155,8 +161,7 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
   Daily Planの候補数、データ状態。すべて05の言葉で、記号は括弧。
 - 本文の巻末に「読み方」：そのレポートで使った記号だけを05から1行ずつ転記。
 - 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
-- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）でリポジトリを追加し
-  （第1節で済んでいれば不要）、結果の指示どおり /home/claude/market-data にクローン（あれば `git -C /home/claude/market-data pull -q --ff-only`）。
+- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：第1節の手順0で add_repo 済み（していなければ同じ手順で mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼ぶ）、結果の指示どおり /home/claude/market-data にクローン（あれば `git -C /home/claude/market-data pull -q --ff-only`）。
   本文を reports/daily/YYYYMMDD-DAILY.md に書き（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md` →
   `git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "report YYYYMMDD-DAILY"` → `git push origin main`。
   push が拒否されたら配信にその旨を書く。reports/ 以外のファイルは変更しない。data ブランチには書かない。公開リポジトリなので口座・保有・数量は本文に書かない（第0節の原則どおり）。
