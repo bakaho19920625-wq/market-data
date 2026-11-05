@@ -19,6 +19,10 @@ on:
     - cron: "35 3,6 * * 2-6"
     - cron: "50 3,6 * * 2-6"
   workflow_dispatch: # 「Run workflow」ボタンで手動実行もできる
+  # レポートの定期実行は GitHub API を使えないことがあるので、refresh/request.txt を push して起動する（refresh/README.md）
+  push:
+    branches: [main]
+    paths: ["refresh/**"]
 
 permissions:
   contents: write

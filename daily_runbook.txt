@@ -1,5 +1,5 @@
-# 日次レポート 実行手順書（daily_runbook v1.8、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.5追補とやさしい表記を反映）
-# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）。
+# 日次レポート 実行手順書（daily_runbook v1.9、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.5追補とやさしい表記を反映）
+# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）、v1.9 gh が使えないときは refresh/ の push で起動。
 # 日次の自動実行（火〜土 7:07 JST、データ未更新なら 9:07 に再試行。半導体の日次は 7:21）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -35,6 +35,11 @@
        `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`、`gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId --jq '.[0].databaseId'` でIDを取り、
        `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト12分）で完了を待ってから取り直す。
        （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
+     ・［v1.9］gh が使えないとき（add_repo が見つからない、gh が認証エラー、403「access to this repository is not enabled」）は、git の push で起動する：
+       /home/claude/market-data（無ければ `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`）で
+       `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
+       完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show origin/data:manifest.json` の prices.as_of を見て、
+       直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。push も拒否されたらエラー文をそのまま控える。
      ・それでも古く、日本時間9時より前の実行（7:07の1回目）→ ユーザーには何も送らず終了（保存しない）。9:07の再試行に任せる。
      ・それでも古く、日本時間9時以降の実行（9:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない）。
        manifest.prices.yahoo_incomplete に基準日より新しい日付があれば、原因として「Yahooが○○日の終値を未確定（空欄）のまま配信しているため。修正されしだい自動で取り込みます」と添える。

@@ -16,7 +16,7 @@
 - data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv＝判定結果の日次履歴、prices_daily.csv.gz、prices_sp500.csv.gz、sp500_constituents.csv、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
-- プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う（reports/ へのレポート保存だけは定期実行が手順書どおり行う）。data ブランチには書き込まない（Actionsが上書きする）。
+- プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う（reports/ へのレポート保存と、データ更新を起動するための refresh/request.txt の push だけは定期実行が手順書どおり行う）。data ブランチには書き込まない（Actionsが上書きする）。
 - 「レポートして」は週次Standard、「Fullで」は全27項目、「日次レポート」はdaily_runbook.txtの日次、「デイリー」「明日のプラン」「発注プラン」はDaily Plan（D7・F4）。
 
 
