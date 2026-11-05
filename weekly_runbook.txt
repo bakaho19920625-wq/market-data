@@ -51,7 +51,7 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
    - ［v1.5］gh が使えないとき（add_repo が見つからない、gh が認証エラー、403「access to this repository is not enabled」）は、git の push で起動する：
      /home/claude/market-data（無ければ `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`）で
      `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
-     完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show origin/data:manifest.json` の prices.as_of を見て、
+     完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
      直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。push も拒否されたらエラー文をそのまま控える。
    - それでも古ければ、基準日を明記してレポートを作り、冒頭で「GitHubのデータが最新ではありません」と警告する。
 3. manifest.repo_last_commit_main から45日以上経過していれば、冒頭で「GitHubのリポジトリを更新してください

@@ -38,7 +38,7 @@
      ・［v1.9］gh が使えないとき（add_repo が見つからない、gh が認証エラー、403「access to this repository is not enabled」）は、git の push で起動する：
        /home/claude/market-data（無ければ `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`）で
        `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
-       完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show origin/data:manifest.json` の prices.as_of を見て、
+       完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
        直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。push も拒否されたらエラー文をそのまま控える。
      ・それでも古く、日本時間9時より前の実行（7:07の1回目）→ ユーザーには何も送らず終了（保存しない）。9:07の再試行に任せる。
      ・それでも古く、日本時間9時以降の実行（9:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない）。
