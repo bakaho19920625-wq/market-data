@@ -1,0 +1,4491 @@
+{
+ "generated_utc": "2026-11-07T10:45:36Z",
+ "as_of_market_date": "2026-11-06",
+ "definition_version": "ST-1.4 / engine 1.3",
+ "data": {
+  "universe_tickers": 72,
+  "sp500_tickers": 503,
+  "rs_rank_population": 521,
+  "breadth_as_of": "2026-11-06",
+  "manifest": {
+   "generated_jst": "2026-11-07 19:45 JST",
+   "repo_last_commit_main": "2026-11-05T22:20:53Z",
+   "keepalive": "ok"
+  },
+  "prices": {
+   "file": "prices_daily.csv.gz",
+   "as_of": "2026-11-06",
+   "price_basis": "split_adjusted_ex_dividends(yahoo_close)",
+   "rows": 77874,
+   "tickers_requested": 104,
+   "tickers_ok": 104,
+   "tickers_failed": [],
+   "tickers_stale": [],
+   "yahoo_incomplete": {}
+  },
+  "note": "市場内部とブレイク追随率は現在のS&P500構成銘柄から計算したproxy（生存者バイアスあり）"
+ },
+ "tape": {
+  "regime_checklist": "C",
+  "regime_effective": "C",
+  "hysteresis": "confirmed",
+  "provisional": false,
+  "reasons": [
+   "高値圏",
+   "大型株主導の崩れ（SPY/QQQの50日線割れ＋分配日7）",
+   "分配・内部悪化の支持2件"
+  ],
+  "previous_confirmed": "C",
+  "yesterday_checklist": "C",
+  "checklist": {
+   "SPY": {
+    "close": 735.29,
+    "above_21ema": false,
+    "above_50": false,
+    "above_200": true,
+    "ma200_rising": true,
+    "IX1": false,
+    "IX1b": true,
+    "pct_from_52w_high": -5.9,
+    "ma200_falling": false
+   },
+   "QQQ": {
+    "close": 656.1,
+    "above_21ema": false,
+    "above_50": false,
+    "above_200": false,
+    "ma200_rising": true,
+    "IX1": false,
+    "IX1b": false,
+    "pct_from_52w_high": -14.0,
+    "ma200_falling": false
+   },
+   "IX2": 7,
+   "BR1_pct_above_50sma": 61.35,
+   "BR1_4w_ago": 35.26,
+   "pct_above_200sma": 55.8,
+   "BR2_nhnl_5d": 34.2,
+   "BR2_4w_ago": 3.0,
+   "new_highs": 3.0,
+   "new_lows": 7.0,
+   "advancers": 184.0,
+   "decliners": 318.0,
+   "breadth_as_of": "2026-11-06",
+   "BR3_rsp_spy_4w_pct": 7.38,
+   "LD1_leaders_market": 62,
+   "LD1_4w_ago": 54,
+   "LD1_sectors": {
+    "Health Care": 28,
+    "Information Technology": 3,
+    "Consumer Discretionary": 5,
+    "Industrials": 7,
+    "Financials": 12,
+    "Real Estate": 1,
+    "Consumer Staples": 6
+   },
+   "FB1": {
+    "events": 242,
+    "d3_matured": 164,
+    "d3_hold_rate": 70.1,
+    "d3_avg_ret_pct": -0.48,
+    "d5_matured": 146,
+    "d5_hold_rate": 69.9,
+    "d5_avg_ret_pct": -0.7,
+    "d10_matured": 106,
+    "d10_hold_rate": 69.8,
+    "d10_avg_ret_pct": -0.77,
+    "d5_hold_rate_4w_ago": 68.2,
+    "extends": false,
+    "stalling": true,
+    "d5_avg_ret_pct_4w_ago": -0.77,
+    "stalling_4w_ago": true
+   },
+   "FB1_extends": false,
+   "FB1_stalling": true,
+   "BR4_pct_down20": 35.2,
+   "BR4_4w_ago": 37.3,
+   "BR4_label": null,
+   "BR5_tech_pct_down20": 68.4,
+   "BR5_tech_4w_ago": 47.4,
+   "BR5_tech_label": "broad_decline",
+   "BR5_tech_pct_above_50sma": 31.6,
+   "megacap_led": true,
+   "IX3_index_breakdown_guard": true,
+   "C_support_met": 2,
+   "E_recovery_items_met": 4
+  },
+  "unverified": []
+ },
+ "index_state": {
+  "^GSPC": {
+   "distribution_days": [
+    "2026-10-07",
+    "2026-10-08",
+    "2026-10-14",
+    "2026-10-22",
+    "2026-10-29",
+    "2026-10-30",
+    "2026-11-05"
+   ],
+   "distribution_count": 7,
+   "stalling_days": [],
+   "rally_attempt_day1": "2026-11-06",
+   "ftd_date": null,
+   "ftd_days_ago": null,
+   "ftd_failed": false,
+   "pct_from_52w_high": -0.056538465309396324
+  },
+  "^IXIC": {
+   "distribution_days": [
+    "2026-10-08",
+    "2026-10-14",
+    "2026-10-22",
+    "2026-10-30",
+    "2026-11-02",
+    "2026-11-05"
+   ],
+   "distribution_count": 6,
+   "stalling_days": [],
+   "rally_attempt_day1": "2026-11-06",
+   "ftd_date": null,
+   "ftd_days_ago": null,
+   "ftd_failed": false,
+   "pct_from_52w_high": -0.10943414705671717
+  }
+ },
+ "breakout_followthrough_market": {
+  "events": 242,
+  "d3_matured": 164,
+  "d3_hold_rate": 70.1,
+  "d3_avg_ret_pct": -0.48,
+  "d5_matured": 146,
+  "d5_hold_rate": 69.9,
+  "d5_avg_ret_pct": -0.7,
+  "d10_matured": 106,
+  "d10_hold_rate": 69.8,
+  "d10_avg_ret_pct": -0.77,
+  "d5_hold_rate_4w_ago": 68.2,
+  "extends": false,
+  "stalling": true,
+  "d5_avg_ret_pct_4w_ago": -0.77,
+  "stalling_4w_ago": true
+ },
+ "breadth_ext": {
+  "definition_version": "BX-1.0",
+  "as_of_index": 752,
+  "groups": {
+   "sp500": {
+    "members": 503,
+    "with_52w_high": 500,
+    "pct_down20": 35.2,
+    "pct_down20_4w_ago": 37.3,
+    "pct_above_50sma": 61.4,
+    "pct_above_50sma_4w_ago": 35.3,
+    "bench": "SPY",
+    "bench_pct_from_52w_high": -5.9,
+    "label": null
+   },
+   "tech": {
+    "members": 98,
+    "with_52w_high": 98,
+    "pct_down20": 68.4,
+    "pct_down20_4w_ago": 47.4,
+    "pct_above_50sma": 31.6,
+    "pct_above_50sma_4w_ago": 60.2,
+    "bench": "XLK",
+    "bench_pct_from_52w_high": -18.9,
+    "label": "broad_decline"
+   },
+   "ex_tech": {
+    "members": 405,
+    "with_52w_high": 402,
+    "pct_down20": 27.1,
+    "pct_down20_4w_ago": 34.8,
+    "pct_above_50sma": 68.6,
+    "pct_above_50sma_4w_ago": 29.2,
+    "bench": null,
+    "bench_pct_from_52w_high": null,
+    "label": null
+   }
+  },
+  "tech_minus_ex_tech_down20_pt": 41.3,
+  "megacap_led": true,
+  "megacap_inputs": {
+   "qqq_rel_spy_1m_pct": -7.62,
+   "rsp_spy_4w_pct": 7.38
+  },
+  "labels_1d_ago": {
+   "sp500": null,
+   "tech": "broad_decline"
+  },
+  "label_ja": {
+   "stealth": "隠れ弱気（指数は高値圏なのに過半が−20%以上）",
+   "watch": "隠れ弱気の警戒（−20%以上が4割超）",
+   "broad_decline": "全面的な下落（指数・基準ETFも−10%超）"
+  },
+  "definition": "pct_down20＝終値が52週高値（日中高値）の80%以下の銘柄の比率。グループはS&P500の現在の構成銘柄（proxy、生存者バイアスあり）。tech＝IT＋通信、ex_tech＝それ以外。ラベル：過半（50%以上）かつ基準ETFが52週高値から-10%以内→stealth、基準ETFも-10%超→broad_decline、40%以上かつ高値圏→watch。megacap_led＝QQQのSPY比1か月<=-3.0%かつRSP/SPY 4週>=+2.0%。Tapeレジームに使うのはS&P500のstealthだけ（Cの支持）。techは半導体・テクノロジー節の環境認識に使う。"
+ },
+ "market": {
+  "^GSPC": {
+   "close": 7376.86,
+   "chg_1d_pct": 0.31,
+   "chg_1w_pct": -2.68,
+   "chg_1m_pct": -5.0,
+   "chg_3m_pct": -4.85,
+   "vs_50sma_pct": -3.94,
+   "vs_200sma_pct": 0.71,
+   "rel_spy_1m_pct": -0.01,
+   "rel_spy_3m_pct": 0.03,
+   "pct_from_52w_high": -6.0,
+   "rvol50": 1.07
+  },
+  "^IXIC": {
+   "close": 24579.43,
+   "chg_1d_pct": 1.09,
+   "chg_1w_pct": -3.37,
+   "chg_1m_pct": -9.61,
+   "chg_3m_pct": -7.61,
+   "vs_50sma_pct": -7.1,
+   "vs_200sma_pct": -2.07,
+   "rel_spy_1m_pct": -4.86,
+   "rel_spy_3m_pct": -2.87,
+   "pct_from_52w_high": -11.3,
+   "rvol50": 1.3
+  },
+  "SPY": {
+   "close": 735.29,
+   "chg_1d_pct": 0.31,
+   "chg_1w_pct": -2.7,
+   "chg_1m_pct": -4.99,
+   "chg_3m_pct": -4.88,
+   "vs_50sma_pct": -3.97,
+   "vs_200sma_pct": 0.67,
+   "rel_spy_1m_pct": 0.0,
+   "rel_spy_3m_pct": 0.0,
+   "pct_from_52w_high": -5.9,
+   "rvol50": 1.34
+  },
+  "QQQ": {
+   "close": 656.1,
+   "chg_1d_pct": 1.4,
+   "chg_1w_pct": -4.98,
+   "chg_1m_pct": -12.24,
+   "chg_3m_pct": -8.98,
+   "vs_50sma_pct": -9.0,
+   "vs_200sma_pct": -3.64,
+   "rel_spy_1m_pct": -7.62,
+   "rel_spy_3m_pct": -4.31,
+   "pct_from_52w_high": -14.0,
+   "rvol50": 1.83
+  },
+  "IWM": {
+   "close": 273.67,
+   "chg_1d_pct": 0.99,
+   "chg_1w_pct": -2.03,
+   "chg_1m_pct": -1.41,
+   "chg_3m_pct": -8.77,
+   "vs_50sma_pct": -2.99,
+   "vs_200sma_pct": -1.91,
+   "rel_spy_1m_pct": 3.78,
+   "rel_spy_3m_pct": -4.09,
+   "pct_from_52w_high": -10.3,
+   "rvol50": 1.06
+  },
+  "RSP": {
+   "close": 216.05,
+   "chg_1d_pct": -0.38,
+   "chg_1w_pct": -1.04,
+   "chg_1m_pct": 1.97,
+   "chg_3m_pct": -1.89,
+   "vs_50sma_pct": 0.59,
+   "vs_200sma_pct": 3.72,
+   "rel_spy_1m_pct": 7.33,
+   "rel_spy_3m_pct": 3.14,
+   "pct_from_52w_high": -3.6,
+   "rvol50": 1.57
+  },
+  "DIA": {
+   "close": 512.22,
+   "chg_1d_pct": -0.4,
+   "chg_1w_pct": -0.95,
+   "chg_1m_pct": 0.11,
+   "chg_3m_pct": -4.97,
+   "vs_50sma_pct": -1.53,
+   "vs_200sma_pct": 1.1,
+   "rel_spy_1m_pct": 5.37,
+   "rel_spy_3m_pct": -0.09,
+   "pct_from_52w_high": -6.3,
+   "rvol50": 1.2
+  },
+  "^VIX": {
+   "close": 25.64,
+   "chg_1d_pct": -9.01,
+   "chg_1w_pct": 32.03,
+   "chg_1m_pct": 66.39,
+   "chg_3m_pct": 65.85,
+   "vs_50sma_pct": 51.67,
+   "vs_200sma_pct": 39.37,
+   "rel_spy_1m_pct": 75.13,
+   "rel_spy_3m_pct": 74.36,
+   "pct_from_52w_high": -27.4,
+   "rvol50": null
+  },
+  "TLT": {
+   "close": 81.92,
+   "chg_1d_pct": -0.01,
+   "chg_1w_pct": 0.1,
+   "chg_1m_pct": 5.2,
+   "chg_3m_pct": -0.17,
+   "vs_50sma_pct": 1.92,
+   "vs_200sma_pct": -3.02,
+   "rel_spy_1m_pct": 10.73,
+   "rel_spy_3m_pct": 4.95,
+   "pct_from_52w_high": -9.8,
+   "rvol50": 0.94
+  },
+  "HYG": {
+   "close": 77.23,
+   "chg_1d_pct": -0.06,
+   "chg_1w_pct": -0.26,
+   "chg_1m_pct": 0.12,
+   "chg_3m_pct": -2.83,
+   "vs_50sma_pct": -0.74,
+   "vs_200sma_pct": -2.77,
+   "rel_spy_1m_pct": 5.38,
+   "rel_spy_3m_pct": 2.16,
+   "pct_from_52w_high": -4.9,
+   "rvol50": 0.6
+  },
+  "LQD": {
+   "close": 104.53,
+   "chg_1d_pct": -0.12,
+   "chg_1w_pct": 0.25,
+   "chg_1m_pct": 2.01,
+   "chg_3m_pct": -1.35,
+   "vs_50sma_pct": 0.65,
+   "vs_200sma_pct": -2.79,
+   "rel_spy_1m_pct": 7.37,
+   "rel_spy_3m_pct": 3.71,
+   "pct_from_52w_high": -6.7,
+   "rvol50": 0.84
+  },
+  "UUP": {
+   "close": 29.13,
+   "chg_1d_pct": 0.73,
+   "chg_1w_pct": 0.45,
+   "chg_1m_pct": 0.52,
+   "chg_3m_pct": 3.52,
+   "vs_50sma_pct": 1.54,
+   "vs_200sma_pct": 4.16,
+   "rel_spy_1m_pct": 5.8,
+   "rel_spy_3m_pct": 8.83,
+   "pct_from_52w_high": -0.4,
+   "rvol50": 1.14
+  },
+  "GLD": {
+   "close": 372.52,
+   "chg_1d_pct": -0.79,
+   "chg_1w_pct": 4.71,
+   "chg_1m_pct": -1.61,
+   "chg_3m_pct": -7.46,
+   "vs_50sma_pct": -3.23,
+   "vs_200sma_pct": -9.42,
+   "rel_spy_1m_pct": 3.56,
+   "rel_spy_3m_pct": -2.71,
+   "pct_from_52w_high": -26.9,
+   "rvol50": 0.8
+  },
+  "USO": {
+   "close": 148.41,
+   "chg_1d_pct": 0.13,
+   "chg_1w_pct": -12.1,
+   "chg_1m_pct": 0.56,
+   "chg_3m_pct": 17.86,
+   "vs_50sma_pct": -2.5,
+   "vs_200sma_pct": 17.82,
+   "rel_spy_1m_pct": 5.85,
+   "rel_spy_3m_pct": 23.91,
+   "pct_from_52w_high": -13.6,
+   "rvol50": 0.72
+  }
+ },
+ "sector_etf": {
+  "XLK": {
+   "close": 164.74,
+   "chg_1d_pct": 1.45,
+   "chg_1w_pct": -8.23,
+   "chg_1m_pct": -16.71,
+   "chg_3m_pct": -11.58,
+   "vs_50sma_pct": -12.58,
+   "vs_200sma_pct": -3.21,
+   "rel_spy_1m_pct": -12.33,
+   "rel_spy_3m_pct": -7.04,
+   "pct_from_52w_high": -18.9,
+   "rvol50": 2.26
+  },
+  "XLC": {
+   "close": 104.79,
+   "chg_1d_pct": 0.43,
+   "chg_1w_pct": 4.89,
+   "chg_1m_pct": -6.5,
+   "chg_3m_pct": -6.3,
+   "vs_50sma_pct": -4.57,
+   "vs_200sma_pct": -6.94,
+   "rel_spy_1m_pct": -1.58,
+   "rel_spy_3m_pct": -1.49,
+   "pct_from_52w_high": -13.0,
+   "rvol50": 1.03
+  },
+  "XLY": {
+   "close": 117.58,
+   "chg_1d_pct": -0.05,
+   "chg_1w_pct": 1.91,
+   "chg_1m_pct": 5.25,
+   "chg_3m_pct": -1.75,
+   "vs_50sma_pct": 3.73,
+   "vs_200sma_pct": 1.82,
+   "rel_spy_1m_pct": 10.79,
+   "rel_spy_3m_pct": 3.3,
+   "pct_from_52w_high": -5.9,
+   "rvol50": 1.47
+  },
+  "XLP": {
+   "close": 90.08,
+   "chg_1d_pct": -1.28,
+   "chg_1w_pct": 0.74,
+   "chg_1m_pct": 7.98,
+   "chg_3m_pct": 6.04,
+   "vs_50sma_pct": 5.93,
+   "vs_200sma_pct": 6.39,
+   "rel_spy_1m_pct": 13.66,
+   "rel_spy_3m_pct": 11.48,
+   "pct_from_52w_high": -3.6,
+   "rvol50": 1.8
+  },
+  "XLE": {
+   "close": 61.62,
+   "chg_1d_pct": -0.02,
+   "chg_1w_pct": -12.0,
+   "chg_1m_pct": -5.55,
+   "chg_3m_pct": 2.39,
+   "vs_50sma_pct": -5.31,
+   "vs_200sma_pct": 4.21,
+   "rel_spy_1m_pct": -0.59,
+   "rel_spy_3m_pct": 7.65,
+   "pct_from_52w_high": -12.2,
+   "rvol50": 1.21
+  },
+  "XLF": {
+   "close": 57.16,
+   "chg_1d_pct": -0.59,
+   "chg_1w_pct": 1.15,
+   "chg_1m_pct": 5.4,
+   "chg_3m_pct": -1.12,
+   "vs_50sma_pct": 2.23,
+   "vs_200sma_pct": 6.21,
+   "rel_spy_1m_pct": 10.94,
+   "rel_spy_3m_pct": 3.95,
+   "pct_from_52w_high": -4.8,
+   "rvol50": 0.97
+  },
+  "XLV": {
+   "close": 184.8,
+   "chg_1d_pct": -0.06,
+   "chg_1w_pct": -0.04,
+   "chg_1m_pct": 9.9,
+   "chg_3m_pct": 9.71,
+   "vs_50sma_pct": 6.59,
+   "vs_200sma_pct": 15.94,
+   "rel_spy_1m_pct": 15.67,
+   "rel_spy_3m_pct": 15.34,
+   "pct_from_52w_high": -3.9,
+   "rvol50": 1.64
+  },
+  "XLI": {
+   "close": 162.67,
+   "chg_1d_pct": 0.12,
+   "chg_1w_pct": -2.83,
+   "chg_1m_pct": -3.4,
+   "chg_3m_pct": -11.88,
+   "vs_50sma_pct": -4.01,
+   "vs_200sma_pct": -6.16,
+   "rel_spy_1m_pct": 1.67,
+   "rel_spy_3m_pct": -7.36,
+   "pct_from_52w_high": -13.6,
+   "rvol50": 1.0
+  },
+  "XLB": {
+   "close": 51.95,
+   "chg_1d_pct": -0.73,
+   "chg_1w_pct": -1.5,
+   "chg_1m_pct": 5.44,
+   "chg_3m_pct": -2.31,
+   "vs_50sma_pct": 2.01,
+   "vs_200sma_pct": 1.51,
+   "rel_spy_1m_pct": 10.98,
+   "rel_spy_3m_pct": 2.7,
+   "pct_from_52w_high": -4.9,
+   "rvol50": 1.29
+  },
+  "XLRE": {
+   "close": 44.0,
+   "chg_1d_pct": -0.68,
+   "chg_1w_pct": 1.92,
+   "chg_1m_pct": 7.71,
+   "chg_3m_pct": -0.9,
+   "vs_50sma_pct": 3.4,
+   "vs_200sma_pct": 1.37,
+   "rel_spy_1m_pct": 13.37,
+   "rel_spy_3m_pct": 4.19,
+   "pct_from_52w_high": -5.3,
+   "rvol50": 1.22
+  },
+  "XLU": {
+   "close": 43.13,
+   "chg_1d_pct": -0.39,
+   "chg_1w_pct": -0.69,
+   "chg_1m_pct": 5.02,
+   "chg_3m_pct": 0.0,
+   "vs_50sma_pct": 3.25,
+   "vs_200sma_pct": -2.67,
+   "rel_spy_1m_pct": 10.53,
+   "rel_spy_3m_pct": 5.13,
+   "pct_from_52w_high": -9.8,
+   "rvol50": 0.94
+  }
+ },
+ "tech_etf": {
+  "SOXX": {
+   "close": 136.53,
+   "chg_1d_pct": 3.51,
+   "chg_1w_pct": -13.13,
+   "chg_1m_pct": -27.28,
+   "chg_3m_pct": -22.63,
+   "vs_50sma_pct": -21.38,
+   "vs_200sma_pct": -14.43,
+   "rel_spy_1m_pct": -23.46,
+   "rel_spy_3m_pct": -18.66,
+   "pct_from_52w_high": -37.6,
+   "rvol50": 2.25
+  },
+  "SMH": {
+   "close": 463.96,
+   "chg_1d_pct": 3.62,
+   "chg_1w_pct": -11.2,
+   "chg_1m_pct": -23.6,
+   "chg_3m_pct": -18.52,
+   "vs_50sma_pct": -17.98,
+   "vs_200sma_pct": -11.08,
+   "rel_spy_1m_pct": -19.58,
+   "rel_spy_3m_pct": -14.34,
+   "pct_from_52w_high": -30.9,
+   "rvol50": 2.05
+  },
+  "XLK": {
+   "close": 164.74,
+   "chg_1d_pct": 1.45,
+   "chg_1w_pct": -8.23,
+   "chg_1m_pct": -16.71,
+   "chg_3m_pct": -11.58,
+   "vs_50sma_pct": -12.58,
+   "vs_200sma_pct": -3.21,
+   "rel_spy_1m_pct": -12.33,
+   "rel_spy_3m_pct": -7.04,
+   "pct_from_52w_high": -18.9,
+   "rvol50": 2.26
+  },
+  "VGT": {
+   "close": 108.51,
+   "chg_1d_pct": 1.35,
+   "chg_1w_pct": -7.22,
+   "chg_1m_pct": -14.73,
+   "chg_3m_pct": -9.76,
+   "vs_50sma_pct": -10.94,
+   "vs_200sma_pct": -1.21,
+   "rel_spy_1m_pct": -10.25,
+   "rel_spy_3m_pct": -5.13,
+   "pct_from_52w_high": -17.0,
+   "rvol50": 2.07
+  },
+  "IGV": {
+   "close": 98.88,
+   "chg_1d_pct": -0.13,
+   "chg_1w_pct": -5.19,
+   "chg_1m_pct": -9.77,
+   "chg_3m_pct": -5.84,
+   "vs_50sma_pct": -7.33,
+   "vs_200sma_pct": 5.13,
+   "rel_spy_1m_pct": -5.03,
+   "rel_spy_3m_pct": -1.0,
+   "pct_from_52w_high": -13.0,
+   "rvol50": 0.87
+  },
+  "CIBR": {
+   "close": 91.04,
+   "chg_1d_pct": 0.03,
+   "chg_1w_pct": -9.89,
+   "chg_1m_pct": -14.27,
+   "chg_3m_pct": -9.5,
+   "vs_50sma_pct": -10.1,
+   "vs_200sma_pct": 8.65,
+   "rel_spy_1m_pct": -9.77,
+   "rel_spy_3m_pct": -4.86,
+   "pct_from_52w_high": -17.7,
+   "rvol50": 1.13
+  },
+  "SKYY": {
+   "close": 146.45,
+   "chg_1d_pct": -0.49,
+   "chg_1w_pct": -8.34,
+   "chg_1m_pct": -13.92,
+   "chg_3m_pct": -8.91,
+   "vs_50sma_pct": -10.65,
+   "vs_200sma_pct": 6.71,
+   "rel_spy_1m_pct": -9.4,
+   "rel_spy_3m_pct": -4.24,
+   "pct_from_52w_high": -16.7,
+   "rvol50": 0.9
+  },
+  "SOXL": {
+   "close": 45.97,
+   "chg_1d_pct": 12.48,
+   "chg_1w_pct": -40.34,
+   "chg_1m_pct": -67.74,
+   "chg_3m_pct": -64.64,
+   "vs_50sma_pct": -60.1,
+   "vs_200sma_pct": -62.99,
+   "rel_spy_1m_pct": -66.05,
+   "rel_spy_3m_pct": -62.82,
+   "pct_from_52w_high": -84.8,
+   "rvol50": 3.24
+  }
+ },
+ "leaders_market": {
+  "count": 62,
+  "count_4w_ago": 54,
+  "by_sector": {
+   "Health Care": 28,
+   "Information Technology": 3,
+   "Consumer Discretionary": 5,
+   "Industrials": 7,
+   "Financials": 12,
+   "Real Estate": 1,
+   "Consumer Staples": 6
+  },
+  "tickers": [
+   "A",
+   "AAPL",
+   "ABBV",
+   "ABNB",
+   "ADP",
+   "AIZ",
+   "AJG",
+   "AMGN",
+   "BBY",
+   "BDX",
+   "BEN",
+   "BIIB",
+   "CAH",
+   "CBOE",
+   "CDW",
+   "CNC",
+   "CPAY",
+   "CRL",
+   "CTAS",
+   "DAL",
+   "DE",
+   "DGX",
+   "EBAY",
+   "EG",
+   "ELV",
+   "EW",
+   "FDS",
+   "GPN",
+   "GWW",
+   "HLT",
+   "HST",
+   "HUM",
+   "IQV",
+   "JNJ",
+   "KDP",
+   "KO",
+   "LH",
+   "LLY",
+   "MA",
+   "MO",
+   "MRK",
+   "MRNA",
+   "MTD",
+   "NDAQ",
+   "PM",
+   "RVTY",
+   "SJM",
+   "SOLV",
+   "SWK",
+   "SWKS",
+   "TECH",
+   "TGT",
+   "TMO",
+   "TRV",
+   "V",
+   "VEEV",
+   "VLTO",
+   "VRTX",
+   "VTRS",
+   "WAT"
+  ]
+ },
+ "leadership": {
+  "definition_version": "LR-1.0",
+  "market": {
+   "now": 62,
+   "w4_ago": 54,
+   "top_sectors_now": [
+    "ヘルスケア",
+    "金融",
+    "資本財"
+   ],
+   "top_sectors_yesterday": [
+    "ヘルスケア",
+    "金融",
+    "生活必需品"
+   ]
+  },
+  "by_sector": [
+   {
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "now": 28,
+    "w4_ago": 12,
+    "change": 16
+   },
+   {
+    "sector": "Financials",
+    "sector_ja": "金融",
+    "now": 12,
+    "w4_ago": 0,
+    "change": 12
+   },
+   {
+    "sector": "Industrials",
+    "sector_ja": "資本財",
+    "now": 7,
+    "w4_ago": 4,
+    "change": 3
+   },
+   {
+    "sector": "Consumer Staples",
+    "sector_ja": "生活必需品",
+    "now": 6,
+    "w4_ago": 1,
+    "change": 5
+   },
+   {
+    "sector": "Consumer Discretionary",
+    "sector_ja": "一般消費財",
+    "now": 5,
+    "w4_ago": 1,
+    "change": 4
+   },
+   {
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "now": 3,
+    "w4_ago": 27,
+    "change": -24
+   },
+   {
+    "sector": "Real Estate",
+    "sector_ja": "不動産",
+    "now": 1,
+    "w4_ago": 0,
+    "change": 1
+   },
+   {
+    "sector": "Energy",
+    "sector_ja": "エネルギー",
+    "now": 0,
+    "w4_ago": 7,
+    "change": -7
+   },
+   {
+    "sector": "Materials",
+    "sector_ja": "素材",
+    "now": 0,
+    "w4_ago": 2,
+    "change": -2
+   }
+  ],
+  "tech": {
+   "now": 2,
+   "w4_ago": 21,
+   "change": -19,
+   "halved_vs_4w": true,
+   "by_group": [
+    {
+     "group": "半導体",
+     "now": 1,
+     "w4_ago": 8,
+     "change": -7,
+     "tickers": [
+      "SWKS"
+     ]
+    },
+    {
+     "group": "ソフトウェア",
+     "now": 0,
+     "w4_ago": 7,
+     "change": -7,
+     "tickers": []
+    },
+    {
+     "group": "ハードウェア",
+     "now": 1,
+     "w4_ago": 6,
+     "change": -5,
+     "tickers": [
+      "AAPL"
+     ]
+    }
+   ]
+  },
+  "new_leaders_vs_4w": [
+   {
+    "ticker": "CPAY",
+    "sector": "Financials",
+    "sector_ja": "金融",
+    "in_universe": false,
+    "rs_rank": 97.9,
+    "pct_from_52w_high": -5.1
+   },
+   {
+    "ticker": "SWK",
+    "sector": "Industrials",
+    "sector_ja": "資本財",
+    "in_universe": false,
+    "rs_rank": 97.7,
+    "pct_from_52w_high": -6.4
+   },
+   {
+    "ticker": "BDX",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 97.5,
+    "pct_from_52w_high": -1.4
+   },
+   {
+    "ticker": "BBY",
+    "sector": "Consumer Discretionary",
+    "sector_ja": "一般消費財",
+    "in_universe": false,
+    "rs_rank": 97.1,
+    "pct_from_52w_high": -3.8
+   },
+   {
+    "ticker": "VEEV",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 96.9,
+    "pct_from_52w_high": -6.8
+   },
+   {
+    "ticker": "LH",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 96.0,
+    "pct_from_52w_high": -1.8
+   },
+   {
+    "ticker": "CNC",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 95.8,
+    "pct_from_52w_high": -10.7
+   },
+   {
+    "ticker": "CAH",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 95.6,
+    "pct_from_52w_high": -5.1
+   },
+   {
+    "ticker": "LLY",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 95.2,
+    "pct_from_52w_high": -6.8
+   },
+   {
+    "ticker": "MTD",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 95.0,
+    "pct_from_52w_high": -4.7
+   },
+   {
+    "ticker": "KDP",
+    "sector": "Consumer Staples",
+    "sector_ja": "生活必需品",
+    "in_universe": false,
+    "rs_rank": 94.8,
+    "pct_from_52w_high": -3.3
+   },
+   {
+    "ticker": "TGT",
+    "sector": "Consumer Staples",
+    "sector_ja": "生活必需品",
+    "in_universe": false,
+    "rs_rank": 94.2,
+    "pct_from_52w_high": -7.2
+   },
+   {
+    "ticker": "IQV",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 94.0,
+    "pct_from_52w_high": -4.5
+   },
+   {
+    "ticker": "FDS",
+    "sector": "Financials",
+    "sector_ja": "金融",
+    "in_universe": false,
+    "rs_rank": 93.5,
+    "pct_from_52w_high": -5.8
+   },
+   {
+    "ticker": "TMO",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 93.3,
+    "pct_from_52w_high": -2.4
+   }
+  ],
+  "new_count": 47,
+  "dropped_leaders_vs_4w": [
+   {
+    "ticker": "MRVL",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 23.5,
+    "pct_from_52w_high": -57.2
+   },
+   {
+    "ticker": "TER",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 4.6,
+    "pct_from_52w_high": -55.3
+   },
+   {
+    "ticker": "LITE",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 26.2,
+    "pct_from_52w_high": -52.9
+   },
+   {
+    "ticker": "BE",
+    "sector": "Industrials",
+    "sector_ja": "資本財",
+    "in_universe": false,
+    "rs_rank": 15.8,
+    "pct_from_52w_high": -50.7
+   },
+   {
+    "ticker": "MU",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 90.0,
+    "pct_from_52w_high": -45.0
+   },
+   {
+    "ticker": "DELL",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 83.8,
+    "pct_from_52w_high": -44.8
+   },
+   {
+    "ticker": "DDOG",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 15.6,
+    "pct_from_52w_high": -40.5
+   },
+   {
+    "ticker": "FTNT",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 35.4,
+    "pct_from_52w_high": -39.7
+   },
+   {
+    "ticker": "HPE",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 91.9,
+    "pct_from_52w_high": -39.1
+   },
+   {
+    "ticker": "P",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": false,
+    "rs_rank": 56.9,
+    "pct_from_52w_high": -38.6
+   },
+   {
+    "ticker": "FFIV",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": false,
+    "rs_rank": 23.8,
+    "pct_from_52w_high": -35.7
+   },
+   {
+    "ticker": "TWLO",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": false,
+    "rs_rank": 53.5,
+    "pct_from_52w_high": -34.5
+   },
+   {
+    "ticker": "AMD",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 80.4,
+    "pct_from_52w_high": -31.8
+   },
+   {
+    "ticker": "ENTG",
+    "sector": "Information Technology",
+    "sector_ja": "情報技術",
+    "in_universe": true,
+    "rs_rank": 46.9,
+    "pct_from_52w_high": -31.5
+   },
+   {
+    "ticker": "ILMN",
+    "sector": "Health Care",
+    "sector_ja": "ヘルスケア",
+    "in_universe": false,
+    "rs_rank": 98.5,
+    "pct_from_52w_high": -31.1
+   }
+  ],
+  "dropped_count": 39,
+  "sector_etf_rank": [
+   {
+    "etf": "XLV",
+    "sector_ja": "ヘルスケア",
+    "rel_21_pct": 15.7,
+    "rel_63_pct": 15.3,
+    "rank_63": 1,
+    "rank_63_4w_ago": 3,
+    "rank_change": 2
+   },
+   {
+    "etf": "XLP",
+    "sector_ja": "生活必需品",
+    "rel_21_pct": 13.7,
+    "rel_63_pct": 11.5,
+    "rank_63": 2,
+    "rank_63_4w_ago": 5,
+    "rank_change": 3
+   },
+   {
+    "etf": "XLE",
+    "sector_ja": "エネルギー",
+    "rel_21_pct": -0.6,
+    "rel_63_pct": 7.6,
+    "rank_63": 3,
+    "rank_63_4w_ago": 1,
+    "rank_change": -2
+   },
+   {
+    "etf": "XLU",
+    "sector_ja": "公益",
+    "rel_21_pct": 10.5,
+    "rel_63_pct": 5.1,
+    "rank_63": 4,
+    "rank_63_4w_ago": 11,
+    "rank_change": 7
+   },
+   {
+    "etf": "XLRE",
+    "sector_ja": "不動産",
+    "rel_21_pct": 13.4,
+    "rel_63_pct": 4.2,
+    "rank_63": 5,
+    "rank_63_4w_ago": 10,
+    "rank_change": 5
+   },
+   {
+    "etf": "XLF",
+    "sector_ja": "金融",
+    "rel_21_pct": 10.9,
+    "rel_63_pct": 4.0,
+    "rank_63": 6,
+    "rank_63_4w_ago": 7,
+    "rank_change": 1
+   },
+   {
+    "etf": "XLY",
+    "sector_ja": "一般消費財",
+    "rel_21_pct": 10.8,
+    "rel_63_pct": 3.3,
+    "rank_63": 7,
+    "rank_63_4w_ago": 8,
+    "rank_change": 1
+   },
+   {
+    "etf": "XLB",
+    "sector_ja": "素材",
+    "rel_21_pct": 11.0,
+    "rel_63_pct": 2.7,
+    "rank_63": 8,
+    "rank_63_4w_ago": 6,
+    "rank_change": -2
+   },
+   {
+    "etf": "XLC",
+    "sector_ja": "通信",
+    "rel_21_pct": -1.6,
+    "rel_63_pct": -1.5,
+    "rank_63": 9,
+    "rank_63_4w_ago": 4,
+    "rank_change": -5
+   },
+   {
+    "etf": "XLK",
+    "sector_ja": "情報技術",
+    "rel_21_pct": -12.3,
+    "rel_63_pct": -7.0,
+    "rank_63": 10,
+    "rank_63_4w_ago": 2,
+    "rank_change": -8
+   },
+   {
+    "etf": "XLI",
+    "sector_ja": "資本財",
+    "rel_21_pct": 1.7,
+    "rel_63_pct": -7.4,
+    "rank_63": 11,
+    "rank_63_4w_ago": 9,
+    "rank_change": -2
+   }
+  ],
+  "note": "観察専用（E7.4）。先導候補の定義はE7（TT価格7項目＋市場RS百分位80以上＋SPY比63日>0）。セクターはS&P500構成銘柄のGICS、監視母集団の非構成銘柄はIT扱い。Tapeレジーム・買い判定には使わない。"
+ },
+ "hedge": {
+  "definition_version": "HG-1.0",
+  "allowed": true,
+  "status": "allowed",
+  "setup_level_max": "H1",
+  "setups": [],
+  "cover_signal": false,
+  "cover_reasons": [],
+  "note": "C10.1（P）。ヘッジは自動設定しない。setup_level は条件がそろった場合の上限で、D部の最終 hedge_level とは別。損切りに達した場合の解除は自分で管理する。"
+ },
+ "spy_model": {
+  "definition_version": "SM-1.0",
+  "status": "ok",
+  "as_of": "2026-11-06",
+  "composite": 80,
+  "composite_1d_ago": 80,
+  "composite_4w_ago": 60,
+  "allocation_pct": 80,
+  "components": {
+   "spy_above_200": true,
+   "sma200_rising": true,
+   "breadth_200_ok": true,
+   "nhnl_positive": true,
+   "vix_credit_ok": false
+  },
+  "inputs": {
+   "pct_above_200sma": 55.8,
+   "nhnl_5d": 34.2,
+   "vix": 25.6,
+   "hyg_vs_50sma_pct": -0.7
+  },
+  "signal": "buy",
+  "signal_since": "2026-04-10",
+  "signal_changes_recent": [
+   {
+    "date": "2025-11-14",
+    "signal": "buy",
+    "composite": 80,
+    "initial": true
+   },
+   {
+    "date": "2026-03-25",
+    "signal": "sell",
+    "composite": 20
+   },
+   {
+    "date": "2026-04-10",
+    "signal": "buy",
+    "composite": 80
+   }
+  ],
+  "history_days": 246,
+  "history_from": "2025-11-14",
+  "note": "F10（P）。本人の長期SPYモデルの代替として独自に定義。観察専用で、Tapeレジーム・L/H・買い判定には使わない。"
+ },
+ "tech_leaders": [
+  {
+   "ticker": "SWKS",
+   "group": "半導体（設計・製造・装置・メモリー・後工程）",
+   "rs_rank": 83.7,
+   "rel_63_pct": 25.6,
+   "pct_from_52w_high": -11.4,
+   "tt3_5m": true,
+   "sector_rs_class": "leader",
+   "resilience_tier": "B"
+  },
+  {
+   "ticker": "AAPL",
+   "group": "ハードウェア・ネットワーク・AI計算基盤",
+   "rs_rank": 82.5,
+   "rel_63_pct": 16.8,
+   "pct_from_52w_high": -3.7,
+   "tt3_5m": true,
+   "sector_rs_class": "leader",
+   "resilience_tier": "A"
+  }
+ ],
+ "tech_watch": [
+  {
+   "ticker": "OKTA",
+   "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+   "tt_count": 5,
+   "rs_rank": 99.6,
+   "rel_63_pct": 17.6,
+   "sector_rs_class": "neutral",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "CRWD",
+   "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+   "tt_count": 6,
+   "rs_rank": 96.3,
+   "rel_63_pct": 1.3,
+   "sector_rs_class": "neutral",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "HPE",
+   "group": "ハードウェア・ネットワーク・AI計算基盤",
+   "tt_count": 4,
+   "rs_rank": 91.9,
+   "rel_63_pct": -13.9,
+   "sector_rs_class": "laggard",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "MU",
+   "group": "半導体（設計・製造・装置・メモリー・後工程）",
+   "tt_count": 4,
+   "rs_rank": 90.0,
+   "rel_63_pct": -15.7,
+   "sector_rs_class": "neutral",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "DELL",
+   "group": "ハードウェア・ネットワーク・AI計算基盤",
+   "tt_count": 4,
+   "rs_rank": 83.8,
+   "rel_63_pct": -24.6,
+   "sector_rs_class": "laggard",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "PANW",
+   "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+   "tt_count": 5,
+   "rs_rank": 82.3,
+   "rel_63_pct": -14.3,
+   "sector_rs_class": "laggard",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "AMD",
+   "group": "半導体（設計・製造・装置・メモリー・後工程）",
+   "tt_count": 4,
+   "rs_rank": 80.4,
+   "rel_63_pct": 0.5,
+   "sector_rs_class": "neutral",
+   "resilience_tier": null
+  },
+  {
+   "ticker": "MSFT",
+   "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+   "tt_count": 7,
+   "rs_rank": 70.4,
+   "rel_63_pct": 10.2,
+   "sector_rs_class": "leader",
+   "resilience_tier": "B"
+  },
+  {
+   "ticker": "AMZN",
+   "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+   "tt_count": 7,
+   "rs_rank": 32.1,
+   "rel_63_pct": -2.0,
+   "sector_rs_class": "neutral",
+   "resilience_tier": null
+  }
+ ],
+ "setups": [],
+ "ledger_cohorts": {},
+ "ledger_open": [],
+ "sell_signals": {
+  "BDX": {
+   "run_start": "2026-06-22",
+   "gain_from_start_pct": 50.6,
+   "climax": [
+    "最大の週間値幅",
+    "200日線から+27%の乖離"
+   ],
+   "weakness": [],
+   "level": "climax_watch"
+  },
+  "EW": {
+   "run_start": "2026-05-11",
+   "gain_from_start_pct": 32.4,
+   "climax": [
+    "最大の週間値幅",
+    "10日中8日以上の上昇",
+    "200日線から+19%の乖離"
+   ],
+   "weakness": [],
+   "level": "climax_alert"
+  },
+  "NET": {
+   "run_start": "2026-05-13",
+   "gain_from_start_pct": 39.5,
+   "climax": [
+    "上放れギャップ",
+    "上昇開始以来の最大出来高"
+   ],
+   "weakness": [],
+   "level": "climax_watch"
+  },
+  "TEAM": {
+   "run_start": "2026-04-30",
+   "gain_from_start_pct": 124.1,
+   "climax": [],
+   "weakness": [
+    "上昇開始以来の最大下落率（出来高増）"
+   ],
+   "level": null
+  },
+  "WDAY": {
+   "run_start": "2026-06-22",
+   "gain_from_start_pct": 70.6,
+   "climax": [
+    "200日線から+24%の乖離"
+   ],
+   "weakness": [
+    "50日線を終値で割り込み"
+   ],
+   "level": null
+  }
+ },
+ "earnings_within_5d": [
+  {
+   "ticker": "AMAT",
+   "date_et": "2026-11-12",
+   "event": "earnings"
+  },
+  {
+   "ticker": "ONTO",
+   "date_et": "2026-11-09",
+   "event": "earnings"
+  },
+  {
+   "ticker": "CSCO",
+   "date_et": "2026-11-12",
+   "event": "earnings"
+  },
+  {
+   "ticker": "CRWV",
+   "date_et": "2026-11-10",
+   "event": "earnings"
+  }
+ ],
+ "key_events_today": [
+  {
+   "type": "late_break_new",
+   "ticker": "AVGO",
+   "bench": "SOXX",
+   "r_held": 1.0,
+   "r_now": 1.04
+  },
+  {
+   "type": "late_break_new",
+   "ticker": "MCHP",
+   "bench": "SOXX",
+   "r_held": 0.93,
+   "r_now": 1.15
+  },
+  {
+   "type": "climax_watch",
+   "ticker": "NET",
+   "items": [
+    "上放れギャップ",
+    "上昇開始以来の最大出来高"
+   ]
+  },
+  {
+   "type": "earnings_within_5d",
+   "ticker": "AMAT",
+   "date_et": "2026-11-12",
+   "event": "earnings"
+  },
+  {
+   "type": "earnings_within_5d",
+   "ticker": "ONTO",
+   "date_et": "2026-11-09",
+   "event": "earnings"
+  },
+  {
+   "type": "earnings_within_5d",
+   "ticker": "CSCO",
+   "date_et": "2026-11-12",
+   "event": "earnings"
+  },
+  {
+   "type": "earnings_within_5d",
+   "ticker": "CRWV",
+   "date_et": "2026-11-10",
+   "event": "earnings"
+  },
+  {
+   "type": "leadership_shift",
+   "kind": "top_sectors",
+   "from": [
+    "ヘルスケア",
+    "金融",
+    "生活必需品"
+   ],
+   "to": [
+    "ヘルスケア",
+    "金融",
+    "資本財"
+   ],
+   "counts": {
+    "ヘルスケア": 28,
+    "金融": 12,
+    "資本財": 7
+   }
+  }
+ ],
+ "sector_rs": {
+  "definition_version": "ST-1.3",
+  "groups": {
+   "半導体": {
+    "bench": "SOXX",
+    "confirm": "SMH",
+    "bench_pct_from_52w_high": -37.6,
+    "bench_rel_spy_63_pct": -18.7,
+    "counts": {
+     "leader": 13,
+     "neutral": 7,
+     "laggard": 18
+    },
+    "leaders": [
+     "SWKS",
+     "SNPS",
+     "NXPI",
+     "QCOM",
+     "TXN",
+     "CDNS",
+     "ADI",
+     "TSM",
+     "ENTG",
+     "MPWR"
+    ],
+    "laggards": [
+     "CRDO",
+     "STX",
+     "INTC",
+     "COHR",
+     "ONTO",
+     "TER",
+     "ALAB",
+     "WDC",
+     "SITM",
+     "CAMT"
+    ],
+    "rows": [
+     {
+      "ticker": "SWKS",
+      "rel_sec_21_pct": 40.0,
+      "rel_sec_63_pct": 54.4,
+      "dd_vs_sector_pt": 26.1,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 83.7,
+      "tt_count": 7.0
+     },
+     {
+      "ticker": "SNPS",
+      "rel_sec_21_pct": 24.5,
+      "rel_sec_63_pct": 41.4,
+      "dd_vs_sector_pt": 21.1,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 49.0,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "NXPI",
+      "rel_sec_21_pct": 47.8,
+      "rel_sec_63_pct": 37.5,
+      "dd_vs_sector_pt": 10.6,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 48.7,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "QCOM",
+      "rel_sec_21_pct": 29.2,
+      "rel_sec_63_pct": 31.8,
+      "dd_vs_sector_pt": 1.2,
+      "rs_line_63h": true,
+      "class": "leader",
+      "rs_rank": 21.3,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "TXN",
+      "rel_sec_21_pct": 32.4,
+      "rel_sec_63_pct": 27.8,
+      "dd_vs_sector_pt": 20.6,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 79.6,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "CDNS",
+      "rel_sec_21_pct": 26.1,
+      "rel_sec_63_pct": 24.6,
+      "dd_vs_sector_pt": 14.3,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 27.9,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "AMD",
+      "rel_sec_21_pct": -0.5,
+      "rel_sec_63_pct": 23.6,
+      "dd_vs_sector_pt": 5.7,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 80.4,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "ADI",
+      "rel_sec_21_pct": 23.2,
+      "rel_sec_63_pct": 22.4,
+      "dd_vs_sector_pt": 19.1,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 59.6,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "TSM",
+      "rel_sec_21_pct": 12.7,
+      "rel_sec_63_pct": 16.0,
+      "dd_vs_sector_pt": 14.6,
+      "rs_line_63h": true,
+      "class": "leader",
+      "rs_rank": 40.8,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "ENTG",
+      "rel_sec_21_pct": 8.5,
+      "rel_sec_63_pct": 14.7,
+      "dd_vs_sector_pt": 6.0,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 46.9,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "MPWR",
+      "rel_sec_21_pct": 19.5,
+      "rel_sec_63_pct": 11.4,
+      "dd_vs_sector_pt": 7.0,
+      "rs_line_63h": true,
+      "class": "leader",
+      "rs_rank": 22.3,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "NVDA",
+      "rel_sec_21_pct": 11.4,
+      "rel_sec_63_pct": 10.9,
+      "dd_vs_sector_pt": 14.2,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 19.6,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "ASML",
+      "rel_sec_21_pct": 10.7,
+      "rel_sec_63_pct": 6.2,
+      "dd_vs_sector_pt": 8.8,
+      "rs_line_63h": true,
+      "class": "leader",
+      "rs_rank": 36.3,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "LSCC",
+      "rel_sec_21_pct": 15.6,
+      "rel_sec_63_pct": 5.8,
+      "dd_vs_sector_pt": 4.4,
+      "rs_line_63h": true,
+      "class": "leader",
+      "rs_rank": 45.8,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "NVMI",
+      "rel_sec_21_pct": 21.5,
+      "rel_sec_63_pct": 5.2,
+      "dd_vs_sector_pt": -11.6,
+      "rs_line_63h": true,
+      "class": "neutral",
+      "rs_rank": 6.9,
+      "tt_count": 0.0
+     },
+     {
+      "ticker": "MU",
+      "rel_sec_21_pct": -8.4,
+      "rel_sec_63_pct": 3.6,
+      "dd_vs_sector_pt": -7.5,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 90.0,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "ON",
+      "rel_sec_21_pct": 9.6,
+      "rel_sec_63_pct": 2.6,
+      "dd_vs_sector_pt": -15.5,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 14.6,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "RMBS",
+      "rel_sec_21_pct": -5.5,
+      "rel_sec_63_pct": 0.5,
+      "dd_vs_sector_pt": -19.6,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 3.1,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "FORM",
+      "rel_sec_21_pct": -18.6,
+      "rel_sec_63_pct": -6.8,
+      "dd_vs_sector_pt": -11.8,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 11.9,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "KLAC",
+      "rel_sec_21_pct": -3.2,
+      "rel_sec_63_pct": -7.1,
+      "dd_vs_sector_pt": -17.4,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 13.1,
+      "tt_count": 2.0
+     },
+     {
+      "ticker": "MCHP",
+      "rel_sec_21_pct": 6.3,
+      "rel_sec_63_pct": -7.3,
+      "dd_vs_sector_pt": -7.3,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 5.0,
+      "tt_count": 2.0
+     },
+     {
+      "ticker": "MTSI",
+      "rel_sec_21_pct": -10.0,
+      "rel_sec_63_pct": -8.2,
+      "dd_vs_sector_pt": -12.1,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 12.1,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "AVGO",
+      "rel_sec_21_pct": 12.1,
+      "rel_sec_63_pct": -10.1,
+      "dd_vs_sector_pt": -3.1,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 4.2,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "MRVL",
+      "rel_sec_21_pct": -29.3,
+      "rel_sec_63_pct": -12.5,
+      "dd_vs_sector_pt": -19.6,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 23.5,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "LRCX",
+      "rel_sec_21_pct": -14.0,
+      "rel_sec_63_pct": -15.4,
+      "dd_vs_sector_pt": -16.7,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 9.6,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "ARM",
+      "rel_sec_21_pct": -12.8,
+      "rel_sec_63_pct": -15.7,
+      "dd_vs_sector_pt": -23.9,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 11.2,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "AMAT",
+      "rel_sec_21_pct": -10.2,
+      "rel_sec_63_pct": -17.6,
+      "dd_vs_sector_pt": -17.5,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 15.0,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "AMKR",
+      "rel_sec_21_pct": -11.5,
+      "rel_sec_63_pct": -19.8,
+      "dd_vs_sector_pt": -28.5,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 1.5,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "CAMT",
+      "rel_sec_21_pct": -11.3,
+      "rel_sec_63_pct": -20.7,
+      "dd_vs_sector_pt": -17.5,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 1.2,
+      "tt_count": 0.0
+     },
+     {
+      "ticker": "SITM",
+      "rel_sec_21_pct": -11.1,
+      "rel_sec_63_pct": -21.9,
+      "dd_vs_sector_pt": -16.2,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 5.4,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "WDC",
+      "rel_sec_21_pct": -7.8,
+      "rel_sec_63_pct": -22.2,
+      "dd_vs_sector_pt": -29.5,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 8.7,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "ALAB",
+      "rel_sec_21_pct": -24.4,
+      "rel_sec_63_pct": -22.3,
+      "dd_vs_sector_pt": -24.3,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 11.3,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "TER",
+      "rel_sec_21_pct": -24.7,
+      "rel_sec_63_pct": -22.7,
+      "dd_vs_sector_pt": -17.7,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 4.6,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "ONTO",
+      "rel_sec_21_pct": -18.6,
+      "rel_sec_63_pct": -23.1,
+      "dd_vs_sector_pt": -17.6,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 5.8,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "COHR",
+      "rel_sec_21_pct": -12.3,
+      "rel_sec_63_pct": -23.4,
+      "dd_vs_sector_pt": -18.6,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 6.7,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "INTC",
+      "rel_sec_21_pct": -27.7,
+      "rel_sec_63_pct": -25.4,
+      "dd_vs_sector_pt": -22.9,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 3.8,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "STX",
+      "rel_sec_21_pct": -18.2,
+      "rel_sec_63_pct": -25.6,
+      "dd_vs_sector_pt": -22.2,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 9.8,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "CRDO",
+      "rel_sec_21_pct": -21.8,
+      "rel_sec_63_pct": -35.1,
+      "dd_vs_sector_pt": -23.4,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 1.0,
+      "tt_count": 3.0
+     }
+    ]
+   },
+   "ソフトウェア": {
+    "bench": "IGV",
+    "confirm": "XLK",
+    "bench_pct_from_52w_high": -13.0,
+    "bench_rel_spy_63_pct": -1.0,
+    "counts": {
+     "leader": 1,
+     "neutral": 12,
+     "laggard": 10
+    },
+    "leaders": [
+     "MSFT"
+    ],
+    "laggards": [
+     "DDOG",
+     "FTNT",
+     "MDB",
+     "ORCL",
+     "GOOGL",
+     "NOW",
+     "PANW",
+     "SNOW",
+     "NET",
+     "PLTR"
+    ],
+    "rows": [
+     {
+      "ticker": "APP",
+      "rel_sec_21_pct": 54.8,
+      "rel_sec_63_pct": 22.6,
+      "dd_vs_sector_pt": -34.0,
+      "rs_line_63h": true,
+      "class": "neutral",
+      "rs_rank": 16.7,
+      "tt_count": 2.0
+     },
+     {
+      "ticker": "OKTA",
+      "rel_sec_21_pct": -15.1,
+      "rel_sec_63_pct": 18.8,
+      "dd_vs_sector_pt": -15.2,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 99.6,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "ZS",
+      "rel_sec_21_pct": 1.0,
+      "rel_sec_63_pct": 18.8,
+      "dd_vs_sector_pt": -27.8,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 34.2,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "CRM",
+      "rel_sec_21_pct": 3.9,
+      "rel_sec_63_pct": 14.9,
+      "dd_vs_sector_pt": -7.6,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 50.6,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "MSFT",
+      "rel_sec_21_pct": 12.5,
+      "rel_sec_63_pct": 11.4,
+      "dd_vs_sector_pt": 7.9,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 70.4,
+      "tt_count": 7.0
+     },
+     {
+      "ticker": "WDAY",
+      "rel_sec_21_pct": 13.8,
+      "rel_sec_63_pct": 11.2,
+      "dd_vs_sector_pt": -5.5,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 65.0,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "IBM",
+      "rel_sec_21_pct": 19.8,
+      "rel_sec_63_pct": 10.1,
+      "dd_vs_sector_pt": -13.3,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 31.7,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "ADSK",
+      "rel_sec_21_pct": 24.2,
+      "rel_sec_63_pct": 8.5,
+      "dd_vs_sector_pt": -5.2,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 37.1,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "INTU",
+      "rel_sec_21_pct": 24.6,
+      "rel_sec_63_pct": 8.4,
+      "dd_vs_sector_pt": -36.9,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 9.0,
+      "tt_count": 2.0
+     },
+     {
+      "ticker": "TEAM",
+      "rel_sec_21_pct": -16.3,
+      "rel_sec_63_pct": 7.5,
+      "dd_vs_sector_pt": -20.1,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 79.8,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "CRWD",
+      "rel_sec_21_pct": -8.6,
+      "rel_sec_63_pct": 2.3,
+      "dd_vs_sector_pt": -11.4,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 96.3,
+      "tt_count": 6.0
+     },
+     {
+      "ticker": "AMZN",
+      "rel_sec_21_pct": 13.1,
+      "rel_sec_63_pct": -1.0,
+      "dd_vs_sector_pt": 3.3,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 32.1,
+      "tt_count": 7.0
+     },
+     {
+      "ticker": "PLTR",
+      "rel_sec_21_pct": -10.6,
+      "rel_sec_63_pct": -2.8,
+      "dd_vs_sector_pt": -11.6,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 31.0,
+      "tt_count": 6.0
+     },
+     {
+      "ticker": "ADBE",
+      "rel_sec_21_pct": 10.0,
+      "rel_sec_63_pct": -6.9,
+      "dd_vs_sector_pt": -21.0,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 14.0,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "NET",
+      "rel_sec_21_pct": -12.9,
+      "rel_sec_63_pct": -8.1,
+      "dd_vs_sector_pt": -14.4,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 64.2,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "SNOW",
+      "rel_sec_21_pct": -11.0,
+      "rel_sec_63_pct": -12.5,
+      "dd_vs_sector_pt": -15.2,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 72.7,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "PANW",
+      "rel_sec_21_pct": -12.7,
+      "rel_sec_63_pct": -13.4,
+      "dd_vs_sector_pt": -14.4,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 82.3,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "NOW",
+      "rel_sec_21_pct": -19.1,
+      "rel_sec_63_pct": -15.0,
+      "dd_vs_sector_pt": -29.0,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 10.2,
+      "tt_count": 2.0
+     },
+     {
+      "ticker": "GOOGL",
+      "rel_sec_21_pct": -9.4,
+      "rel_sec_63_pct": -15.4,
+      "dd_vs_sector_pt": -17.3,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 12.3,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "ORCL",
+      "rel_sec_21_pct": -5.2,
+      "rel_sec_63_pct": -18.4,
+      "dd_vs_sector_pt": -40.6,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 1.3,
+      "tt_count": 1.0
+     },
+     {
+      "ticker": "MDB",
+      "rel_sec_21_pct": -6.6,
+      "rel_sec_63_pct": -20.3,
+      "dd_vs_sector_pt": -20.8,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 16.3,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "FTNT",
+      "rel_sec_21_pct": -30.3,
+      "rel_sec_63_pct": -23.1,
+      "dd_vs_sector_pt": -26.7,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 35.4,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "DDOG",
+      "rel_sec_21_pct": -27.5,
+      "rel_sec_63_pct": -27.1,
+      "dd_vs_sector_pt": -27.4,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 15.6,
+      "tt_count": 4.0
+     }
+    ]
+   },
+   "ハードウェア": {
+    "bench": "XLK",
+    "confirm": "VGT",
+    "bench_pct_from_52w_high": -18.9,
+    "bench_rel_spy_63_pct": -7.0,
+    "counts": {
+     "leader": 2,
+     "neutral": 2,
+     "laggard": 7
+    },
+    "leaders": [
+     "AAPL",
+     "APH"
+    ],
+    "laggards": [
+     "CRWV",
+     "CIEN",
+     "LITE",
+     "GLW",
+     "DELL",
+     "CSCO",
+     "HPE"
+    ],
+    "rows": [
+     {
+      "ticker": "AAPL",
+      "rel_sec_21_pct": 20.7,
+      "rel_sec_63_pct": 25.6,
+      "dd_vs_sector_pt": 15.3,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 82.5,
+      "tt_count": 7.0
+     },
+     {
+      "ticker": "SMCI",
+      "rel_sec_21_pct": -19.3,
+      "rel_sec_63_pct": 3.4,
+      "dd_vs_sector_pt": -25.1,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 10.8,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "ANET",
+      "rel_sec_21_pct": -2.8,
+      "rel_sec_63_pct": 0.9,
+      "dd_vs_sector_pt": -2.5,
+      "rs_line_63h": false,
+      "class": "neutral",
+      "rs_rank": 60.6,
+      "tt_count": 5.0
+     },
+     {
+      "ticker": "APH",
+      "rel_sec_21_pct": 5.0,
+      "rel_sec_63_pct": 0.6,
+      "dd_vs_sector_pt": 1.9,
+      "rs_line_63h": false,
+      "class": "leader",
+      "rs_rank": 47.9,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "HPE",
+      "rel_sec_21_pct": -24.3,
+      "rel_sec_63_pct": -7.4,
+      "dd_vs_sector_pt": -20.2,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 91.9,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "CSCO",
+      "rel_sec_21_pct": -1.9,
+      "rel_sec_63_pct": -13.4,
+      "dd_vs_sector_pt": -9.1,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 31.3,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "DELL",
+      "rel_sec_21_pct": -31.4,
+      "rel_sec_63_pct": -18.9,
+      "dd_vs_sector_pt": -25.9,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 83.8,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "GLW",
+      "rel_sec_21_pct": -16.6,
+      "rel_sec_63_pct": -23.9,
+      "dd_vs_sector_pt": -42.0,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 6.5,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "LITE",
+      "rel_sec_21_pct": -38.3,
+      "rel_sec_63_pct": -25.1,
+      "dd_vs_sector_pt": -33.9,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 26.2,
+      "tt_count": 4.0
+     },
+     {
+      "ticker": "CIEN",
+      "rel_sec_21_pct": -31.4,
+      "rel_sec_63_pct": -29.0,
+      "dd_vs_sector_pt": -42.9,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 3.3,
+      "tt_count": 3.0
+     },
+     {
+      "ticker": "CRWV",
+      "rel_sec_21_pct": -31.7,
+      "rel_sec_63_pct": -40.5,
+      "dd_vs_sector_pt": -47.5,
+      "rs_line_63h": false,
+      "class": "laggard",
+      "rs_rank": 0.0,
+      "tt_count": 1.0
+     }
+    ]
+   }
+  },
+  "note": "対セクターETFの補助表示。市場RS百分位（rs_rank）・先導候補の条件・Tapeスコアには使わない（E7.1）。"
+ },
+ "correction_resilience": {
+  "definition_version": "ST-1.3",
+  "windows": [
+   {
+    "bench": "IGV",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-10-09",
+    "low_date": "2026-11-06",
+    "dd_low_pct": -12.2,
+    "dd_now_pct": -12.2,
+    "bars_high_to_low": 20,
+    "bars_since_low": 0,
+    "note": ""
+   },
+   {
+    "bench": "SOXX",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-06-22",
+    "low_date": "2026-11-05",
+    "dd_low_pct": -39.6,
+    "dd_now_pct": -37.5,
+    "bars_high_to_low": 96,
+    "bars_since_low": 1,
+    "note": ""
+   },
+   {
+    "bench": "SPY",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-10-06",
+    "low_date": "2026-11-05",
+    "dd_low_pct": -5.9,
+    "dd_now_pct": -5.6,
+    "bars_high_to_low": 22,
+    "bars_since_low": 1,
+    "note": "浅い調整（参考）"
+   },
+   {
+    "bench": "XLB",
+    "state": "完了（直前）",
+    "valid": true,
+    "high_date": "2026-08-26",
+    "low_date": "2026-10-01",
+    "dd_low_pct": -9.6,
+    "dd_now_pct": -3.2,
+    "bars_high_to_low": 25,
+    "bars_since_low": 26,
+    "note": "新高値回復 2026-11-02"
+   },
+   {
+    "bench": "XLC",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-01-30",
+    "low_date": "2026-10-30",
+    "dd_low_pct": -16.8,
+    "dd_now_pct": -12.7,
+    "bars_high_to_low": 189,
+    "bars_since_low": 5,
+    "note": ""
+   },
+   {
+    "bench": "XLE",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-10-30",
+    "low_date": "2026-11-06",
+    "dd_low_pct": -12.0,
+    "dd_now_pct": -12.0,
+    "bars_high_to_low": 5,
+    "bars_since_low": 0,
+    "note": ""
+   },
+   {
+    "bench": "XLF",
+    "state": "完了（直前）",
+    "valid": true,
+    "high_date": "2026-09-03",
+    "low_date": "2026-09-30",
+    "dd_low_pct": -8.8,
+    "dd_now_pct": -2.4,
+    "bars_high_to_low": 18,
+    "bars_since_low": 27,
+    "note": "新高値回復 2026-11-04"
+   },
+   {
+    "bench": "XLI",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-08-14",
+    "low_date": "2026-11-05",
+    "dd_low_pct": -12.9,
+    "dd_now_pct": -12.8,
+    "bars_high_to_low": 58,
+    "bars_since_low": 1,
+    "note": ""
+   },
+   {
+    "bench": "XLK",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-10-06",
+    "low_date": "2026-11-05",
+    "dd_low_pct": -19.6,
+    "dd_now_pct": -18.4,
+    "bars_high_to_low": 22,
+    "bars_since_low": 1,
+    "note": ""
+   },
+   {
+    "bench": "XLP",
+    "state": "完了（直前）",
+    "valid": true,
+    "high_date": "2026-02-27",
+    "low_date": "2026-10-01",
+    "dd_low_pct": -10.8,
+    "dd_now_pct": 0.1,
+    "bars_high_to_low": 149,
+    "bars_since_low": 26,
+    "note": "新高値回復 2026-11-02"
+   },
+   {
+    "bench": "XLRE",
+    "state": "回復中",
+    "valid": true,
+    "high_date": "2026-07-28",
+    "low_date": "2026-10-07",
+    "dd_low_pct": -11.8,
+    "dd_now_pct": -4.4,
+    "bars_high_to_low": 50,
+    "bars_since_low": 22,
+    "note": ""
+   },
+   {
+    "bench": "XLU",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-02-27",
+    "low_date": "2026-09-28",
+    "dd_low_pct": -17.8,
+    "dd_now_pct": -9.6,
+    "bars_high_to_low": 146,
+    "bars_since_low": 29,
+    "note": ""
+   },
+   {
+    "bench": "XLV",
+    "state": "完了（直前）",
+    "valid": true,
+    "high_date": "2026-08-19",
+    "low_date": "2026-09-11",
+    "dd_low_pct": -5.9,
+    "dd_now_pct": 5.2,
+    "bars_high_to_low": 16,
+    "bars_since_low": 40,
+    "note": "浅い調整（参考）、新高値回復 2026-10-15"
+   },
+   {
+    "bench": "XLY",
+    "state": "調整中",
+    "valid": true,
+    "high_date": "2026-01-12",
+    "low_date": "2026-03-30",
+    "dd_low_pct": -15.1,
+    "dd_now_pct": -5.6,
+    "bars_high_to_low": 53,
+    "bars_since_low": 154,
+    "note": ""
+   }
+  ],
+  "next_candidates": [
+   {
+    "ticker": "AAPL",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "bench": "XLK",
+    "tier": "A",
+    "held_class": "耐えた",
+    "r_held": 0.26,
+    "own_dd_low_pct": -5.0,
+    "rebound_class": "先行",
+    "r_now": 0.11,
+    "own_dd_now_pct": -2.0,
+    "new_high_after_low": false,
+    "below_50sma_days": 1.0,
+    "tt_count": 7.0,
+    "rs_rank": 82.5,
+    "rel_63_pct": 16.8,
+    "sector_rs_class": "leader"
+   },
+   {
+    "ticker": "ADI",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": "B",
+    "held_class": "同調",
+    "r_held": 0.52,
+    "own_dd_low_pct": -20.7,
+    "rebound_class": "先行",
+    "r_now": 0.49,
+    "own_dd_now_pct": -18.4,
+    "new_high_after_low": false,
+    "below_50sma_days": 58.0,
+    "tt_count": 4.0,
+    "rs_rank": 59.6,
+    "rel_63_pct": -0.4,
+    "sector_rs_class": "leader"
+   },
+   {
+    "ticker": "TXN",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": "B",
+    "held_class": "同調",
+    "r_held": 0.6,
+    "own_dd_low_pct": -23.8,
+    "rebound_class": "先行",
+    "r_now": 0.44,
+    "own_dd_now_pct": -16.5,
+    "new_high_after_low": false,
+    "below_50sma_days": 55.0,
+    "tt_count": 4.0,
+    "rs_rank": 79.6,
+    "rel_63_pct": 4.0,
+    "sector_rs_class": "leader"
+   },
+   {
+    "ticker": "MSFT",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "bench": "IGV",
+    "tier": "B",
+    "held_class": "同調",
+    "r_held": 0.72,
+    "own_dd_low_pct": -8.8,
+    "rebound_class": "先行",
+    "r_now": 0.37,
+    "own_dd_now_pct": -4.5,
+    "new_high_after_low": false,
+    "below_50sma_days": 1.0,
+    "tt_count": 7.0,
+    "rs_rank": 70.4,
+    "rel_63_pct": 10.2,
+    "sector_rs_class": "leader"
+   },
+   {
+    "ticker": "SWKS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": "B",
+    "held_class": "同調",
+    "r_held": 0.96,
+    "own_dd_low_pct": -38.1,
+    "rebound_class": "先行",
+    "r_now": 0.27,
+    "own_dd_now_pct": -10.1,
+    "new_high_after_low": false,
+    "below_50sma_days": 34.0,
+    "tt_count": 7.0,
+    "rs_rank": 83.7,
+    "rel_63_pct": 25.6,
+    "sector_rs_class": "leader"
+   },
+   {
+    "ticker": "SNPS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": "C",
+    "held_class": "崩れた",
+    "r_held": 1.09,
+    "own_dd_low_pct": -43.0,
+    "rebound_class": "先行",
+    "r_now": 0.42,
+    "own_dd_now_pct": -15.7,
+    "new_high_after_low": false,
+    "below_50sma_days": 61.0,
+    "tt_count": 4.0,
+    "rs_rank": 49.0,
+    "rel_63_pct": 15.0,
+    "sector_rs_class": "leader"
+   }
+  ],
+  "late_breaks": [
+   {
+    "ticker": "MCHP",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": null,
+    "held_class": "同調",
+    "r_held": 0.93,
+    "own_dd_low_pct": -37.0,
+    "rebound_class": "遅れ",
+    "r_now": 1.15,
+    "own_dd_now_pct": -43.3,
+    "new_high_after_low": false,
+    "below_50sma_days": 75.0,
+    "tt_count": 2.0,
+    "rs_rank": 5.0,
+    "rel_63_pct": -24.6,
+    "sector_rs_class": "neutral"
+   },
+   {
+    "ticker": "AVGO",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "bench": "SOXX",
+    "tier": null,
+    "held_class": "同調",
+    "r_held": 1.0,
+    "own_dd_low_pct": -39.5,
+    "rebound_class": "遅れ",
+    "r_now": 1.04,
+    "own_dd_now_pct": -39.0,
+    "new_high_after_low": false,
+    "below_50sma_days": 85.0,
+    "tt_count": 1.0,
+    "rs_rank": 4.2,
+    "rel_63_pct": -26.9,
+    "sector_rs_class": "neutral"
+   }
+  ],
+  "held_ratio": {
+   "IGV": {
+    "held": 0,
+    "computed": 23,
+    "ratio_pct": 0.0
+   },
+   "SOXX": {
+    "held": 0,
+    "computed": 38,
+    "ratio_pct": 0.0
+   },
+   "SPY": {
+    "held": 0,
+    "computed": 72,
+    "ratio_pct": 0.0
+   },
+   "XLB": {
+    "held": 0,
+    "computed": 24,
+    "ratio_pct": 0.0
+   },
+   "XLC": {
+    "held": 0,
+    "computed": 20,
+    "ratio_pct": 0.0
+   },
+   "XLE": {
+    "held": 0,
+    "computed": 21,
+    "ratio_pct": 0.0
+   },
+   "XLF": {
+    "held": 0,
+    "computed": 76,
+    "ratio_pct": 0.0
+   },
+   "XLI": {
+    "held": 0,
+    "computed": 81,
+    "ratio_pct": 0.0
+   },
+   "XLK": {
+    "held": 3,
+    "computed": 39,
+    "ratio_pct": 7.7
+   },
+   "XLP": {
+    "held": 0,
+    "computed": 32,
+    "ratio_pct": 0.0
+   },
+   "XLRE": {
+    "held": 0,
+    "computed": 30,
+    "ratio_pct": 0.0
+   },
+   "XLU": {
+    "held": 0,
+    "computed": 31,
+    "ratio_pct": 0.0
+   },
+   "XLV": {
+    "held": 1,
+    "computed": 60,
+    "ratio_pct": 1.7
+   },
+   "XLY": {
+    "held": 0,
+    "computed": 46,
+    "ratio_pct": 0.0
+   }
+  },
+  "sp500_next_candidates_ab": {
+   "count": 23,
+   "tickers": [
+    "TECH",
+    "PTC",
+    "VRSN",
+    "IEX",
+    "ED",
+    "EVRG",
+    "BRK-B",
+    "HLT",
+    "MSI",
+    "FAST",
+    "JNJ",
+    "WAT",
+    "PFE",
+    "DUK",
+    "WEC",
+    "MAR",
+    "AEE",
+    "SOLV",
+    "PNW",
+    "D",
+    "DGX",
+    "CPAY",
+    "DRI"
+   ]
+  },
+  "note": "監視候補の順番であり買い判定ではない。R_held・R_nowは倍率なので dd_low・dd_now を併記して読む。"
+ },
+ "rs_lines": {
+  "status": "ok",
+  "bench": "SPY",
+  "aux_bench": "QQQ",
+  "definition": "RSライン＝終値÷SPY終値。RS新高値＝当日値が直近252本の過去値すべてを上回る（253本必要、E7）。先行＝RS新高値の日に株価が252本終値高値から2.0%以上下。EMA＝RSラインの21日指数平滑。対QQQは補助表示。SOXLは対象外（SOXXで代用）。候補の絞り込みであり買い判定ではない。",
+  "spy_pct_from_52w_close_high": -5.6,
+  "market": {
+   "population": 521,
+   "rs_new_high_count": 18,
+   "rs_leads_price_count": 6,
+   "above_ema21_pct": 70.6,
+   "note": "S&P500∪監視母集団。市場全体の情報としてだけ使い、個別分析は監視母集団に限る"
+  },
+  "summary": {
+   "rs_new_high": [],
+   "rs_leads_price": [],
+   "rs_near_high_5pct": [
+    "AAPL"
+   ],
+   "above_ema21_count": "14/79",
+   "crossed_up": [
+    "CDNS",
+    "LSCC",
+    "NVMI",
+    "SNPS"
+   ],
+   "crossed_down": [
+    "ADBE"
+   ],
+   "history_short": []
+  },
+  "core": [
+   {
+    "ticker": "AMD",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 23,
+    "rs_pct_from_52w_high": -26.7,
+    "price_pct_from_52w_close_high": -30.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.46,
+    "ema21_slope_5d_pct": -6.03,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -19.9
+    }
+   },
+   {
+    "ticker": "AVGO",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 109,
+    "rs_pct_from_52w_high": -37.1,
+    "price_pct_from_52w_close_high": -39.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.14,
+    "ema21_slope_5d_pct": -2.56,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -32.0
+    }
+   },
+   {
+    "ticker": "MSFT",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 318,
+    "rs_pct_from_52w_high": -5.3,
+    "price_pct_from_52w_close_high": -4.5,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 3.84,
+    "ema21_slope_5d_pct": 1.43,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -3.8
+    }
+   },
+   {
+    "ticker": "MU",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 94,
+    "rs_pct_from_52w_high": -43.2,
+    "price_pct_from_52w_close_high": -43.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -18.18,
+    "ema21_slope_5d_pct": -6.72,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -37.9
+    }
+   },
+   {
+    "ticker": "NVDA",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 122,
+    "rs_pct_from_52w_high": -19.4,
+    "price_pct_from_52w_close_high": -22.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.75,
+    "ema21_slope_5d_pct": -3.25,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -13.1
+    }
+   },
+   {
+    "ticker": "ORCL",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 292,
+    "rs_pct_from_52w_high": -56.6,
+    "price_pct_from_52w_close_high": -53.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.01,
+    "ema21_slope_5d_pct": -3.34,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.6
+    }
+   },
+   {
+    "ticker": "TSM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -20.2,
+    "price_pct_from_52w_close_high": -22.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.14,
+    "ema21_slope_5d_pct": -3.34,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -11.8
+    }
+   },
+   {
+    "ticker": "SOXX",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -36.7,
+    "price_pct_from_52w_close_high": -37.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.42,
+    "ema21_slope_5d_pct": -5.32,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -29.7
+    }
+   },
+   {
+    "ticker": "SMH",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -29.8,
+    "price_pct_from_52w_close_high": -30.6,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -9.92,
+    "ema21_slope_5d_pct": -4.26,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -22.0
+    }
+   },
+   {
+    "ticker": "XLK",
+    "group": "11セクターETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 110,
+    "rs_pct_from_52w_high": -14.1,
+    "price_pct_from_52w_close_high": -18.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.28,
+    "ema21_slope_5d_pct": -2.81,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -5.8
+    }
+   },
+   {
+    "ticker": "IGV",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 480,
+    "rs_pct_from_52w_high": -18.0,
+    "price_pct_from_52w_close_high": -12.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -3.25,
+    "ema21_slope_5d_pct": -1.65,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -16.1
+    }
+   }
+  ],
+  "rows": [
+   {
+    "ticker": "AAPL",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 1,
+    "rs_pct_from_52w_high": -0.8,
+    "price_pct_from_52w_close_high": -2.0,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 3.48,
+    "ema21_slope_5d_pct": 1.01,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -1.9
+    }
+   },
+   {
+    "ticker": "MSFT",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 318,
+    "rs_pct_from_52w_high": -5.3,
+    "price_pct_from_52w_close_high": -4.5,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 3.84,
+    "ema21_slope_5d_pct": 1.43,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -3.8
+    }
+   },
+   {
+    "ticker": "SWKS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -6.7,
+    "price_pct_from_52w_close_high": -10.1,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 1.95,
+    "ema21_slope_5d_pct": 0.95,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -1.9
+    }
+   },
+   {
+    "ticker": "AMZN",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 130,
+    "rs_pct_from_52w_high": -6.9,
+    "price_pct_from_52w_close_high": -8.7,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 5.44,
+    "ema21_slope_5d_pct": 1.79,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -2.6
+    }
+   },
+   {
+    "ticker": "SKYY",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -11.3,
+    "price_pct_from_52w_close_high": -16.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -5.87,
+    "ema21_slope_5d_pct": -2.43,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -6.4
+    }
+   },
+   {
+    "ticker": "VGT",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 24,
+    "rs_pct_from_52w_high": -11.5,
+    "price_pct_from_52w_close_high": -16.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -5.08,
+    "ema21_slope_5d_pct": -2.32,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -3.4
+    }
+   },
+   {
+    "ticker": "CIBR",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 8,
+    "rs_pct_from_52w_high": -13.1,
+    "price_pct_from_52w_close_high": -17.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.33,
+    "ema21_slope_5d_pct": -2.68,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -8.9
+    }
+   },
+   {
+    "ticker": "XLK",
+    "group": "11セクターETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 110,
+    "rs_pct_from_52w_high": -14.1,
+    "price_pct_from_52w_close_high": -18.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.28,
+    "ema21_slope_5d_pct": -2.81,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -5.8
+    }
+   },
+   {
+    "ticker": "APH",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 197,
+    "rs_pct_from_52w_high": -15.1,
+    "price_pct_from_52w_close_high": -15.8,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -2.75,
+    "ema21_slope_5d_pct": -0.44,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -13.7
+    }
+   },
+   {
+    "ticker": "TXN",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -15.5,
+    "price_pct_from_52w_close_high": -16.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -1.8,
+    "ema21_slope_5d_pct": 1.61,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -7.3
+    }
+   },
+   {
+    "ticker": "ANET",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -16.6,
+    "price_pct_from_52w_close_high": -21.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -2.06,
+    "ema21_slope_5d_pct": -2.91,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -10.5
+    }
+   },
+   {
+    "ticker": "ADI",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -17.4,
+    "price_pct_from_52w_close_high": -18.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.11,
+    "ema21_slope_5d_pct": -0.63,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -10.6
+    }
+   },
+   {
+    "ticker": "CRWD",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 23,
+    "rs_pct_from_52w_high": -17.6,
+    "price_pct_from_52w_close_high": -22.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.17,
+    "ema21_slope_5d_pct": -2.32,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -11.0
+    }
+   },
+   {
+    "ticker": "IGV",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 480,
+    "rs_pct_from_52w_high": -18.0,
+    "price_pct_from_52w_close_high": -12.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -3.25,
+    "ema21_slope_5d_pct": -1.65,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -16.1
+    }
+   },
+   {
+    "ticker": "NVDA",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 122,
+    "rs_pct_from_52w_high": -19.4,
+    "price_pct_from_52w_close_high": -22.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.75,
+    "ema21_slope_5d_pct": -3.25,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -13.1
+    }
+   },
+   {
+    "ticker": "SNPS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 321,
+    "rs_pct_from_52w_high": -20.2,
+    "price_pct_from_52w_close_high": -15.7,
+    "above_ema21": true,
+    "cross_ema21": "up",
+    "dist_ema21_pct": 1.38,
+    "ema21_slope_5d_pct": 0.54,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -19.3
+    }
+   },
+   {
+    "ticker": "TSM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -20.2,
+    "price_pct_from_52w_close_high": -22.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.14,
+    "ema21_slope_5d_pct": -3.34,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -11.8
+    }
+   },
+   {
+    "ticker": "CDNS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 321,
+    "rs_pct_from_52w_high": -20.6,
+    "price_pct_from_52w_close_high": -23.2,
+    "above_ema21": true,
+    "cross_ema21": "up",
+    "dist_ema21_pct": 1.13,
+    "ema21_slope_5d_pct": 0.14,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -12.6
+    }
+   },
+   {
+    "ticker": "PANW",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 23,
+    "rs_pct_from_52w_high": -20.8,
+    "price_pct_from_52w_close_high": -25.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.07,
+    "ema21_slope_5d_pct": -3.53,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -14.2
+    }
+   },
+   {
+    "ticker": "SNOW",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -20.8,
+    "price_pct_from_52w_close_high": -25.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.56,
+    "ema21_slope_5d_pct": -4.45,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -15.3
+    }
+   },
+   {
+    "ticker": "ADSK",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 489,
+    "rs_pct_from_52w_high": -21.8,
+    "price_pct_from_52w_close_high": -15.6,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 8.87,
+    "ema21_slope_5d_pct": 4.84,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -20.0
+    }
+   },
+   {
+    "ticker": "NET",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 31,
+    "rs_pct_from_52w_high": -21.9,
+    "price_pct_from_52w_close_high": -25.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -6.69,
+    "ema21_slope_5d_pct": -5.78,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -15.4
+    }
+   },
+   {
+    "ticker": "OKTA",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -23.1,
+    "price_pct_from_52w_close_high": -27.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.16,
+    "ema21_slope_5d_pct": -4.53,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -18.0
+    }
+   },
+   {
+    "ticker": "PLTR",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 254,
+    "rs_pct_from_52w_high": -23.2,
+    "price_pct_from_52w_close_high": -23.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -9.77,
+    "ema21_slope_5d_pct": -4.4,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -22.0
+    }
+   },
+   {
+    "ticker": "NXPI",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 115,
+    "rs_pct_from_52w_high": -23.8,
+    "price_pct_from_52w_close_high": -25.4,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 3.89,
+    "ema21_slope_5d_pct": 3.09,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -16.9
+    }
+   },
+   {
+    "ticker": "WDAY",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -24.2,
+    "price_pct_from_52w_close_high": -17.5,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 0.75,
+    "ema21_slope_5d_pct": 1.1,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -23.4
+    }
+   },
+   {
+    "ticker": "CRM",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -25.2,
+    "price_pct_from_52w_close_high": -19.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -4.81,
+    "ema21_slope_5d_pct": -1.65,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -24.5
+    }
+   },
+   {
+    "ticker": "CSCO",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 108,
+    "rs_pct_from_52w_high": -25.7,
+    "price_pct_from_52w_close_high": -27.8,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.98,
+    "ema21_slope_5d_pct": -2.62,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -18.5
+    }
+   },
+   {
+    "ticker": "AMD",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 23,
+    "rs_pct_from_52w_high": -26.7,
+    "price_pct_from_52w_close_high": -30.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.46,
+    "ema21_slope_5d_pct": -6.03,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -19.9
+    }
+   },
+   {
+    "ticker": "ASML",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -27.3,
+    "price_pct_from_52w_close_high": -28.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.22,
+    "ema21_slope_5d_pct": -3.67,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -19.6
+    }
+   },
+   {
+    "ticker": "IBM",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 346,
+    "rs_pct_from_52w_high": -28.5,
+    "price_pct_from_52w_close_high": -25.6,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 3.09,
+    "ema21_slope_5d_pct": 2.05,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -26.9
+    }
+   },
+   {
+    "ticker": "GOOGL",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 127,
+    "rs_pct_from_52w_high": -28.8,
+    "price_pct_from_52w_close_high": -29.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -5.01,
+    "ema21_slope_5d_pct": -4.09,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -24.7
+    }
+   },
+   {
+    "ticker": "MPWR",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 136,
+    "rs_pct_from_52w_high": -29.2,
+    "price_pct_from_52w_close_high": -29.6,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -0.77,
+    "ema21_slope_5d_pct": 0.28,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -26.2
+    }
+   },
+   {
+    "ticker": "ENTG",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -29.6,
+    "price_pct_from_52w_close_high": -30.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -9.09,
+    "ema21_slope_5d_pct": -1.94,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -21.8
+    }
+   },
+   {
+    "ticker": "SMH",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -29.8,
+    "price_pct_from_52w_close_high": -30.6,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -9.92,
+    "ema21_slope_5d_pct": -4.26,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -22.0
+    }
+   },
+   {
+    "ticker": "TEAM",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 10,
+    "rs_pct_from_52w_high": -30.2,
+    "price_pct_from_52w_close_high": -32.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -19.42,
+    "ema21_slope_5d_pct": -4.34,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -27.5
+    }
+   },
+   {
+    "ticker": "LSCC",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -31.5,
+    "price_pct_from_52w_close_high": -32.4,
+    "above_ema21": true,
+    "cross_ema21": "up",
+    "dist_ema21_pct": 2.25,
+    "ema21_slope_5d_pct": -1.07,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -23.9
+    }
+   },
+   {
+    "ticker": "QCOM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 112,
+    "rs_pct_from_52w_high": -32.2,
+    "price_pct_from_52w_close_high": -34.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -1.04,
+    "ema21_slope_5d_pct": -1.95,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -26.0
+    }
+   },
+   {
+    "ticker": "MDB",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 220,
+    "rs_pct_from_52w_high": -33.7,
+    "price_pct_from_52w_close_high": -33.8,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.52,
+    "ema21_slope_5d_pct": -4.46,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -32.9
+    }
+   },
+   {
+    "ticker": "DDOG",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -35.4,
+    "price_pct_from_52w_close_high": -38.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -22.07,
+    "ema21_slope_5d_pct": -9.48,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -31.7
+    }
+   },
+   {
+    "ticker": "FTNT",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -35.4,
+    "price_pct_from_52w_close_high": -39.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -19.93,
+    "ema21_slope_5d_pct": -9.6,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -30.1
+    }
+   },
+   {
+    "ticker": "HPE",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 20,
+    "rs_pct_from_52w_high": -35.5,
+    "price_pct_from_52w_close_high": -39.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.66,
+    "ema21_slope_5d_pct": -6.67,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -30.2
+    }
+   },
+   {
+    "ticker": "SOXX",
+    "group": "半導体・テクノロジーETF",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -36.7,
+    "price_pct_from_52w_close_high": -37.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.42,
+    "ema21_slope_5d_pct": -5.32,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -29.7
+    }
+   },
+   {
+    "ticker": "AVGO",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 109,
+    "rs_pct_from_52w_high": -37.1,
+    "price_pct_from_52w_close_high": -39.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.14,
+    "ema21_slope_5d_pct": -2.56,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -32.0
+    }
+   },
+   {
+    "ticker": "ADBE",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -38.4,
+    "price_pct_from_52w_close_high": -33.1,
+    "above_ema21": false,
+    "cross_ema21": "down",
+    "dist_ema21_pct": -0.49,
+    "ema21_slope_5d_pct": 0.39,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -38.3
+    }
+   },
+   {
+    "ticker": "SMCI",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -40.8,
+    "price_pct_from_52w_close_high": -42.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.98,
+    "ema21_slope_5d_pct": -6.16,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -34.8
+    }
+   },
+   {
+    "ticker": "DELL",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 36,
+    "rs_pct_from_52w_high": -42.1,
+    "price_pct_from_52w_close_high": -44.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -23.11,
+    "ema21_slope_5d_pct": -9.54,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -39.0
+    }
+   },
+   {
+    "ticker": "MU",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 94,
+    "rs_pct_from_52w_high": -43.2,
+    "price_pct_from_52w_close_high": -43.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -18.18,
+    "ema21_slope_5d_pct": -6.72,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -37.9
+    }
+   },
+   {
+    "ticker": "MCHP",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 128,
+    "rs_pct_from_52w_high": -43.4,
+    "price_pct_from_52w_close_high": -43.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -18.45,
+    "ema21_slope_5d_pct": -2.65,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -39.9
+    }
+   },
+   {
+    "ticker": "ZS",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 347,
+    "rs_pct_from_52w_high": -44.6,
+    "price_pct_from_52w_close_high": -40.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -8.78,
+    "ema21_slope_5d_pct": -1.85,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -43.5
+    }
+   },
+   {
+    "ticker": "NOW",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 447,
+    "rs_pct_from_52w_high": -46.0,
+    "price_pct_from_52w_close_high": -41.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.72,
+    "ema21_slope_5d_pct": -8.56,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -45.0
+    }
+   },
+   {
+    "ticker": "NVMI",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 101,
+    "rs_pct_from_52w_high": -46.9,
+    "price_pct_from_52w_close_high": -48.3,
+    "above_ema21": true,
+    "cross_ema21": "up",
+    "dist_ema21_pct": 0.64,
+    "ema21_slope_5d_pct": -3.19,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -42.6
+    }
+   },
+   {
+    "ticker": "MTSI",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 115,
+    "rs_pct_from_52w_high": -47.4,
+    "price_pct_from_52w_close_high": -48.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.04,
+    "ema21_slope_5d_pct": -6.3,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -42.7
+    }
+   },
+   {
+    "ticker": "FORM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 136,
+    "rs_pct_from_52w_high": -49.2,
+    "price_pct_from_52w_close_high": -49.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.62,
+    "ema21_slope_5d_pct": -8.59,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -47.1
+    }
+   },
+   {
+    "ticker": "LITE",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 23,
+    "rs_pct_from_52w_high": -49.6,
+    "price_pct_from_52w_close_high": -52.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -28.5,
+    "ema21_slope_5d_pct": -11.76,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -45.0
+    }
+   },
+   {
+    "ticker": "APP",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 278,
+    "rs_pct_from_52w_high": -50.3,
+    "price_pct_from_52w_close_high": -46.7,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 42.34,
+    "ema21_slope_5d_pct": 6.7,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -49.7
+    }
+   },
+   {
+    "ticker": "ON",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 109,
+    "rs_pct_from_52w_high": -51.5,
+    "price_pct_from_52w_close_high": -52.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -9.56,
+    "ema21_slope_5d_pct": -2.98,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -46.4
+    }
+   },
+   {
+    "ticker": "LRCX",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -53.0,
+    "price_pct_from_52w_close_high": -53.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.13,
+    "ema21_slope_5d_pct": -7.42,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -48.1
+    }
+   },
+   {
+    "ticker": "AMAT",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -53.3,
+    "price_pct_from_52w_close_high": -54.0,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -14.01,
+    "ema21_slope_5d_pct": -5.95,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -48.3
+    }
+   },
+   {
+    "ticker": "KLAC",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -53.4,
+    "price_pct_from_52w_close_high": -54.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.08,
+    "ema21_slope_5d_pct": -4.54,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -48.5
+    }
+   },
+   {
+    "ticker": "ONTO",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -53.5,
+    "price_pct_from_52w_close_high": -54.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.57,
+    "ema21_slope_5d_pct": -8.28,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -48.6
+    }
+   },
+   {
+    "ticker": "SITM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 125,
+    "rs_pct_from_52w_high": -53.5,
+    "price_pct_from_52w_close_high": -53.8,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -10.12,
+    "ema21_slope_5d_pct": -7.83,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -49.7
+    }
+   },
+   {
+    "ticker": "CAMT",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 136,
+    "rs_pct_from_52w_high": -53.6,
+    "price_pct_from_52w_close_high": -53.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -16.89,
+    "ema21_slope_5d_pct": -8.18,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -51.8
+    }
+   },
+   {
+    "ticker": "INTU",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 358,
+    "rs_pct_from_52w_high": -53.8,
+    "price_pct_from_52w_close_high": -49.5,
+    "above_ema21": true,
+    "cross_ema21": null,
+    "dist_ema21_pct": 5.64,
+    "ema21_slope_5d_pct": 4.12,
+    "rs_up_vs_21d": true,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": true,
+     "rs_pct_from_52w_high": -53.7
+    }
+   },
+   {
+    "ticker": "COHR",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -54.1,
+    "price_pct_from_52w_close_high": -54.8,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.7,
+    "ema21_slope_5d_pct": -8.12,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -49.0
+    }
+   },
+   {
+    "ticker": "MRVL",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 108,
+    "rs_pct_from_52w_high": -54.1,
+    "price_pct_from_52w_close_high": -55.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -29.29,
+    "ema21_slope_5d_pct": -12.94,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -49.6
+    }
+   },
+   {
+    "ticker": "TER",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -54.2,
+    "price_pct_from_52w_close_high": -54.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -24.86,
+    "ema21_slope_5d_pct": -10.32,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -49.5
+    }
+   },
+   {
+    "ticker": "RMBS",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 109,
+    "rs_pct_from_52w_high": -55.2,
+    "price_pct_from_52w_close_high": -56.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -12.16,
+    "ema21_slope_5d_pct": -4.82,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -52.4
+    }
+   },
+   {
+    "ticker": "ORCL",
+    "group": "ソフトウェア・クラウド・サイバーセキュリティ",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 292,
+    "rs_pct_from_52w_high": -56.6,
+    "price_pct_from_52w_close_high": -53.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -7.01,
+    "ema21_slope_5d_pct": -3.34,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.6
+    }
+   },
+   {
+    "ticker": "STX",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -57.3,
+    "price_pct_from_52w_close_high": -57.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -26.02,
+    "ema21_slope_5d_pct": -9.17,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -52.6
+    }
+   },
+   {
+    "ticker": "GLW",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 92,
+    "rs_pct_from_52w_high": -58.2,
+    "price_pct_from_52w_close_high": -58.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -14.42,
+    "ema21_slope_5d_pct": -5.35,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -54.2
+    }
+   },
+   {
+    "ticker": "ARM",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 98,
+    "rs_pct_from_52w_high": -59.6,
+    "price_pct_from_52w_close_high": -60.3,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -17.47,
+    "ema21_slope_5d_pct": -7.9,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.1
+    }
+   },
+   {
+    "ticker": "INTC",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -59.6,
+    "price_pct_from_52w_close_high": -60.1,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -27.47,
+    "ema21_slope_5d_pct": -14.39,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.1
+    }
+   },
+   {
+    "ticker": "CRDO",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -59.7,
+    "price_pct_from_52w_close_high": -60.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -21.31,
+    "ema21_slope_5d_pct": -9.0,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.2
+    }
+   },
+   {
+    "ticker": "ALAB",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 91,
+    "rs_pct_from_52w_high": -59.9,
+    "price_pct_from_52w_close_high": -60.5,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -24.95,
+    "ema21_slope_5d_pct": -10.51,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.7
+    }
+   },
+   {
+    "ticker": "CIEN",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 110,
+    "rs_pct_from_52w_high": -59.9,
+    "price_pct_from_52w_close_high": -61.2,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -21.42,
+    "ema21_slope_5d_pct": -9.12,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -55.9
+    }
+   },
+   {
+    "ticker": "WDC",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 98,
+    "rs_pct_from_52w_high": -64.1,
+    "price_pct_from_52w_close_high": -64.7,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -22.9,
+    "ema21_slope_5d_pct": -7.21,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -60.1
+    }
+   },
+   {
+    "ticker": "AMKR",
+    "group": "半導体（設計・製造・装置・メモリー・後工程）",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": 97,
+    "rs_pct_from_52w_high": -64.5,
+    "price_pct_from_52w_close_high": -64.9,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -15.62,
+    "ema21_slope_5d_pct": -7.35,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -60.5
+    }
+   },
+   {
+    "ticker": "CRWV",
+    "group": "ハードウェア・ネットワーク・AI計算基盤",
+    "rs_new_high": false,
+    "leads_price": false,
+    "days_since_prev_rs_high": null,
+    "rs_pct_from_52w_high": -66.4,
+    "price_pct_from_52w_close_high": -66.4,
+    "above_ema21": false,
+    "cross_ema21": null,
+    "dist_ema21_pct": -19.73,
+    "ema21_slope_5d_pct": -9.95,
+    "rs_up_vs_21d": false,
+    "qqq": {
+     "rs_new_high": false,
+     "above_ema21": false,
+     "rs_pct_from_52w_high": -64.3
+    }
+   }
+  ]
+ }
+}

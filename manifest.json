@@ -1,0 +1,33 @@
+{
+  "generated_utc": "2026-11-07T10:45:33Z",
+  "generated_jst": "2026-11-07 19:45 JST",
+  "runtime_sec": 166,
+  "source": "Yahoo Finance via yfinance (unofficial)",
+  "yfinance_version": "1.8.0",
+  "prices": {
+    "file": "prices_daily.csv.gz",
+    "as_of": "2026-11-06",
+    "price_basis": "split_adjusted_ex_dividends(yahoo_close)",
+    "rows": 77874,
+    "tickers_requested": 104,
+    "tickers_ok": 104,
+    "tickers_failed": [],
+    "tickers_stale": [],
+    "yahoo_incomplete": {}
+  },
+  "breadth": {
+    "status": "ok",
+    "as_of": "2026-11-06",
+    "members_listed": 503,
+    "members_failed": 0,
+    "source": "computed:sp500_current_constituents:yahoo",
+    "note": "現在の構成銘柄で過去を計算（生存者バイアスあり、proxy）"
+  },
+  "earnings": {
+    "status": "ok",
+    "rows": 72,
+    "tickers_with_date": 72
+  },
+  "repo_last_commit_main": "2026-11-05T22:20:53Z",
+  "keepalive": "ok"
+}
