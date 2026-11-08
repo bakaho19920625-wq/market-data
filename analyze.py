@@ -824,9 +824,9 @@ def weekly_stage(P, t, i, spy_w=None):
     return out
 
 
-SB_LABEL_JA = {"weak": "弱い（ステージ4が4割以上）", "deteriorating": "悪化中（4週でステージ4が10pt以上増、またはステージ3が4割以上）",
+SB_LABEL_JA = {"weak": "弱い（ステージ4が4割以上）", "deteriorating": "悪化中（4週でステージ4、またはステージ3＋4が10pt以上増、またはステージ3が4割以上）",
                "healthy": "健全（ステージ2が5割以上、ステージ4が2割未満）",
-               "improving": "改善中（4週でステージ2が10pt以上増、または上抜け間近と上昇初期が25%以上）", "neutral": "どちらとも言えない"}
+               "improving": "改善中（4週でステージ2が10pt以上増、または上抜け間近と上昇初期が25%以上。天井圏・下落中が増えていないこと）", "neutral": "どちらとも言えない"}
 SUBS = ("1A", "1", "1B", "2A", "2", "2B", "3A", "3", "3B", "4A", "4", "4B", "4B-")
 
 
@@ -856,13 +856,14 @@ def stage_breadth(stages, groups_map):
         p, q = now["pct"], (w4 or {}).get("pct") or {}
         d4 = p[4] - q[4] if q else 0
         d2 = p[2] - q[2] if q else 0
+        d34 = (p[3] + p[4]) - (q[3] + q[4]) if q else 0      # 天井圏＋下落中の増減（v4.6c：上昇中が増えても天井圏・下落中が同時に増えていれば改善とは言わない）
         if p[4] >= 40:
             return "weak"
-        if d4 >= 10 or p[3] >= 40:
+        if d4 >= 10 or p[3] >= 40 or d34 >= 10:
             return "deteriorating"
         if p[2] >= 50 and p[4] < 20:
             return "healthy"
-        if d2 >= 10 or now["pct_1B_2A"] >= 25:
+        if (d2 >= 10 or now["pct_1B_2A"] >= 25) and d34 <= 0:
             return "improving"
         return "neutral"
 
