@@ -1,9 +1,9 @@
 # 米国株指標チェック：統合仕様 v4.2
 
-改訂日：2026-10-25 JST（本文）。現行の仕様版は 4.5（本文v4.2＋追補03・04・06、2026-11-01）。版の読み方は下の「版の読み方」
-仕様版：PROJECT-4.2（本文）／現行 4.5
+改訂日：2026-10-25 JST（本文）。現行の仕様版は 4.6（本文v4.2＋追補03・04・06・07、2026-11-08）。版の読み方は下の「版の読み方」
+仕様版：PROJECT-4.2（本文）／現行 4.6
 継続状態：checkpoint 4.1（checkpoint 4.0の状態も読込可）
-半導体・テクノロジー定義：ST-1.2（本文）／解析エンジン ST-1.4・engine 1.3
+半導体・テクノロジー定義：ST-1.2（本文）／解析エンジン ST-1.5・engine 1.4
 登録名：00_US_Stock_Project_Master_v4.2.txt
 前版：00_US_Stock_Project_Master_v4.1.txt（本書で置き換える）
 
@@ -37,13 +37,19 @@
 12. ［v4.5］E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデルを追加
     （正本は 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも観察専用で、Tapeレジーム・L/H・買い判定は変えない。
     specification_version 4.5、engine 1.3。signals.json の leadership／hedge／spy_model、key_events の leadership_shift／hedge_setup／hedge_cover／spy_model_signal（2026-11-01）。
+13. ［v4.6］本文にあってエンジンが計算していなかった条項を実装し、型を追加した（正本は 07_Addendum_v4.6_Setups_PocketPivot_Stage.txt）：
+    E6.1 Stageのエンジン実装（状態 confirmed／provisional／transition）、E9.5a ベースカウント、E9.2a カップウィズハンドル、
+    E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット（本文E10.1を改訂：10日線か50日線の近く、V字・ウェッジ除外、種類）、
+    E13.2 利益確定の目安と8週ルール、E14.1a setup_type。Tape・Broad・L/H・VCP等の判定は変えない。
+    specification_version 4.6、definition_version ST-1.5／engine 1.4。signals.json の setup_counts／pocket_pivots／profit_tracking／stages、
+    key_events の pocket_pivot／profit_zone／eight_week_hold／eight_week_end（2026-11-08）。
 
-版の読み方（A7・03・04・06）：
-・report.specification_version＝仕様全体の版。本書v4.2＋追補03＋追補04＋追補06で 4.5。
+版の読み方（A7・03・04・06・07）：
+・report.specification_version＝仕様全体の版。本書v4.2＋追補03＋追補04＋追補06＋追補07で 4.6。
 ・checkpoint_version＝状態YAMLの形。4.1 のまま（追補はフィールドの追加だけ）。
-・signals.json の definition_version＝解析エンジン全体の定義版（ST-1.4／engine 1.3）。
-  sector_rs・correction_resilience の definition_version は ST-1.3、breadth_ext は BX-1.0、leadership は LR-1.0、hedge は HG-1.0、spy_model は SM-1.0 で、
-  それぞれ自分の定義が最後に変わった版を示す。
+・signals.json の definition_version＝解析エンジン全体の定義版（ST-1.5／engine 1.4）。
+  sector_rs・correction_resilience の definition_version は ST-1.3、breadth_ext は BX-1.0、leadership は LR-1.0、hedge は HG-1.0、spy_model は SM-1.0、
+  stages は ST6-1.0、pocket_pivots は PP-1.0、profit_tracking は PT-1.0 で、それぞれ自分の定義が最後に変わった版を示す。
 
 v4.2で追加・変更した箇所には［v4.2］を付す。
 2026-10-25夜の改訂（v4.2b）：解析エンジン（GitHub Actionsのanalyze.py）を正本の計算系とし、C15.1を改訂、E9の閾値を校正、
@@ -196,7 +202,7 @@ ConfidenceはCoverageと別に判断する。
 
 状態のルートはUNIFIED_MARKET_STATEに統一する。
 ［v4.2］checkpoint_versionは4.1。
-［v4.2］report.specification_versionは4.2。［v4.3］4.3。［v4.4］4.4。［v4.5］4.5（現行）。
+［v4.2］report.specification_versionは4.2。［v4.3］4.3。［v4.4］4.4。［v4.5］4.5。［v4.6］4.6（現行）。
 ［v4.2］extensions.sector_leadershipにschema1.2／ST-1.2を併合する。［v4.3］schema1.3／ST-1.3（現行。03の1.3節）。
 ［v4.4］extensions.breadth_ext（BX-1.0）に signals.json の breadth_ext と tape.checklist の FB1_stalling・IX3・BR4・BR5・megacap_led を写す。追加フィールドだけで既存項目は変えない。
 ［v4.5］extensions.spy_model（SM-1.0）に signal・composite・signal_since を、extensions.hedge（HG-1.0）に allowed・status・setup_level_max を写す（06の C10.1「出すもの」）。
@@ -1653,7 +1659,7 @@ UNIFIED_MARKET_STATE:
     supersedes_id: null
     revision_kind: null
     based_on_report_id: null  # daily_planが前提とした確定レポート
-    specification_version: "4.5"   # A7の現行値を入れる（本文v4.2＋追補）
+    specification_version: "4.6"   # A7の現行値を入れる（本文v4.2＋追補）
   input_data:                 # v4.2
     files: []                 # name, as_of, rows, tickers, source_type, issues
     connectors: []
@@ -2128,6 +2134,7 @@ proxy適格は別表示。
 TTは監視候補フィルターであり買いシグナルではない。
 
 ## E6. Stage1〜4
+［v4.6］エンジンでの実装（状態 confirmed／provisional／transition、truncated）は 07_Addendum の E6.1。
 
 Weinstein系の底固め、上昇、天井候補、下降。[S10〜S11]
 Minervini Tape A〜Fとは別欄。
@@ -2435,6 +2442,7 @@ VCP-like／非標準として残せるが標準ready件数へ混ぜない。
 32→16→8等を必須の半減比率にしない。
 
 ### E9.2 カップウィズハンドル R/P
+［v4.6］エンジンでの実装細目は 07_Addendum の E9.2a。フラットベース（E9.6）・ダブルボトム（E9.7）も07に定義。
 
 採用するIBD教材版[S9]：
 標準深さ15〜30%。
@@ -2533,6 +2541,7 @@ D+3／5／10も別系列で集計する。
 ロー・チートの本人定義は公開要約で確認できていない（M2-）。参考情報として扱い、標準readyと成績を分ける。
 
 ### E9.5 ［v4.2］ベースカウント R／P
+［v4.6］エンジンでの実装細目は 07_Addendum の E9.5a。
 
 概念はO'Neil・IBD系（R）。
 後期ベースの失敗が増えるという考え方は、ミネルヴィニの手法としても紹介される（M原典照合待ち）。
@@ -2558,6 +2567,7 @@ P実装：
 ## E10. Pocket Pivot・U&R
 
 ### E10.1 Pocket Pivot R/P
+［v4.6］本条は 07_Addendum の E10.1a で置き換えた（「終値＞10日線」を常に求める条件の廃止、V字・ウェッジ除外、種類、追跡）。以下は v4.2 の本文。
 
 Morales・Kacher系の公開基準の中心：
 当日出来高が直前10営業日の下落日出来高をすべて上回る。[S14]
@@ -2827,6 +2837,7 @@ floor(許容損失額 / (E−S + 1株当たり想定コスト))
 Stage4逆張りを標準化しない。
 
 ### E13.1 ［v4.2］売り検討シグナル P
+［v4.6］利益確定の目安（+20〜25%）と8週ルールは 07_Addendum の E13.2。
 
 自動売却ではない。
 保有・監視中の先導株に適用する。
@@ -3708,5 +3719,10 @@ specification_version 4.4、definition_version ST-1.4／engine 1.2。checkpoint 
 v4.5：2026-11-01 JST
 追補06（E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデル）。観察専用で判定は不変。
 specification_version 4.5、engine 1.3。レポートの言葉づかいを 05_Plain_Language_Glossary.txt に統一（冒頭ブロック）。
+
+v4.6：2026-11-08 JST
+追補07（E6.1 Stageのエンジン実装、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット（E10.1を改訂）、
+E13.2 利益確定の目安と8週ルール、E14.1a setup_type）。本文にあってエンジンが計算していなかった条項の実装と、型の追加。Tape・Broad・L/Hは不変。
+specification_version 4.6、definition_version ST-1.5／engine 1.4。checkpoint 4.1 据え置き。
 
 以上。

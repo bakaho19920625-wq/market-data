@@ -1,13 +1,14 @@
-# 週次レポート 実行手順書（weekly_runbook v1.5、マスター仕様v4.2のD7「週次」の実装。v4.3〜v4.5追補とやさしい表記を反映）
+# 週次レポート 実行手順書（weekly_runbook v1.6、マスター仕様v4.2のD7「週次」の実装。v4.3〜v4.6追補とやさしい表記を反映）
 # 週次の自動実行（日曜 9:07 JST）はこの手順書に従う。ユーザーがチャットで「レポートして」「Fullで」と頼んだときも同じ。
 # 定期実行の本文には手順を書かず、この手順書を読む指示と実行環境の前提だけを置く。手順を変えるときはこのファイルを直す。
-# 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの）。v1.1 でやさしい表記、v1.2 で v4.5（先導セクター・ヘッジ・長期モデル）、v1.3 で reports/ への保存と保管ページ本文の180日整理、v1.4 で書き込み準備を最初に（add_repo の読み込み手順）、v1.5 で gh が使えないときの refresh/ の push による起動を追加。
+# 作成 2026-11-01（それまで定期実行の本文にあった手順を移したもの）。v1.1 でやさしい表記、v1.2 で v4.5（先導セクター・ヘッジ・長期モデル）、v1.3 で reports/ への保存と保管ページ本文の180日整理、v1.4 で書き込み準備を最初に（add_repo の読み込み手順）、v1.5 で gh が使えないときの refresh/ の push による起動を追加。v1.6 で v4.6（週足Stage・ベースの番号はエンジンの値を使う、カップ・フラットベース・ダブルボトム、ポケットピボット、利益確定の目安・8週ルール）。
 
 ## 0. 原則
 - 計算はGitHubの解析エンジン（analyze.py）が済ませている。Tapeチェックリスト、先導候補、セットアップ、ブレイク追跡、売りシグナル、
   セクター相対強度・調整耐性・RSライン、市場内部の拡張（breadth_ext）、先導セクターの推移（leadership）、ヘッジ条件（hedge）、
-  長期SPY配分モデル（spy_model）は signals.json・ledger.json の値を使い、再計算しない
-  （検証目的は可。食い違いは signals.json を優先して報告）。それ以外の時系列計算（週足Stage、SMA、HV等）はPythonで行う。
+  長期SPY配分モデル（spy_model）、［v1.6］週足Stage・ベースの番号（stages、setups の stage・base_count）、ポケットピボット（pocket_pivots）、
+  利益確定の目安・8週ルール（profit_tracking）は signals.json・ledger.json の値を使い、再計算しない
+  （検証目的は可。食い違いは signals.json を優先して報告）。それ以外の時系列計算（SMA、HV等。監視母集団の外のETFの週足Stage）はPythonで行う。
 - マクロ、金融政策、金利、景気・雇用・物価、企業利益・EPS修正、評価、信用・ボラ、心理・フロー・FINRA、ドル・商品・地政学、
   セクター、季節性、次週のイベントはWeb検索で取得し、出典・基準日・単位・データ状態を付ける。
 - 推測で埋めない。未確認の値は missing とし、D4のデータゲートを適用する。
@@ -27,9 +28,11 @@ main ブランチから次を読む（https://raw.githubusercontent.com/bakaho19
 - 03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）
 - 04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d。C15.1と食い違えば04を優先）
 - 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4 先導セクターの推移、C10.1 ヘッジの価格セットアップ、F10 長期SPY配分モデル。観察専用）
+- 07_Addendum_v4.6_Setups_PocketPivot_Stage.txt（E6.1 Stage、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット、E13.2 利益確定の目安・8週ルール。本文と食い違えば07を優先）
+- 05_Plain_Language_Glossary.txt（やさしい表記）
 届かなければ、保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）の予備コピーを
 Artifactツールの read（paths）で読む：spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、
-spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
+spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/addendum_v4.6.txt、spec/plain_language.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
 A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）、B10（Fullの27項目）、C15.1（改訂版）と04の C15.1a〜d、
 D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 
@@ -100,7 +103,14 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
   Tapeとの組み合わせの読み方を1行（例「長期は買い持ちのまま、短期は守り」）。長く持つ分（積立や段階売りの残し方）の参考であり、短期の売買判断には使わない。
   SPYの目安なので、SOXL等の3倍ETFに配分%をそのまま当てはめない、と一言添える。
 - セクター相対強度・調整耐性・RSライン（追補03）は signals.sector_rs／correction_resilience／rs_lines から転記する。監視候補の順番であり買い判定ではない。
-- Full は B10 の27項目すべてと D10 のフルYAML（UNIFIED_MARKET_STATE、checkpoint_version 4.1、specification_version 4.5、
+- ［v1.6］個別表（E15）の Stage 列は signals.stages（確定ステージと状態。truncated は「起点がデータより前」）、ベースカウント列は setups の base_count（無ければ stages の current_base）、
+  setup_type 列は setups の setup_type から転記する。セットアップは型（pattern_ja）ごとに数え（setup_counts）、late_stage は別枠。
+- ［v1.6］「ポケットピボット」の小節：今週の日次の key_events から pocket_pivot を集め（銘柄、日付、種類、支持線、その後の値動き＝ledger の d3／d5）、
+  ledger_cohorts の pocket_pivot（D+3／5／10、件数20未満は参考値）と、今日の excluded の理由を1行。業績は未確認と明記。
+- ［v1.6］「利益確定の目安」の小節：profit_tracking.rows（上昇率、最大上昇率、20〜25%の帯か、8週ルール中か、50日線の下か）。
+  持っていれば、の条件つきで、オニール流（+20〜25%で利確、3週以内に+20%なら8週保有）とミネルヴィニ流（一部利確＋残りは50日線割れまで）を並べる。
+- ［v1.6］v4.6 適用後の最初の週次では、前回比の欄に「定義変更（v4.6）：セットアップの型が増えた。ready件数の前回比は型ごとに見る」と書く（Fullの理由にはしない）。
+- Full は B10 の27項目すべてと D10 のフルYAML（UNIFIED_MARKET_STATE、checkpoint_version 4.1、specification_version 4.6、
   extensions.sector_leadership schema 1.3、extensions.breadth_ext BX-1.0、extensions.spy_model SM-1.0、extensions.hedge HG-1.0）。Standard は D9 の簡易YAML。
 - 出力前に CLAUDE.md 8節の点検（構成、根拠、日付、基準日、計算ログ、Tapeチェックリスト、配分、確率合計100%、トリガー、本文とYAMLの一致）を行う。
 

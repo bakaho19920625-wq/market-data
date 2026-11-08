@@ -39,6 +39,12 @@ v4.5 追補（06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも�
   (C) 長期SPY配分モデル F10：signals.json の spy_model（5項目、配分%、buy／sell）。key_events の spy_model_signal。
 v4.5b（F2.2）：判定結果の日次履歴 history_signals.csv（1日1行。レジーム、チェックリスト、先導セクター、ヘッジ、長期モデル、候補数、イベント種類）を
   data ブランチに追記する（--prev-history で前回分を引き継ぎ、無ければ main の history_seed.csv＝backfill から始める）。
+v4.6 追補（07_Addendum_v4.6_Setups_PocketPivot_Stage.txt）。Tape・Broad・L/H・VCP等の判定は変えない：
+  E6.1 週足Stage（状態 confirmed／provisional／transition）、E9.5a ベースカウント、E9.2a カップウィズハンドル、E9.6 フラットベース、
+  E9.7 ダブルボトム、E10.1a ポケットピボット（10日線か50日線の近く、V字・ウェッジ除外、種類、台帳でD+3/5/10を追跡）、
+  E13.2 利益確定の目安（+20〜25%）と8週ルール、E14.1a setup_type。
+  signals.json の stages／setup_counts／pocket_pivots／profit_tracking、setups の stage・base_count・setup_type、
+  screen.csv の stage 等の列、key_events の pocket_pivot／profit_zone／eight_week_hold／eight_week_end。
 """
 import argparse
 import json
@@ -50,7 +56,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-DEF_VERSION = "ST-1.4 / engine 1.3"
+DEF_VERSION = "ST-1.5 / engine 1.4"
 JST = timezone(timedelta(hours=9))
 INDEX_TICKERS = {"^GSPC", "^IXIC", "^VIX"}
 SECTOR_ETFS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLU"]
@@ -79,6 +85,24 @@ BRX = {"down_pct": 20.0,        # 52週高値（日中高値）から何%下を�
 TECH_SECTORS = ("Information Technology", "Communication Services")
 BX_LABEL_JA = {"stealth": "隠れ弱気（指数は高値圏なのに過半が−20%以上）", "watch": "隠れ弱気の警戒（−20%以上が4割超）",
                "broad_decline": "全面的な下落（指数・基準ETFも−10%超）"}
+# v4.6（07追補）: ステージ・ベースカウント・カップ・フラットベース・ダブルボトム・ポケットピボット・利益確定の目安（すべてP）
+ST6 = {"slope_pct": 1.0, "near_ma_pct": 5.0, "min_days": 175}       # E6.1：30週線の4週変化±1%、横ばい時の線からの距離5%
+BC = {"min_depth": 0.08, "max_depth": 0.50, "min_days": 25}           # E9.5a：ベース＝5週以上、深さ8〜50%
+READY = {"near_pivot": 0.92, "extended": 1.05, "max_risk": 0.07, "watch_risk": 0.08}  # VCPと同じ（E9.1・E11）
+CUP = {"min_depth": 0.15, "max_depth": 0.30, "min_total_days": 35, "max_total_days": 325, "prior_up": 0.30,
+       "side_min_days": 10, "handle_min": 5, "handle_max": 20, "handle_max_depth": 0.12, "handle_hi_vs_left": 0.85,
+       "right_max_vs_left": 1.02, "handle_vol_max": 0.80}                # E9.2a（IBD教材版＝本文E9.2の値）
+FLAT = {"min_days": 25, "max_days": 65, "max_depth": 0.15, "ideal_depth": 0.10, "top_band": 0.95, "flat_top": 1.03, "prior_up": 0.20,
+        "stop_lookback": 10, "dry5_max": 1.0}                              # E9.6
+DB = {"min_days": 35, "max_days": 325, "min_depth": 0.15, "max_depth": 0.35, "prior_up": 0.30, "undercut_max": 0.05,
+      "no_undercut_tol": 0.03, "mid_min_frac": 0.4, "leg_min_days": 5, "stop_lookback": 10, "low_vol_max": 1.0}  # E9.7
+PPV = {"lookback": 10, "near_low_pct": 2.0, "max_above_ma_pct": 5.0, "vshape_below_pct": 5.0, "wedge_days": 15,
+       "wedge_rise_pct": 5.0, "max_risk_pct": 7.0, "base_lookback": 65, "base_corr": 0.08, "dedupe_days": 5}  # E10.1a
+PT = {"zone_lo": 20.0, "zone_hi": 25.0, "eight_week_gain": 20.0, "eight_week_window": 15, "eight_week_hold": 40,
+      "track_days": 60}                                                    # E13.2
+STANDARD_PATTERNS = ("vcp", "cup_handle", "flat_base", "double_bottom")
+PATTERN_JA = {"vcp": "VCP", "cup_handle": "カップウィズハンドル", "flat_base": "フラットベース", "double_bottom": "ダブルボトム",
+              "power_play": "パワープレイ", "cheat": "チート", "low_cheat": "ロー・チート", "pocket_pivot": "ポケットピボット"}
 
 
 # ----------------------------------------------------------------------------
@@ -532,6 +556,381 @@ def detect_early_entry(P, t, i, vcp):
 
 
 # ----------------------------------------------------------------------------
+# v4.6（07追補）: ステージ（E6.1）、ベースカウント（E9.5a）
+# ----------------------------------------------------------------------------
+def _d(P, j):
+    return str(P.dates[j].date())
+
+
+def weekly_stage(P, t, i):
+    """E6.1: 週足30週SMAのStage。基準日iまでに完了した週だけで判定し、同じ候補が2完了週続いたら確定する（E6）。"""
+    out = {"stage": None, "candidate": None, "since": None, "stage2_start": None, "truncated": None,
+           "pct_vs_ma30": None, "ma30_slope_4w_pct": None, "week_end": None, "provisional_week": None, "note": None}
+    df = pd.DataFrame({"c": P.C[t].iloc[: i + 1], "h": P.H[t].iloc[: i + 1], "l": P.L[t].iloc[: i + 1]}).dropna()
+    if len(df) < ST6["min_days"]:
+        out["note"] = "履歴不足"
+        return out
+    key = df.index.to_period("W-FRI")
+    g = df.groupby(key)
+    W = pd.DataFrame({"c": g["c"].last(), "h": g["h"].max(), "l": g["l"].min()})
+    dates = pd.Series(df.index, index=df.index).groupby(key)
+    W["first"], W["last"] = dates.first().values, dates.last().values
+    if pd.Timestamp(W["last"].iloc[-1]).weekday() != 4:   # 金曜で終わっていない週は未完了（休場の金曜は暫定のまま扱う）
+        out["provisional_week"] = str(pd.Timestamp(W["last"].iloc[-1]).date())
+        W = W.iloc[:-1]
+    n = len(W)
+    ma = W["c"].rolling(30).mean()
+    s = ma / ma.shift(4) - 1
+    hv, lv = W["h"].values, W["l"].values
+    sw_h = [k for k in range(1, n - 1) if hv[k] > hv[k - 1] and hv[k] > hv[k + 1]]
+    sw_l = [k for k in range(1, n - 1) if lv[k] < lv[k - 1] and lv[k] < lv[k + 1]]
+    conf, conf_since, last_dir, prev_cand, ready_w, cand = None, None, None, None, None, None
+    for w in range(n):
+        if math.isnan(s.iloc[w]):
+            prev_cand = None
+            continue
+        hs = [hv[k] for k in sw_h if k + 1 <= w][-2:]   # 後続1週の完了で認定（E4）
+        ls = [lv[k] for k in sw_l if k + 1 <= w][-2:]
+        if ready_w is None and len(hs) == 2 and len(ls) == 2:
+            ready_w = w
+        rising = len(hs) == 2 and len(ls) == 2 and hs[1] > hs[0] and ls[1] > ls[0]
+        falling = len(hs) == 2 and len(ls) == 2 and hs[1] < hs[0] and ls[1] < ls[0]
+        wc, m, sl_ = W["c"].iloc[w], ma.iloc[w], s.iloc[w]
+        up, down = sl_ > ST6["slope_pct"] / 100, sl_ < -ST6["slope_pct"] / 100
+        near = abs(wc / m - 1) <= ST6["near_ma_pct"] / 100
+        if wc > m and up and rising:
+            cand = 2
+        elif wc < m and down and falling:
+            cand = 4
+        elif not up and not down and near:
+            cand = 1 if last_dir == 4 else 3 if last_dir == 2 else None   # 過去の方向性が不明なら1と3を強制分類しない
+        else:
+            cand = None                                                    # transition
+        if cand is not None and cand == prev_cand and conf != cand:
+            conf, conf_since = cand, w - 1
+            if cand in (2, 4):
+                last_dir = cand
+        prev_cand = cand
+    if n == 0 or math.isnan(s.iloc[-1]):
+        out["note"] = "履歴不足"
+        return out
+    # 状態：確定Stageの条件が今週も成立＝confirmed、別Stageの候補が1週だけ＝provisional、どの条件も満たさない＝transition（E6）
+    state = ("unclassified" if conf is None else "confirmed" if cand == conf else "transition" if cand is None else "provisional")
+    out.update({"stage": conf, "candidate": cand, "state": state,
+                "since": str(pd.Timestamp(W["first"].iloc[conf_since]).date()) if conf_since is not None else None,
+                "truncated": bool(conf_since is not None and ready_w is not None and conf_since <= ready_w + 1),
+                "pct_vs_ma30": round(100 * float(W["c"].iloc[-1] / ma.iloc[-1] - 1), 1),
+                "ma30_slope_4w_pct": round(100 * float(s.iloc[-1]), 2),
+                "week_end": str(pd.Timestamp(W["last"].iloc[-1]).date())})
+    if conf == 2:
+        out["stage2_start"] = out["since"]
+    return out
+
+
+def base_walk(P, t, i, start):
+    """E9.5a: Stage2の起点から日足でベースを数える。ベース＝高値から8%以上の押しで、5週以上かけて高値を終値で上抜けたもの。"""
+    if start is None:
+        return None
+    c, h, l = P.C[t].values, P.H[t].values, P.L[t].values
+    j_s = P.dates.get_loc(pd.Timestamp(start))
+    peak, jpeak, in_corr, low = h[j_s], j_s, False, None
+    bases, prev_low, count, resets = [], None, 0, []
+    for j in range(j_s + 1, i + 1):
+        if math.isnan(c[j]):
+            continue
+        if not in_corr:
+            if h[j] > peak:
+                peak, jpeak = h[j], j
+            elif l[j] <= peak * (1 - BC["min_depth"]):
+                in_corr, low = True, l[j]
+            continue
+        low = min(low, l[j])
+        if (peak - low) / peak > BC["max_depth"]:      # 50%超はベースではない。数え直す
+            resets.append({"date": _d(P, j), "reason": "深さ50%超"})
+            count, prev_low, peak, jpeak, in_corr = 0, None, h[j], j, False
+            continue
+        if c[j] > peak:
+            if j - jpeak >= BC["min_days"]:
+                if prev_low is not None and low < prev_low:
+                    count = 1
+                    resets.append({"date": _d(P, j), "reason": "前のベースの安値を下回った"})
+                else:
+                    count += 1
+                prev_low = low
+                bases.append({"n": count, "start": _d(P, jpeak), "breakout": _d(P, j), "days": j - jpeak,
+                              "depth_pct": round(100 * (peak - low) / peak, 1), "high": round(float(peak), 2), "low": round(float(low), 2)})
+            peak, jpeak, in_corr = h[j], j, False
+    cur = None
+    if in_corr:
+        cur = {"n": 1 if (prev_low is not None and low < prev_low) else count + 1, "start": _d(P, jpeak), "days": i - jpeak,
+               "depth_pct": round(100 * (peak - low) / peak, 1), "high": round(float(peak), 2),
+               "provisional": i - jpeak < BC["min_days"]}
+    return {"stage2_start": start, "completed": bases, "count_completed": count, "current": cur, "resets": resets[-3:]}
+
+
+def base_number(stage, walk, base_start, base_low):
+    """セットアップのベースが何番目か（E9.5）。戻り値は (番号 or None, 状態)。"""
+    if stage is None or stage.get("stage") != 2:
+        return None, "Stage2未確認"
+    if stage.get("truncated") or walk is None:
+        return None, "起点が履歴不足"
+    done = [b for b in walk["completed"] if b["breakout"] <= base_start]
+    if not done:
+        return 1, "ok"
+    last = done[-1]
+    return (1 if base_low < last["low"] else last["n"] + 1), "ok"
+
+
+# ----------------------------------------------------------------------------
+# v4.6（07追補）: カップウィズハンドル（E9.2a）、フラットベース（E9.6）、ダブルボトム（E9.7）
+# ----------------------------------------------------------------------------
+def _ready_status(c_last, pivot, stop, extra_ok, watch_ok=True):
+    e_plan = pivot * 1.001
+    risk = (e_plan - stop) / e_plan
+    checks = {"risk_ok": risk <= READY["max_risk"], "not_extended": c_last <= pivot * READY["extended"],
+              "near_pivot": c_last >= pivot * READY["near_pivot"]}
+    checks.update(extra_ok)
+    if all(checks.values()):
+        status = "ready"
+    elif watch_ok and risk <= READY["watch_risk"] and checks["not_extended"] and checks["near_pivot"]:
+        status = "watch"
+    else:
+        status = "forming"
+    return status, risk, checks
+
+
+def _prior_up(l, j0, high):
+    lo = np.nanmin(l[max(0, j0 - 130): j0 + 1])
+    return high / lo - 1 if lo and lo > 0 else np.nan
+
+
+def detect_cup(P, t, i):
+    """E9.2a: カップウィズハンドル（IBD教材版：深さ15〜30%、7週以上、先行上昇30%以上、ハンドルは上半分）。"""
+    c, h, l, v = P.C[t].values[: i + 1], P.H[t].values[: i + 1], P.L[t].values[: i + 1], P.V[t].values[: i + 1]
+    if len(c) < 260 or np.isnan(c[-60:]).any():
+        return None
+    seg = h[i - CUP["handle_max"] + 1: i + 1]
+    jR = i - CUP["handle_max"] + 1 + (len(seg) - 1 - int(np.argmax(seg[::-1])))   # ハンドル開始＝直近20日の最高値（同値なら新しい方）
+    handle_len = i - jR + 1
+    if handle_len < CUP["handle_min"]:
+        return None
+    R = h[jR]
+    # 左側高値：右側高値より前で、そこから右側高値までにそれ以上の高値がない最も近い確認済みスイング高値
+    j0, run_max = None, R
+    for j in range(jR - 2 * CUP["side_min_days"], max(2, jR - CUP["max_total_days"]) - 1, -1):
+        run_max = max(run_max, h[j + 1])
+        if h[j] >= run_max and h[j] > h[j - 1] and h[j] > h[j - 2] and h[j] > h[j + 1] and h[j] > h[j + 2] and R >= h[j] / CUP["right_max_vs_left"]:
+            j0 = j
+            break
+    if j0 is None:
+        return None
+    H0 = h[j0]
+    jB = j0 + int(np.nanargmin(l[j0: jR + 1]))
+    B = l[jB]
+    depth = (H0 - B) / H0
+    HL = np.nanmin(l[jR: i + 1])
+    mid = B + (H0 - B) / 2
+    prior = _prior_up(l, j0, H0)
+    core = {
+        "depth_15_30": CUP["min_depth"] <= depth <= CUP["max_depth"],
+        "left_side_10d": jB - j0 >= CUP["side_min_days"],
+        "right_side_10d": jR - jB >= CUP["side_min_days"],
+        "total_7w": CUP["min_total_days"] <= i - j0 <= CUP["max_total_days"],
+        "prior_up_30": bool(prior >= CUP["prior_up"]),
+        "handle_5_20d": CUP["handle_min"] <= handle_len <= CUP["handle_max"],
+        "handle_depth_12": (R - HL) / R <= CUP["handle_max_depth"],
+        "handle_upper_half": HL > mid,
+        "handle_high_85": R >= CUP["handle_hi_vs_left"] * H0,
+    }
+    if not all(core.values()):
+        return None
+    vol_handle = np.nanmean(v[jR: i + 1])
+    vol_base = np.nanmean(v[max(0, jR - 50): jR])
+    hv_ratio = vol_handle / vol_base if vol_base > 0 else np.nan
+    pivot, stop = float(R), float(HL * 0.995)
+    status, risk, checks = _ready_status(c[-1], pivot, stop, {"handle_vol_dry": bool(hv_ratio <= CUP["handle_vol_max"])})
+    return {
+        "pattern": "cup_handle", "status": status, "base_start": _d(P, j0), "base_low": round(float(B), 2), "base_days": int(i - j0),
+        "depth_pct": round(100 * depth, 1), "handle_days": int(handle_len), "handle_depth_pct": round(100 * (R - HL) / R, 1),
+        "handle_vol_ratio": round(float(hv_ratio), 2), "prior_up_pct": round(100 * prior), "left_high": round(float(H0), 2),
+        "footprint": f"{round((i - j0) / 5)}W {round(100 * depth)}% H{handle_len}d {round(100 * (R - HL) / R)}%",
+        "pivot": round(pivot, 2), "trigger_ibd": round(pivot + 0.10, 2), "stop": round(stop, 2), "risk_pct": round(100 * risk, 1),
+        "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1),
+        "dry5": round(float(P.dry5[t].iloc[i]), 2) if not math.isnan(P.dry5[t].iloc[i]) else None, "checks": {**core, **checks},
+    }
+
+
+def detect_flat_base(P, t, i):
+    """E9.6: フラットベース（5週以上、高値からの押し15%以内、先行上昇20%以上）。"""
+    c, h, l = P.C[t].values[: i + 1], P.H[t].values[: i + 1], P.L[t].values[: i + 1]
+    if len(c) < 260 or np.isnan(c[-FLAT["max_days"] - 5:]).any():
+        return None
+    w0 = i - FLAT["max_days"] + 1
+    seg = h[w0: i + 1]
+    H0 = float(np.nanmax(seg))
+    if h[i] >= H0 and c[i] > np.nanmax(h[w0: i]):
+        return None                                   # 今日が上抜けの日（台帳のブレイク判定に任せる）
+    floor = H0 * (1 - FLAT["max_depth"])
+    # 起点：高値の95%以上に届いた最も古い日で、そこから今日まで安値が高値の85%を下回らず、
+    # かつ起点の週の高値からその後の最高値までが3%以内（上昇の途中から数えない＝横ばいの上限が平ら）
+    js = None
+    for j in range(w0, i + 1):
+        if h[j] >= FLAT["top_band"] * H0 and np.nanmin(l[j: i + 1]) >= floor and H0 <= np.nanmax(h[j: j + 6]) * FLAT["flat_top"]:
+            js = j
+            break
+    if js is None or i - js < FLAT["min_days"]:
+        return None
+    lo = float(np.nanmin(l[js: i + 1]))
+    depth = (H0 - lo) / H0
+    prior = _prior_up(l, js, h[js])
+    if not prior >= FLAT["prior_up"]:
+        return None
+    dry5 = float(P.dry5[t].iloc[i]) if not math.isnan(P.dry5[t].iloc[i]) else None
+    pivot = H0
+    stop = float(np.nanmin(l[i - FLAT["stop_lookback"] + 1: i + 1]) * 0.995)
+    status, risk, checks = _ready_status(c[-1], pivot, stop, {"dry5_ok": dry5 is not None and dry5 <= FLAT["dry5_max"]})
+    return {
+        "pattern": "flat_base", "status": status, "base_start": _d(P, js), "base_low": round(lo, 2), "base_days": int(i - js),
+        "depth_pct": round(100 * depth, 1), "ideal_depth": depth <= FLAT["ideal_depth"], "prior_up_pct": round(100 * prior),
+        "footprint": f"{round((i - js) / 5)}W {round(100 * depth)}%",
+        "pivot": round(pivot, 2), "stop": round(stop, 2), "risk_pct": round(100 * risk, 1),
+        "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1), "dry5": round(dry5, 2) if dry5 is not None else None, "checks": checks,
+    }
+
+
+def detect_double_bottom(P, t, i):
+    """E9.7: ダブルボトム（7週以上、深さ15〜35%、二番底は一番底をわずかに割る（最大5%）のが標準、ピボット＝W字の真ん中の高値）。"""
+    c, h, l, v = P.C[t].values[: i + 1], P.H[t].values[: i + 1], P.L[t].values[: i + 1], P.V[t].values[: i + 1]
+    if len(c) < 260 or np.isnan(c[-60:]).any():
+        return None
+    lo_w = max(2, i - DB["max_days"])
+    j0 = lo_w + int(np.nanargmax(h[lo_w: i + 1]))     # 左側高値＝期間内の最高値
+    if i - j0 < DB["min_days"]:
+        return None
+    H0 = h[j0]
+    sh = [j for j in range(j0 + DB["leg_min_days"], i - 1) if h[j] > h[j - 1] and h[j] > h[j - 2] and h[j] > h[j + 1] and h[j] > h[j + 2]]
+    for jM in sorted(sh, key=lambda j: -h[j]):       # 真ん中の高値の候補を高い順に
+        if jM - j0 < DB["leg_min_days"] or i - jM < DB["leg_min_days"]:
+            continue
+        ja = j0 + int(np.nanargmin(l[j0: jM]))
+        jb = jM + 1 + int(np.nanargmin(l[jM + 1: i + 1]))
+        La, Lb, M = l[ja], l[jb], h[jM]
+        if jM - ja < DB["leg_min_days"] or jb - jM < DB["leg_min_days"]:
+            continue
+        lowest = min(La, Lb)
+        depth = (H0 - lowest) / H0
+        if not (DB["min_depth"] <= depth <= DB["max_depth"]):
+            continue
+        if not (La * (1 - DB["undercut_max"]) <= Lb <= La * (1 + DB["no_undercut_tol"])):
+            continue
+        if (M - La) / (H0 - La) < DB["mid_min_frac"]:
+            continue
+        after = c[jb + 1: i]
+        if len(after) and np.nanmax(after) > M:
+            continue                                  # 二番底の後、すでに真ん中の高値を終値で上抜けた
+        prior = _prior_up(l, j0, H0)
+        if not prior >= DB["prior_up"]:
+            return None
+        vavg = np.nanmean(v[max(0, ja - 50): ja])
+        v_low2 = np.nanmean(v[max(jb - 2, 0): min(jb + 3, i + 1)])
+        low_vol = v_low2 / vavg if vavg > 0 else np.nan
+        pivot = float(M)
+        stop = float(max(Lb, np.nanmin(l[i - DB["stop_lookback"] + 1: i + 1])) * 0.995)
+        status, risk, checks = _ready_status(c[-1], pivot, stop, {"low2_vol_not_up": bool(low_vol <= DB["low_vol_max"])})
+        return {
+            "pattern": "double_bottom", "status": status, "base_start": _d(P, j0), "base_low": round(float(lowest), 2), "base_days": int(i - j0),
+            "depth_pct": round(100 * depth, 1), "first_low": round(float(La), 2), "first_low_date": _d(P, ja),
+            "second_low": round(float(Lb), 2), "second_low_date": _d(P, jb), "undercut": bool(Lb < La),
+            "undercut_pct": round(100 * (1 - Lb / La), 1), "middle_high_date": _d(P, jM), "low2_vol_ratio": round(float(low_vol), 2),
+            "prior_up_pct": round(100 * prior), "left_high": round(float(H0), 2),
+            "footprint": f"{round((i - j0) / 5)}W {round(100 * depth)}% W",
+            "pivot": round(pivot, 2), "trigger_ibd": round(pivot + 0.10, 2), "stop": round(stop, 2), "risk_pct": round(100 * risk, 1),
+            "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1),
+            "dry5": round(float(P.dry5[t].iloc[i]), 2) if not math.isnan(P.dry5[t].iloc[i]) else None, "checks": checks,
+        }
+    return None
+
+
+# ----------------------------------------------------------------------------
+# v4.6（07追補）: ポケットピボット（E10.1a。本文E10.1を改訂）
+# ----------------------------------------------------------------------------
+def detect_pocket_pivot(P, t, i, tt_row, stage):
+    """E10.1a: 当日出来高が直前10営業日の下落日の最大出来高を上回って上昇し、10日線か50日線の近くにある日。"""
+    c, h, l, v = P.C[t].values, P.H[t].values, P.L[t].values, P.V[t].values
+    if i < 70 or np.isnan(c[i - 70: i + 1]).any() or np.isnan(v[i - 11: i + 1]).any():
+        return None
+    if not c[i] > c[i - 1]:
+        return None
+    downs = [j for j in range(i - PPV["lookback"], i) if c[j] < c[j - 1]]     # 同値日は含めない
+    if not downs:
+        return None                                                            # 下落日0件は unverified（出さない）
+    vmax = max(v[j] for j in downs)
+    if not (vmax > 0 and v[i] > vmax):
+        return None
+    ma = {"10": P.s10[t].values, "50": P.s50[t].values}
+    near = {}
+    for k, m in ma.items():
+        if math.isnan(m[i]):
+            continue
+        lo_dev, c_dev = l[i] / m[i] - 1, c[i] / m[i] - 1
+        if abs(lo_dev) <= PPV["near_low_pct"] / 100 and 0 <= c_dev <= PPV["max_above_ma_pct"] / 100:
+            near[k] = abs(lo_dev)
+    if not near:
+        return None                                                            # 線から離れた大商いの上げ（延びすぎ）は対象外
+    sup = min(near, key=near.get)
+    m = ma[sup]
+    excl = []
+    if math.isnan(P.s50[t].values[i]) or c[i] < P.s50[t].values[i]:
+        excl.append("50日線の下")
+    if not (bool(tt_row.get("tt1")) and bool(tt_row.get("tt3"))):
+        excl.append("上昇トレンドでない（150・200日線の下、または200日線が下向き）")
+    if stage and stage.get("stage") == 4:
+        excl.append("Stage4（下降）")
+    dev = [l[j] / m[j] - 1 for j in range(i - PPV["lookback"], i) if not math.isnan(m[j])]
+    if dev and min(dev) < -PPV["vshape_below_pct"] / 100:
+        excl.append(f"V字（直前10日に{sup}日線を{PPV['vshape_below_pct']:.0f}%超割り込んでから急反発）")
+    # ウェッジ：直前15日で+5%以上上げ、上げた日の出来高が下げた日より少なく、安値の傾きが高値の傾きより大きい（上向きに収束）
+    n = PPV["wedge_days"]
+    w = range(i - n, i)
+    rise = c[i - 1] / c[i - n - 1] - 1
+    upv = [v[j] for j in w if c[j] > c[j - 1]]
+    dnv = [v[j] for j in w if c[j] < c[j - 1]]
+    x = np.arange(n)
+    sh_, sl_ = np.polyfit(x, h[i - n: i], 1)[0], np.polyfit(x, l[i - n: i], 1)[0]
+    wedge = bool(rise >= PPV["wedge_rise_pct"] / 100 and upv and dnv and np.mean(upv) < np.mean(dnv) and sl_ > sh_ > 0)
+    if wedge:
+        excl.append("ウェッジ（出来高の少ない上げで上向きに収束した後）")
+    stop = l[i] * 0.995
+    risk = (c[i] - stop) / c[i]
+    if risk > PPV["max_risk_pct"] / 100:
+        excl.append(f"損切り幅{100 * risk:.1f}%（7%超）")
+    lb = PPV["base_lookback"]
+    jH = i - lb + int(np.nanargmax(h[i - lb: i]))
+    H65 = h[jH]
+    corr = (H65 - np.nanmin(l[jH: i])) / H65 if jH < i else 0.0
+    if sup == "50":
+        kind = "ma50"
+    elif c[i] < H65 and corr >= PPV["base_corr"]:
+        kind = "in_base"
+    else:
+        kind = "continuation"
+    rng = h[i] - l[i]
+    return {
+        "pattern": "pocket_pivot", "ticker": t, "date": _d(P, i), "kind": kind, "support_ma": sup,
+        "kind_ja": {"in_base": "ベースの中", "continuation": "ブレイク後の10日線沿い", "ma50": "50日線での反発"}[kind],
+        "close": round(float(c[i]), 2), "low": round(float(l[i]), 2), "stop": round(float(stop), 2), "risk_pct": round(100 * risk, 1),
+        "volume": int(v[i]), "max_down_volume": int(vmax), "vol_vs_max_down": round(float(v[i] / vmax), 2), "down_days": len(downs),
+        "rvol50": round(float(P.rvol50[t].values[i]), 2) if not math.isnan(P.rvol50[t].values[i]) else None,
+        "close_vs_ma_pct": round(100 * float(c[i] / m[i] - 1), 1), "low_vs_ma_pct": round(100 * float(l[i] / m[i] - 1), 1),
+        "close_vs_10sma_pct": round(100 * float(c[i] / ma["10"][i] - 1), 1) if not math.isnan(ma["10"][i]) else None,
+        "close_vs_50sma_pct": round(100 * float(c[i] / ma["50"][i] - 1), 1) if not math.isnan(ma["50"][i]) else None,
+        "with_breakout": bool(c[i] > H65 >= c[i - 1]), "gap_up": bool(l[i] > h[i - 1]),
+        "clv": round(float((c[i] - l[i]) / rng), 2) if rng > 0 else None,
+        "wedge": wedge, "exclusions": excl, "qualified": not excl, "fundamentals": "unverified",
+    }
+
+
+# ----------------------------------------------------------------------------
 # 売り検討シグナル（E13.1）
 # ----------------------------------------------------------------------------
 def sell_signals(P, t, i):
@@ -791,7 +1190,8 @@ HIST_COLS = ["as_of", "generated_utc", "definition_version", "source",
              "hedge_allowed", "hedge_status", "hedge_setups", "hedge_cover",
              "spy_model_composite", "spy_model_signal", "spy_model_since",
              "soxx_close", "soxx_pct_from_52w_high", "vix_close",
-             "setups_ready", "setups_watch", "key_events_n", "key_event_types"]
+             "setups_ready", "setups_watch", "key_events_n", "key_event_types",
+             "setups_ready_standard", "pocket_pivots_n"]   # v4.6
 
 
 def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine"):
@@ -824,7 +1224,10 @@ def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, s
            "setups_ready": (sum(1 for x in setups if x.get("status") == "ready") if setups is not None else None),
            "setups_watch": (sum(1 for x in setups if x.get("status") == "watch") if setups is not None else None),
            "key_events_n": (len(key_events) if key_events is not None else None),
-           "key_event_types": ("/".join(sorted({e["type"] for e in key_events})) if key_events is not None else None)}
+           "key_event_types": ("/".join(sorted({e["type"] for e in key_events})) if key_events is not None else None),
+           "setups_ready_standard": (len({x["ticker"] for x in setups if x.get("status") == "ready" and x.get("setup_type") == "standard"})
+                                     if setups is not None else None),
+           "pocket_pivots_n": (sum(1 for e in key_events if e.get("type") == "pocket_pivot") if key_events is not None else None)}
     return {k: row.get(k) for k in HIST_COLS}
 
 
@@ -1024,10 +1427,12 @@ def update_ledger(ledger, P, universe_setups, today, i):
         if key not in by_key:
             rec = {"setup_id": f"{u['ticker']}-{u['pattern']}-{tstr}", "ticker": u["ticker"], "pattern": u["pattern"], "registered": tstr,
                    "pivot": u["pivot"], "stop": u["stop"], "risk_pct": u["risk_pct"], "status": "registered", "breakout_date": None,
+                   "setup_type": u.get("setup_type"), "base_count": u.get("base_count"),   # v4.6（E14.1）
                    "definition_version": DEF_VERSION}
             setups.append(rec)
             by_key[key] = rec
-            events.append({"type": "new_ready", "ticker": u["ticker"], "pattern": u["pattern"], "pivot": u["pivot"], "stop": u["stop"], "risk_pct": u["risk_pct"]})
+            events.append({"type": "new_ready", "ticker": u["ticker"], "pattern": u["pattern"], "pivot": u["pivot"], "stop": u["stop"], "risk_pct": u["risk_pct"],
+                           "setup_type": u.get("setup_type"), "base_count": u.get("base_count"), "base_count_status": u.get("base_count_status")})
     # 古いものを畳む（直近120営業日より前のclosed/failed/expiredは集計だけ残す）
     cutoff = str((today - pd.tseries.offsets.BDay(120)).date())
     keep, folded = [], ledger.get("folded_counts", {})
@@ -1040,11 +1445,80 @@ def update_ledger(ledger, P, universe_setups, today, i):
     return events
 
 
+def register_pocket_pivots(ledger, pps, tstr, P, i):
+    """E10.1a・E14: 適格なポケットピボットを当日をDとして台帳に登録（同じ銘柄は5営業日以内に重ねない）。"""
+    setups = ledger.setdefault("setups", [])
+    since = str(P.dates[max(0, i - PPV["dedupe_days"])].date())
+    events = []
+    for pp in pps:
+        recent = [s for s in setups if s["ticker"] == pp["ticker"] and s["pattern"] == "pocket_pivot"
+                  and (s.get("breakout_date") or "") > since and s.get("breakout_date") != tstr]
+        same = [s for s in setups if s["ticker"] == pp["ticker"] and s["pattern"] == "pocket_pivot" and s.get("breakout_date") == tstr]
+        pp["repeat_within_5d"] = bool(recent)
+        if not recent and not same:
+            setups.append({"setup_id": f"{pp['ticker']}-pocket_pivot-{tstr}", "ticker": pp["ticker"], "pattern": "pocket_pivot",
+                           "kind": pp["kind"], "registered": tstr, "pivot": pp["low"], "stop": pp["stop"], "risk_pct": pp["risk_pct"],
+                           "status": "breakout", "breakout_date": tstr, "breakout_close": pp["close"], "rvol50": pp["rvol50"],
+                           "volume_confirmed": True, "weak_breakout": bool(pp["clv"] is not None and pp["clv"] < 0.25),
+                           "with_breakout": pp["with_breakout"], "observation": "same_day", "setup_type": "pocket_pivot",
+                           "base_count": pp.get("base_count"), "definition_version": DEF_VERSION,
+                           "note": "D＝シグナル当日。pivot＝当日安値（終値がこれを割ればピボット失敗）、基準リターンは当日終値から"})
+        events.append({"type": "pocket_pivot", "ticker": pp["ticker"], "kind": pp["kind"], "kind_ja": pp["kind_ja"], "support_ma": pp["support_ma"],
+                       "close": pp["close"], "stop": pp["stop"], "risk_pct": pp["risk_pct"], "vol_vs_max_down": pp["vol_vs_max_down"],
+                       "rvol50": pp["rvol50"], "with_breakout": pp["with_breakout"], "gap_up": pp["gap_up"],
+                       "base_count": pp.get("base_count"), "repeat_within_5d": pp["repeat_within_5d"]})
+    return events
+
+
+def profit_tracking(ledger, P, i):
+    """E13.2: ブレイク（PPはシグナル日）から60営業日まで、利益確定の目安（+20〜25%）と8週ルールを追う。自動売却ではない。"""
+    events, rows = [], []
+    for s in ledger.get("setups", []):
+        bd = s.get("breakout_date")
+        t = s["ticker"]
+        if bd is None or t not in P.C.columns or pd.Timestamp(bd) not in P.dates:
+            continue
+        jD = P.dates.get_loc(pd.Timestamp(bd))
+        k = i - jD
+        if k < 1 or k > PT["track_days"] or s.get("stop_touched"):
+            continue
+        c = P.C[t].values
+        ref = s["breakout_close"] if s["pattern"] == "pocket_pivot" else s["pivot"]   # 買いの基準＝ピボット（PPは当日終値）
+        if not ref or math.isnan(c[i]):
+            continue
+        gain = 100 * (c[i] / ref - 1)
+        mx = 100 * (np.nanmax(c[jD + 1: i + 1]) / ref - 1)
+        early = c[jD + 1: min(i, jD + PT["eight_week_window"]) + 1]
+        ew = s.get("eight_week") or {}
+        if not ew and len(early) and 100 * (np.nanmax(early) / ref - 1) >= PT["eight_week_gain"]:
+            j_hit = jD + 1 + int(np.nanargmax(early >= ref * (1 + PT["eight_week_gain"] / 100)))
+            until = P.dates[jD] + pd.tseries.offsets.BDay(PT["eight_week_hold"])
+            ew = {"active": True, "hit_date": _d(P, j_hit), "hit_day": int(j_hit - jD), "until": str(until.date())}
+            s["eight_week"] = ew
+            events.append({"type": "eight_week_hold", "ticker": t, "pattern": s["pattern"], "gain_pct": round(gain, 1),
+                           "hit_day": ew["hit_day"], "until": ew["until"]})
+        if ew.get("active") and str(P.dates[i].date()) >= ew["until"]:
+            ew["active"] = False
+            s["eight_week"] = ew
+            events.append({"type": "eight_week_end", "ticker": t, "pattern": s["pattern"], "gain_pct": round(gain, 1)})
+        if gain >= PT["zone_lo"] and not s.get("profit_zone_date") and not ew.get("active"):
+            s["profit_zone_date"] = _d(P, i)
+            events.append({"type": "profit_zone", "ticker": t, "pattern": s["pattern"], "ref": ref, "close": round(float(c[i]), 2),
+                           "gain_pct": round(gain, 1), "days_since_breakout": int(k)})
+        s50 = P.s50[t].values[i]
+        rows.append({"ticker": t, "pattern": s["pattern"], "setup_type": s.get("setup_type"), "breakout_date": bd, "days": int(k),
+                     "ref": ref, "close": round(float(c[i]), 2), "gain_pct": round(gain, 1), "max_gain_pct": round(float(mx), 1),
+                     "zone": "20-25" if PT["zone_lo"] <= gain <= PT["zone_hi"] else ("over_25" if gain > PT["zone_hi"] else None),
+                     "eight_week_active": bool(ew.get("active")), "eight_week_until": ew.get("until"),
+                     "below_50sma": bool(not math.isnan(s50) and c[i] < s50), "pivot_failed": bool(s.get("pivot_failed"))})
+    return events, sorted(rows, key=lambda r: -r["gain_pct"])
+
+
 def ledger_cohorts(ledger):
-    """E14.3: prospectiveのD+3/5/10集計（setup_type別）。"""
+    """E14.3: prospectiveのD+3/5/10集計（setup_type別）。PPはシグナル当日をDとする same_day。"""
     out = {}
     for s in ledger.get("setups", []):
-        if s.get("breakout_date") is None or s.get("observation") != "prospective":
+        if s.get("breakout_date") is None or s.get("observation") not in ("prospective", "same_day"):
             continue
         g = out.setdefault(s["pattern"], {})
         for k in (3, 5, 10):
@@ -1486,6 +1960,17 @@ def main():
                     rs_events.append({"type": "late_break_new", "ticker": t, "bench": cur.loc[t, "res_bench"],
                                       "r_held": cur.loc[t, "r_held"], "r_now": cur.loc[t, "r_now"]})
 
+    # --- v4.6: ステージ（E6.1）とベースカウント（E9.5a）。監視母集団のみ ---
+    stages = {t: weekly_stage(P, t, i) for t in uni_stocks}
+    walks = {t: (base_walk(P, t, i, st["stage2_start"]) if st.get("stage") == 2 and not st.get("truncated") else None)
+             for t, st in stages.items()}
+    screen["stage"] = [stages[t]["stage"] if t in stages else None for t in all_stocks]
+    screen["stage_state"] = [stages[t].get("state") if t in stages else None for t in all_stocks]
+    screen["stage_since"] = [stages[t]["since"] if t in stages else None for t in all_stocks]
+    screen["stage_truncated"] = [stages[t]["truncated"] if t in stages else None for t in all_stocks]
+    screen["base_count_current"] = [((walks.get(t) or {}).get("current") or {}).get("n") for t in all_stocks]
+    screen["bases_completed"] = [(walks.get(t) or {}).get("count_completed") for t in all_stocks]
+
     screen.sort_values(["leader", "rs_rank"], ascending=[False, False]).to_csv(os.path.join(out, "screen.csv"), index=False)
 
     # --- 市場（C7.1） ---
@@ -1528,23 +2013,62 @@ def main():
         tt_ok = bool(tt_now.loc[t, "tt7_pass"])
         vcp = detect_vcp(P, t, i) if tt_ok else None
         if vcp:
+            vcp["base_low"] = round(float(P.L[t].iloc[P.dates.get_loc(pd.Timestamp(vcp["base_start"])): i + 1].min()), 2)
             setups.append({"ticker": t, **vcp})
             ee = detect_early_entry(P, t, i, vcp) if eff_regime in ("A", "B", "E") else None
             if ee:
                 setups.append({"ticker": t, **ee})
+        if tt_ok:                                                        # v4.6：カップ・フラットベース・ダブルボトム（E9.2a・E9.6・E9.7）
+            for det in (detect_cup, detect_flat_base, detect_double_bottom):
+                x = det(P, t, i)
+                if x:
+                    setups.append({"ticker": t, **x})
         pp = detect_power_play(P, t, i)
         if pp:
             setups.append({"ticker": t, **pp})
     for s in setups:
-        s["rs_rank"] = round(float(rank_now.get(s["ticker"], np.nan)), 1)
-        s["leader"] = s["ticker"] in leaders_now
-        s["group"] = groups.get(s["ticker"], "")
-        s["sector_rs_class"] = srs.loc[s["ticker"], "sector_rs_class"] if s["ticker"] in srs.index else None  # v4.3
-        s["resilience_tier"] = res.loc[s["ticker"], "tier"] if s["ticker"] in res.index else None          # v4.3
+        t = s["ticker"]
+        s["rs_rank"] = round(float(rank_now.get(t, np.nan)), 1)
+        s["leader"] = t in leaders_now
+        s["group"] = groups.get(t, "")
+        s["sector_rs_class"] = srs.loc[t, "sector_rs_class"] if t in srs.index else None  # v4.3
+        s["resilience_tier"] = res.loc[t, "tier"] if t in res.index else None          # v4.3
+        # v4.6：Stage、ベースカウント、setup_type（E9.5・E12・E14.1）
+        s["stage"], s["stage_state"] = stages[t].get("stage"), stages[t].get("state")
+        if s["pattern"] in STANDARD_PATTERNS:
+            n_, st_ = base_number(stages[t], walks[t], s["base_start"], s["base_low"])
+            s["base_count"], s["base_count_status"] = n_, st_
+            s["setup_type"] = "late_stage" if (n_ or 0) >= 4 else "standard"
+            s["base_count_warning"] = bool(n_ == 3)
+        else:
+            s["base_count"], s["base_count_status"] = None, "対象外"
+            s["setup_type"] = "power_play" if s["pattern"] == "power_play" else "early_entry"
+        s["pattern_ja"] = PATTERN_JA.get(s["pattern"], s["pattern"])
+    # 同じ銘柄に複数の標準パターンが出たら、ほかの型名を添える（件数は銘柄単位で数える）
+    for s in setups:
+        others = [x["pattern"] for x in setups if x["ticker"] == s["ticker"] and x is not s and x["pattern"] in STANDARD_PATTERNS]
+        s["also"] = others if s["pattern"] in STANDARD_PATTERNS and others else []
     pd.DataFrame(setups).to_csv(os.path.join(out, "setups.csv"), index=False)
+
+    # --- v4.6: ポケットピボット（E10.1a。テック・半導体のみ） ---
+    pps = []
+    for t in uni_stocks:
+        x = detect_pocket_pivot(P, t, i, tt_now.loc[t].to_dict(), stages[t])
+        if x:
+            cur = (walks[t] or {}).get("current")
+            x["base_count"] = cur["n"] if (x["kind"] == "in_base" and cur) else None
+            x["stage"], x["stage_state"] = stages[t].get("stage"), stages[t].get("state")
+            x["group"] = groups.get(t, "")
+            x["rs_rank"] = round(float(rank_now.get(t, np.nan)), 1)
+            x["leader"] = t in leaders_now
+            pps.append(x)
+    pps_ok = [x for x in pps if x["qualified"]]
 
     # --- 台帳更新 ---
     events = update_ledger(ledger, P, setups, today, i)
+    events += register_pocket_pivots(ledger, pps_ok, tstr, P, i)   # v4.6
+    pt_events, pt_rows = profit_tracking(ledger, P, i)               # v4.6（E13.2）
+    events += pt_events
     events = events + jsonable(rs_events)  # v4.3 の差分イベントも台帳の day_events に残し、同日の再実行で消えないようにする
     # 同じ基準日に先の実行で検出したイベント（ブレイク等）を引き継ぐ。再実行では同じ事象が再検出されないため
     day = ledger.get("day_events") or {}
@@ -1672,7 +2196,9 @@ def main():
 
     tech_leaders = [{"ticker": t, "group": groups.get(t, ""), "rs_rank": round(float(rank_now[t]), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1),
                      "pct_from_52w_high": round(100 * float(P.C[t].iloc[i] / P.h252[t].iloc[i] - 1), 1), "tt3_5m": bool(tt_now.loc[t, "tt3_5m"]),
-                     "sector_rs_class": srs.loc[t, "sector_rs_class"], "resilience_tier": res.loc[t, "tier"]}
+                     "sector_rs_class": srs.loc[t, "sector_rs_class"], "resilience_tier": res.loc[t, "tier"],
+                     "stage": stages[t].get("stage"), "stage_state": stages[t].get("state"),
+                     "base_count_current": ((walks.get(t) or {}).get("current") or {}).get("n")}   # v4.6
                     for t in leaders_now if t in uni_stocks]
     tech_watch = [{"ticker": t, "group": groups.get(t, ""), "tt_count": int(tt_now.loc[t, "tt_count"]) if not math.isnan(tt_now.loc[t, "tt_count"]) else None,
                    "rs_rank": round(float(rank_now.get(t, np.nan)), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1),
@@ -1723,6 +2249,26 @@ def main():
         "note": "監視候補の順番であり買い判定ではない。R_held・R_nowは倍率なので dd_low・dd_now を併記して読む。",
     }
 
+    # --- v4.6: setup_type別の件数（銘柄単位）、ステージの一覧 ---
+    setup_counts = {}
+    for s in setups:
+        d = setup_counts.setdefault(s["setup_type"], {})
+        d.setdefault(s["status"], set()).add(s["ticker"])
+    setup_counts = {k: {st: {"count": len(v), "tickers": sorted(v)} for st, v in d.items()} for k, d in setup_counts.items()}
+    setup_counts["pocket_pivot"] = {"today": {"count": len(pps_ok), "tickers": sorted({x["ticker"] for x in pps_ok})}}
+    stage_rows = []
+    for t in uni_stocks:
+        st, wk = stages[t], walks.get(t) or {}
+        cur = wk.get("current") or {}
+        stage_rows.append({"ticker": t, "group": groups.get(t, ""), "stage": st.get("stage"), "state": st.get("state"), "since": st.get("since"),
+                           "truncated": st.get("truncated"), "pct_vs_ma30": st.get("pct_vs_ma30"), "ma30_slope_4w_pct": st.get("ma30_slope_4w_pct"),
+                           "bases_completed": wk.get("count_completed"), "in_base": bool(cur), "current_base": cur.get("n"),
+                           "current_base_start": cur.get("start"), "current_base_depth_pct": cur.get("depth_pct"),
+                           "last_bases": wk.get("completed", [])[-3:], "note": st.get("note")})
+    stage_counts = {str(k): sum(1 for r in stage_rows if r["stage"] == k) for k in (1, 2, 3, 4, None)}
+    stage_counts["state"] = {k: sum(1 for r in stage_rows if r["state"] == k) for k in ("confirmed", "provisional", "transition", "unclassified")}
+    stage_counts["stage2_confirmed"] = sum(1 for r in stage_rows if r["stage"] == 2 and r["state"] == "confirmed")
+
     signals = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "as_of_market_date": tstr,
@@ -1753,6 +2299,16 @@ def main():
         "tech_leaders": sorted(tech_leaders, key=lambda x: -x["rs_rank"]),
         "tech_watch": sorted(tech_watch, key=lambda x: -(x["rs_rank"] or 0))[:25],
         "setups": sorted(setups, key=lambda s: ({"ready": 0, "watch": 1, "forming": 2}.get(s["status"], 3), -(s.get("rs_rank") or 0))),
+        "setup_counts": setup_counts,                                    # v4.6：setup_type別・状態別（銘柄単位）
+        "pocket_pivots": {"definition_version": "PP-1.0", "today": pps_ok, "excluded": [x for x in pps if not x["qualified"]],
+                          "note": "E10.1a。当日出来高＞直前10営業日の下落日の最大出来高、上昇引け、10日線か50日線の近く（安値が線の±2%、終値が線の0〜5%上）、"
+                                  "50日線以上、150・200日線の上で200日線が上向き。V字・ウェッジ・損切り幅7%超は除外。業績は未確認（unverified）。"
+                                  "補助シグナルであり、VCP・通常ブレイクとは別系列で追跡する。"},
+        "profit_tracking": {"definition_version": "PT-1.0", "rows": pt_rows,
+                            "note": "E13.2。ブレイク（PPはシグナル日）から60営業日まで。基準＝ピボット（PPは当日終値）。"
+                                    "+20〜25%は利益確定の検討帯、3週以内に+20%なら8週（40営業日）保有ルール。自動売却ではなく、保有を明示した銘柄だけ行動に結びつける。"},
+        "stages": {"definition_version": "ST6-1.0", "counts": stage_counts, "rows": stage_rows,
+                   "note": "E6.1。週足30週SMA、4週変化±1%、2完了週で確定。truncated＝起点がデータの始まりと重なり、ベースカウントは未確認。"},
         "ledger_cohorts": ledger_cohorts(ledger),
         "ledger_open": [s for s in ledger["setups"] if s.get("status") in ("registered", "breakout")],
         "sell_signals": sells,

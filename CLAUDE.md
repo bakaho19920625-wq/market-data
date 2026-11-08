@@ -1,13 +1,13 @@
 # 米国株指標チェック｜プロジェクト指示（CLAUDE.md）
-# 仕様版 4.5（本文 00 v4.2 ＋ 追補03 ＋ 追補04 ＋ 追補06）
+# 仕様版 4.6（本文 00 v4.2 ＋ 追補03 ＋ 追補04 ＋ 追補06 ＋ 追補07）
 
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜06、daily_runbook.txt、weekly_runbook.txt）、
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜07、daily_runbook.txt、weekly_runbook.txt）、
   レポート本文の全履歴 reports/daily/・reports/weekly/（定期実行が手順書どおり保存する。保管ページの本文は直近180日だけ）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
-  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06 の追補が上書きする。
+  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06・07 の追補が上書きする。
   ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
   ・週次の手順と出力の形：weekly_runbook.txt。
   ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
@@ -36,13 +36,14 @@ RSライン（対SPY・対QQQ、RS新高値、株価に先行、21日EMA。追�
 テック内部（BR5）は市場全体のレジームには使わず、半導体・テクノロジー節の環境認識として毎回表示する。
 追補「06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt」（E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデル。v4.5、engine 1.3）も正本の一部とする。
 値は signals.json の leadership／hedge／spy_model から読む。3つとも観察専用で、Tapeレジーム・L/H・買い判定・Broadの点数には使わない。ヘッジはエンジンが条件の成立を出すだけで、置くかどうかはその都度判断する（C10）。
+追補「07_Addendum_v4.6_Setups_PocketPivot_Stage.txt」（E6.1 Stageの実装、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット（本文E10.1を改訂）、E13.2 利益確定の目安と8週ルール、E14.1a setup_type。v4.6、engine 1.4）も正本の一部とする。値は signals.json の stages／setups（stage・base_count・setup_type）／setup_counts／pocket_pivots／profit_tracking から読む。Tape・Broad・L/Hの判定は変えない。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
-E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03、E7.4は追補06）
+E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03、E7.4は追補06、E6.1・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2・E14.1aは追補07）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」「06」、やさしい表記の対応表「05」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」「06」「07」、やさしい表記の対応表「05」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 
@@ -56,7 +57,7 @@ F部：ユーザー設定、データ入力、計算、執行、売買ログ、�
 【3. データ入力と計算（v4.2）】
 入力ルートは、接続済みの市場データコネクタ、ユーザー提供ファイル（F2の標準CSV）、Web検索の個別値の順。Web検索の個別値は指数終値・経済指標・イベント等に限る。
 
-時系列の計算（TT、RS、Tapeチェックリスト、分配日、セットアップ、ブレイク追跡、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張、先導セクターの推移、ヘッジ条件、長期SPY配分モデル）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
+時系列の計算（TT、RS、Tapeチェックリスト、分配日、週足Stage、ベースカウント、セットアップ（VCP・カップ・フラットベース・ダブルボトム・パワープレイ・チート）、ポケットピボット、ブレイク追跡、利益確定の目安・8週ルール、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張、先導セクターの推移、ヘッジ条件、長期SPY配分モデル）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
 
 読込時はファイル名、基準日、行数、銘柄数、欠損・重複・分割疑義、出典種別を示す。
 
@@ -95,7 +96,7 @@ Pilotの成功、利益化、内部改善、セットアップ増加に応じて
 【6. レポート構成】
 「レポートして」「最新版レポート」は、元のマルチファクターレポートの継続更新とする。
 
-週次の既定はStandard。日次は「Daily（日次レポート）」（D7）で、Tape中心の短い更新とDaily Planをまとめる。月初・4週ごと、重要な判定変更、重大イベント後、定義変更、Full依頼時はFull。イベント単独はEvent Update。初回、新規チャット、比較復元不能時はFullとフルYAMLを出す。判定条件が変わった改訂（直近はv4.4）の後の最初の週次レポート、またはこのチャットで依頼された最初の市況レポートはFullとする（日次レポートは対象外）。観察項目だけの追加（v4.5）はFullの理由にしない。
+週次の既定はStandard。日次は「Daily（日次レポート）」（D7）で、Tape中心の短い更新とDaily Planをまとめる。月初・4週ごと、重要な判定変更、重大イベント後、定義変更、Full依頼時はFull。イベント単独はEvent Update。初回、新規チャット、比較復元不能時はFullとフルYAMLを出す。判定条件が変わった改訂（直近はv4.4）の後の最初の週次レポート、またはこのチャットで依頼された最初の市況レポートはFullとする（日次レポートは対象外）。観察項目だけの追加（v4.5）と、セットアップの型の追加（v4.6。Tape・Broadの定義は不変）はFullの理由にしない。
 
 「デイリー」「明日のプラン」「発注プラン」はDaily Plan（D7・F4）とする。直近の確定レポートを前提に、ready等の候補ごとにP、T、E_plan、E_max、S、リスク幅、決算日、許容サイズ、無効化条件を示す。米国取引時間（日本時間の深夜）と、ユーザーの注文手段・監視可能時間を前提にする。Daily Planで市場レジームを正式変更しない。ゲート該当時は発注計画を出さない。
 
@@ -114,7 +115,7 @@ NVDA・TSM・MUは固定推奨ではない。SOXLは明示依頼、保有情報�
 
 個別分析とセットアップ検出の対象は半導体・テクノロジーの監視銘柄だけとする。市場全体の先導候補数やRS百分位はS&P500構成銘柄を含めて計算し、Tape判定にだけ使う。E部のTT8、Stage、RS、CAN SLIM、Code 33、決算サプライズ・予想修正、VCP、カップ、Power Play、チート／ロー・チート、ベースカウント、Pocket Pivot、U&R、ピボット、スクワット、エントリー、初期ストップ、売り検討シグナル、D+3／5／10追跡を適用する。本人公開手法M（M1＝本人公開、M2＝公開要約で照合・頁未確認）、関連手法R、プロジェクト独自規則Pを区別する。
 
-先導候補、セットアップready、現在の買い許可を分離する。標準ready、power_play_ready、early_entry_ready、late_stage（ベースカウント4以上）を別枠で数え、成績も別集計する。公式RSとproxy、掲載枠と調査母集団を区別し、部分調査から全市場順位や成功率を作らない。
+先導候補、セットアップready、現在の買い許可を分離する。標準ready（VCP・カップ・フラットベース・ダブルボトム）、power_play_ready、early_entry_ready、late_stage（ベースカウント4以上）、ポケットピボットを別枠で数え（signals.setup_counts）、成績も別集計する。公式RSとproxy、掲載枠と調査母集団を区別し、部分調査から全市場順位や成功率を作らない。
 
 【8. 欠損と継続】
 データ状態はverified／reported_unverified／proxy／missing。
@@ -124,7 +125,7 @@ NVDA・TSM・MUは固定推奨ではない。SOXLは明示依頼、保有情報�
 
 BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱いを示す。Confidenceは別判定する。
 
-状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.5とし、extensions.sector_leadershipはschema1.3／ST-1.3（追補03）、extensions.breadth_extはBX-1.0（追補04）、extensions.spy_model／hedge（追補06）とする。checkpoint 4.0〜4.1の旧状態は読込可とし、追加項目はnullとして前回比を作らない。版の読み方は00の冒頭「版の読み方」。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
+状態はUNIFIED_MARKET_STATE、checkpoint_version 4.1、report.specification_version 4.6とし、extensions.sector_leadershipはschema1.3／ST-1.3（追補03）、extensions.breadth_extはBX-1.0（追補04）、extensions.spy_model／hedge（追補06）とする。追補07はフィールドの追加だけで、状態YAMLの形は変えない。checkpoint 4.0〜4.1の旧状態は読込可とし、追加項目はnullとして前回比を作らない。版の読み方は00の冒頭「版の読み方」。Standardは簡易、Fullは復旧可能なフルYAMLを出す。
 
 前回基準は今回明示されたものを優先し、それ以外は今回アクセスできる確定資料の最新市場基準日を使う。同日訂正版はsupersedes_idで区別し、訂正を新しい相場変化にしない。Daily Planは比較基準にしない。復元不能ならprevious_id=null、前回比較不能とする。
 
