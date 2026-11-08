@@ -40,11 +40,12 @@ v4.5 追補（06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt）。いずれも�
 v4.5b（F2.2）：判定結果の日次履歴 history_signals.csv（1日1行。レジーム、チェックリスト、先導セクター、ヘッジ、長期モデル、候補数、イベント種類）を
   data ブランチに追記する（--prev-history で前回分を引き継ぎ、無ければ main の history_seed.csv＝backfill から始める）。
 v4.6 追補（07_Addendum_v4.6_Setups_PocketPivot_Stage.txt）。Tape・Broad・L/H・VCP等の判定は変えない：
-  E6.1 週足Stage（状態 confirmed／provisional／transition）、E9.5a ベースカウント、E9.2a カップウィズハンドル、E9.6 フラットベース、
+  E6.2 週足ステージ（v4.6b：状態遷移、細区分1A〜4B-、支え・抵抗、マンスフィールドRS）、E6.3 業種別のステージ分布、
+  E9.5a ベースカウント、E9.2a カップウィズハンドル、E9.6 フラットベース、
   E9.7 ダブルボトム、E10.1a ポケットピボット（10日線か50日線の近く、V字・ウェッジ除外、種類、台帳でD+3/5/10を追跡）、
   E13.2 利益確定の目安（+20〜25%）と8週ルール、E14.1a setup_type。
   signals.json の stages／setup_counts／pocket_pivots／profit_tracking、setups の stage・base_count・setup_type、
-  screen.csv の stage 等の列、key_events の pocket_pivot／profit_zone／eight_week_hold／eight_week_end。
+  screen.csv の stage 等の列、key_events の pocket_pivot／profit_zone／eight_week_hold／eight_week_end／stage_change／sector_stage_shift。
 """
 import argparse
 import json
@@ -56,7 +57,7 @@ from datetime import datetime, timedelta, timezone
 import numpy as np
 import pandas as pd
 
-DEF_VERSION = "ST-1.5 / engine 1.4"
+DEF_VERSION = "ST-1.5b / engine 1.4b"
 JST = timezone(timedelta(hours=9))
 INDEX_TICKERS = {"^GSPC", "^IXIC", "^VIX"}
 SECTOR_ETFS = ["XLK", "XLC", "XLY", "XLP", "XLE", "XLF", "XLV", "XLI", "XLB", "XLRE", "XLU"]
@@ -86,7 +87,11 @@ TECH_SECTORS = ("Information Technology", "Communication Services")
 BX_LABEL_JA = {"stealth": "隠れ弱気（指数は高値圏なのに過半が−20%以上）", "watch": "隠れ弱気の警戒（−20%以上が4割超）",
                "broad_decline": "全面的な下落（指数・基準ETFも−10%超）"}
 # v4.6（07追補）: ステージ・ベースカウント・カップ・フラットベース・ダブルボトム・ポケットピボット・利益確定の目安（すべてP）
-ST6 = {"slope_pct": 1.0, "near_ma_pct": 5.0, "min_days": 175}       # E6.1：30週線の4週変化±1%、横ばい時の線からの距離5%
+STG = {"flat": 1.0, "near_ma": 8.0, "bo_min_slope": 0.5, "s4_to1_slope": 2.0, "mrs_weeks": 52,   # E6.2（07追補）：週足ステージの閾値（P）
+       "support_weeks": 13, "break_below_ma": 5.0, "base_fail_pct": 3.0, "s4_min_weeks": 3,
+       "a_weeks": 8, "a_max_ext": 25.0, "b_age": 30, "b_ext": 40.0, "b_div_weeks": 8,
+       "s1_early_weeks": 6, "s1_late_weeks": 6, "s1b_near_res": 10.0, "s3_early_weeks": 5, "s3_late_weeks": 8, "s3_near_support": 5.0,
+       "s4_early_weeks": 6, "s4_late_weeks": 10, "s4_nolow_late": 3, "s4_nolow_bminus": 6, "s4_bminus_near_ma": 5.0}
 BC = {"min_depth": 0.08, "max_depth": 0.50, "min_days": 25}           # E9.5a：ベース＝5週以上、深さ8〜50%
 READY = {"near_pivot": 0.92, "extended": 1.05, "max_risk": 0.07, "watch_risk": 0.08}  # VCPと同じ（E9.1・E11）
 CUP = {"min_depth": 0.15, "max_depth": 0.30, "min_total_days": 35, "max_total_days": 325, "prior_up": 0.30,
@@ -556,74 +561,331 @@ def detect_early_entry(P, t, i, vcp):
 
 
 # ----------------------------------------------------------------------------
-# v4.6（07追補）: ステージ（E6.1）、ベースカウント（E9.5a）
+# v4.6b（07追補）: ステージ分析（E6.2）、業種別のステージ分布（E6.3）、ベースカウント（E9.5a）
 # ----------------------------------------------------------------------------
 def _d(P, j):
     return str(P.dates[j].date())
 
 
-def weekly_stage(P, t, i):
-    """E6.1: 週足30週SMAのStage。基準日iまでに完了した週だけで判定し、同じ候補が2完了週続いたら確定する（E6）。"""
-    out = {"stage": None, "candidate": None, "since": None, "stage2_start": None, "truncated": None,
-           "pct_vs_ma30": None, "ma30_slope_4w_pct": None, "week_end": None, "provisional_week": None, "note": None}
-    df = pd.DataFrame({"c": P.C[t].iloc[: i + 1], "h": P.H[t].iloc[: i + 1], "l": P.L[t].iloc[: i + 1]}).dropna()
-    if len(df) < ST6["min_days"]:
-        out["note"] = "履歴不足"
-        return out
+STAGE_JA = {"1A": "底固めの始まり", "1": "底固め", "1B": "底固めの終盤（上抜け間近）",
+            "2A": "上昇の初期", "2": "上昇の途中", "2B": "上昇の終盤",
+            "3A": "天井の兆し", "3": "天井圏", "3B": "天井圏の終盤（崩れ間近）",
+            "4A": "下落入り", "4": "下落の途中", "4B": "下落の終盤", "4B-": "安値を付けた可能性"}
+
+
+def weekly_bars(P, t, i):
+    """完了週と進行中の週の週足（W-FRI）。戻り値 (DataFrame, 最後の週が未完了か)。"""
+    df = pd.DataFrame({"c": P.C[t].iloc[: i + 1], "h": P.H[t].iloc[: i + 1], "l": P.L[t].iloc[: i + 1],
+                       "v": P.V[t].iloc[: i + 1]}).dropna(subset=["c", "h", "l"])
+    if df.empty:
+        return df, False
     key = df.index.to_period("W-FRI")
     g = df.groupby(key)
-    W = pd.DataFrame({"c": g["c"].last(), "h": g["h"].max(), "l": g["l"].min()})
+    W = pd.DataFrame({"c": g["c"].last(), "h": g["h"].max(), "l": g["l"].min(), "v": g["v"].sum(min_count=1)})
     dates = pd.Series(df.index, index=df.index).groupby(key)
     W["first"], W["last"] = dates.first().values, dates.last().values
-    if pd.Timestamp(W["last"].iloc[-1]).weekday() != 4:   # 金曜で終わっていない週は未完了（休場の金曜は暫定のまま扱う）
-        out["provisional_week"] = str(pd.Timestamp(W["last"].iloc[-1]).date())
-        W = W.iloc[:-1]
+    partial = pd.Timestamp(W["last"].iloc[-1]).weekday() != 4   # 金曜で終わっていない最後の週は未完了
+    return W, partial
+
+
+def stage_machine(W, spy_c):
+    """E6.2（07追補）：週足の状態遷移でステージ（1〜4）と細区分（1A〜4B-）を決める。各週の結果のリストを返す。"""
     n = len(W)
-    ma = W["c"].rolling(30).mean()
-    s = ma / ma.shift(4) - 1
-    hv, lv = W["h"].values, W["l"].values
-    sw_h = [k for k in range(1, n - 1) if hv[k] > hv[k - 1] and hv[k] > hv[k + 1]]
-    sw_l = [k for k in range(1, n - 1) if lv[k] < lv[k - 1] and lv[k] < lv[k + 1]]
-    conf, conf_since, last_dir, prev_cand, ready_w, cand = None, None, None, None, None, None
+    c, h, l, v = W["c"].values, W["h"].values, W["l"].values, W["v"].values
+    ma = W["c"].rolling(30).mean().values
+    s4 = (pd.Series(ma) / pd.Series(ma).shift(4) - 1).values * 100
+    d = (c / ma - 1) * 100
+    ratio = pd.Series(c, index=W.index) / spy_c.reindex(W.index)
+    mrs = ((ratio / ratio.rolling(STG["mrs_weeks"], min_periods=STG["mrs_weeks"]).mean() - 1) * 100).values
+    sw_l = [k for k in range(1, n - 1) if l[k] < l[k - 1] and l[k] < l[k + 1]]
+    flat = STG["flat"]
+    out = [None] * n
+    stage, st_start, trunc = None, None, False
+    adv_start, H2, s4max, sup2 = None, None, None, None      # ステージ2（上昇）の起点・高値・線の傾きの最大・支え
+    sup3, R3 = None, None                                      # ステージ3（天井圏）の支え・上限
+    low4, low4_w, s4min = None, None, None                     # ステージ4（下落）の安値・その週・線の傾きの最小
+    base_from, breakout, resume = None, None, False            # ステージ1（底固め）の起点、直近のブレイク、天井圏からの上昇再開
+    adv_trunc, last_change = False, None                       # 上昇の起点がデータより前か、直近のステージ変更
+    above, below, flatn = 0, 0, 0
     for w in range(n):
-        if math.isnan(s.iloc[w]):
-            prev_cand = None
+        if np.isnan(s4[w]) or np.isnan(d[w]):
             continue
-        hs = [hv[k] for k in sw_h if k + 1 <= w][-2:]   # 後続1週の完了で認定（E4）
-        ls = [lv[k] for k in sw_l if k + 1 <= w][-2:]
-        if ready_w is None and len(hs) == 2 and len(ls) == 2:
-            ready_w = w
-        rising = len(hs) == 2 and len(ls) == 2 and hs[1] > hs[0] and ls[1] > ls[0]
-        falling = len(hs) == 2 and len(ls) == 2 and hs[1] < hs[0] and ls[1] < ls[0]
-        wc, m, sl_ = W["c"].iloc[w], ma.iloc[w], s.iloc[w]
-        up, down = sl_ > ST6["slope_pct"] / 100, sl_ < -ST6["slope_pct"] / 100
-        near = abs(wc / m - 1) <= ST6["near_ma_pct"] / 100
-        if wc > m and up and rising:
-            cand = 2
-        elif wc < m and down and falling:
-            cand = 4
-        elif not up and not down and near:
-            cand = 1 if last_dir == 4 else 3 if last_dir == 2 else None   # 過去の方向性が不明なら1と3を強制分類しない
-        else:
-            cand = None                                                    # transition
-        if cand is not None and cand == prev_cand and conf != cand:
-            conf, conf_since = cand, w - 1
-            if cand in (2, 4):
-                last_dir = cand
-        prev_cand = cand
-    if n == 0 or math.isnan(s.iloc[-1]):
+        above = above + 1 if c[w] > ma[w] else 0
+        below = below + 1 if c[w] < ma[w] else 0
+        flatn = flatn + 1 if abs(s4[w]) <= flat else 0
+        lows_ok = [k for k in sw_l if k + 1 <= w]
+        new, why = None, ""
+        if stage is None:                       # 最初の分類（データの始まり。起点は不明＝truncated）
+            org = ma[w] / ma[w - 26] if w >= 26 and not np.isnan(ma[w - 26]) else np.nan
+            if above >= 2 and s4[w] > flat:
+                new, why = 2, "初回：上向きの30週線の上"
+            elif below >= 2 and s4[w] < -flat:
+                new, why = 4, "初回：下向きの30週線の下"
+            elif flatn >= 2 and abs(d[w]) <= STG["near_ma"] and not np.isnan(org):
+                new, why = (3, "初回：上昇のあと線が横ばい") if org > 1.10 else (1, "初回：下落のあと線が横ばい") if org < 0.90 else (None, "")
+            if new is None:
+                continue
+            trunc = True
+        elif stage == 1:
+            res = np.nanmax(h[base_from: w]) if w > base_from else np.nan
+            base_low = np.nanmin(l[base_from: w]) if w > base_from else np.nan
+            if not np.isnan(res) and c[w] > res and c[w] > ma[w] and s4[w] >= -STG["bo_min_slope"]:
+                new, why = 2, "底固めの上限を終値で上抜け"
+                vb = np.nanmean(v[max(0, w - 4): w])
+                breakout = {"week": w, "level": float(res), "vol_ratio": float(v[w] / vb) if vb and vb > 0 else None}
+            elif not np.isnan(base_low) and (s4[w] < 0 or d[w] <= -STG["break_below_ma"]) and (
+                    c[w] < base_low * (1 - STG["base_fail_pct"] / 100) or (c[w] < base_low and w >= 1 and c[w - 1] < base_low)):
+                new, why = 4, "底固めの安値を終値で割った（3%超、または2週続けて）"
+        elif stage == 2:
+            low13 = np.nanmin(l[max(0, w - STG["support_weeks"]): w]) if w > 0 else np.nan
+            if c[w] < ma[w] and c[w] < low13 and (d[w] <= -STG["break_below_ma"] or s4[w] < 0):
+                new, why = 4, f"30週線を{-d[w]:.0f}%下回り、直近13週の安値も終値で割った（天井圏を経ない崩れ）"
+            elif (adv_start is not None and w - adv_start <= STG["a_weeks"] and breakout and not adv_trunc
+                  and c[w] < breakout["level"] and c[w] < ma[w]):
+                new, why = 1, "上抜けから8週以内に底固めの上限と30週線の下へ戻った（上抜け失敗）"
+            elif below >= 2:
+                new, why = 3, "30週線の下で2週続けて引けた"
+            elif flatn >= 2 and abs(d[w]) <= STG["near_ma"] and (adv_start is None or w - adv_start > STG["a_weeks"]):
+                new, why = 3, "30週線が横ばいになり、株価が線の近く"
+        elif stage == 3:
+            if c[w] < ma[w] and c[w] < sup3:
+                new, why = 4, "天井圏の安値（支え）を終値で割った"
+            elif below >= 2 and s4[w] < -flat:
+                new, why = 4, "30週線が下向きに変わり、2週続けて線の下"
+            elif c[w] > R3 and c[w] > ma[w] and s4[w] > 0:
+                new, why, resume = 2, "天井圏の上限を上抜けて上昇再開", True
+        elif stage == 4:
+            if above >= 2 and s4[w] > flat:
+                new, why = 3, "下落入りの後、まだ上向きの30週線の上に戻った（天井圏の荒い値動き）"
+            elif above >= 2 and s4[w] >= -STG["s4_to1_slope"]:
+                new, why = 1, "30週線の上で2週続けて引けた"
+            elif flatn >= 2 and abs(d[w]) <= STG["near_ma"] and w - st_start >= STG["s4_min_weeks"]:
+                new, why = 1, "30週線が横ばいになり、株価が線の近く"
+        if new is not None:
+            prev = stage
+            stage, st_start = new, w
+            if prev is not None:
+                trunc = False                                  # 実際の遷移で始まったステージ（起点が分かる）
+            if new == 2:
+                if prev == 3 and resume and adv_start is not None:   # 天井圏からの上昇再開：同じ上昇の続き（起点・ベースの番号を引き継ぐ）
+                    H2, s4max = max(H2 or h[w], h[w]), (s4max if s4max is not None else s4[w])
+                else:
+                    adv_start, H2, s4max = w, h[w], s4[w]
+                    adv_trunc = prev is None
+                    if prev != 1:
+                        breakout = None
+                resume = False
+            elif new == 3:
+                sup3 = float(np.nanmin(l[max(0, w - STG["support_weeks"]): w + 1]))
+                if prev == 4:                                   # 崩れの後の戻り：支え＝下落の安値、上限＝直近26週の高値
+                    sup3 = float(min(sup3, low4))
+                    H2 = None
+                R3 = max(H2 if H2 is not None else np.nanmax(h[max(0, w - 26): w + 1]), h[w])
+            elif new == 4:
+                low4, low4_w, s4min = l[w], w, s4[w]
+                adv_start, H2, s4max, sup2, breakout, adv_trunc = None, None, None, None, None, False
+            elif new == 1:
+                if prev == 2:
+                    pass                                        # 上抜け失敗：同じ底固めの続き（base_from を引き継ぐ）
+                elif prev == 4 and low4_w is not None:
+                    base_from = low4_w
+                else:
+                    base_from = max(0, w - 26) + int(np.nanargmin(l[max(0, w - 26): w + 1]))
+            last_change = {"week": w, "from": prev, "to": new, "why": why}
+        if stage is None:
+            continue
+        # 状態の更新
+        if stage == 2:
+            H2, s4max = max(H2, h[w]), max(s4max, s4[w])
+            cand = [l[k] for k in lows_ok if adv_start is not None and k >= adv_start]
+            sup2 = cand[-1] if cand else (np.nanmin(l[adv_start: w + 1]) if adv_start is not None else l[w])
+        elif stage == 3:
+            R3 = max(R3, h[w])
+            if w > st_start:
+                sup3 = min(sup3, np.nanmin(l[st_start: w]))
+        elif stage == 4:
+            if l[w] < low4:
+                low4, low4_w = l[w], w
+            s4min = min(s4min, s4[w])
+        # 細区分
+        wk = w - st_start
+        wk1 = wk + 1                                          # 何週目か（入った週＝1週目）
+        reasons, sub = [], str(stage)
+        mrs_w, mrs_4 = mrs[w], (mrs[w - 4] if w >= 4 else np.nan)
+        rs_up = bool(not np.isnan(mrs_w) and not np.isnan(mrs_4) and mrs_w > mrs_4)
+        if stage == 1:
+            res = np.nanmax(h[base_from: w]) if w > base_from else h[w]
+            bw = w - base_from
+            if bw >= STG["s1_late_weeks"] and s4[w] >= -STG["bo_min_slope"] and c[w] >= res * (1 - STG["s1b_near_res"] / 100) and rs_up:
+                sub = "1B"; reasons.append(f"底固め{bw}週、上限まで{100 * (res / c[w] - 1):.1f}%、市場比の強さが改善")
+            elif wk < STG["s1_early_weeks"] or s4[w] < -STG["bo_min_slope"]:
+                sub = "1A"; reasons.append("下落が止まったばかり" if wk < STG["s1_early_weeks"] else "30週線はまだ下向き")
+            if d[w] >= 15:
+                reasons.append(f"30週線から+{d[w]:.0f}%の急な戻り（V字。底固めの形はまだない）")
+        elif stage == 2:
+            age = w - adv_start if adv_start is not None else None
+            flags = []
+            if adv_trunc or (age is not None and age >= STG["b_age"]):
+                flags.append("上昇がデータの始まりより前から続いている" if adv_trunc else f"上昇{age}週")
+            if s4max >= 3 and s4[w] < 0.5 * s4max:
+                flags.append(f"30週線の傾きが鈍化（{s4[w]:.1f}%、最大{s4max:.1f}%）")
+            if w >= STG["b_div_weeks"] and c[w] >= 0.9 * H2 and not np.isnan(mrs_w) and not np.isnan(mrs[w - STG["b_div_weeks"]]) and mrs_w < mrs[w - STG["b_div_weeks"]]:
+                flags.append("高値圏なのに市場比の強さが低下")
+            if sup2 is not None and c[w] < sup2:
+                flags.append("直近の押し安値を割った")
+            if any(c[k] < ma[k] for k in range(max(st_start, w - 7), w)):
+                flags.append("直近8週に30週線を割った週あり")
+            if len(flags) >= 2 or "直近の押し安値を割った" in flags:
+                sub = "2B"; reasons += flags
+            elif not adv_trunc and age is not None and age <= STG["a_weeks"] and d[w] <= STG["a_max_ext"]:
+                sub = "2A"; reasons.append(f"上抜けから{age + 1}週目" + ("（上抜けの週の出来高は直前4週平均の{:.1f}倍）".format(breakout["vol_ratio"]) if breakout and breakout.get("vol_ratio") else ""))
+            else:
+                reasons += flags
+            if d[w] >= STG["b_ext"]:
+                reasons.append(f"30週線から+{d[w]:.0f}%（離れすぎ。新規は押し目待ち）")
+        elif stage == 3:
+            near_sup = c[w] <= sup3 * (1 + STG["s3_near_support"] / 100)
+            late = wk >= STG["s3_late_weeks"] or (s4[w] < 0 and c[w] < ma[w]) or near_sup
+            if late:
+                sub = "3B"
+                reasons.append("支えの近く" if near_sup else "30週線が下向きに変わり、株価も線の下" if (s4[w] < 0 and c[w] < ma[w]) else f"天井圏{wk1}週目")
+            elif wk < STG["s3_early_weeks"]:
+                sub = "3A"
+        elif stage == 4:
+            nolow = w - low4_w
+            if nolow >= STG["s4_nolow_bminus"] and d[w] >= -STG["s4_bminus_near_ma"]:
+                sub = "4B-"; reasons.append(f"{nolow}週安値を更新せず、30週線の近く")
+            elif (wk >= STG["s4_late_weeks"] and nolow >= STG["s4_nolow_late"]) or (wk >= 8 and s4min < 0 and s4[w] > 0.5 * s4min):
+                sub = "4B"; reasons.append(f"{nolow}週安値を更新せず" if nolow >= STG["s4_nolow_late"] else "下げの勢いが鈍化")
+            elif wk < STG["s4_early_weeks"]:
+                sub = "4A"; reasons.append(f"下落入りから{wk1}週目")
+        qual = "+" if (not np.isnan(mrs_w) and mrs_w > 0 and rs_up) else "-" if (not np.isnan(mrs_w) and mrs_w < 0 and not rs_up) else ""
+        out[w] = {"stage": stage, "sub": sub, "qual": qual, "weeks": int(wk1), "start": int(st_start), "trunc": bool(trunc),
+                  "adv_start": adv_start, "adv_trunc": bool(adv_trunc), "reasons": reasons, "ma": float(ma[w]), "d": float(d[w]), "s4": float(s4[w]),
+                  "mrs": None if np.isnan(mrs_w) else float(mrs_w), "mrs_4w": None if np.isnan(mrs_4) else float(mrs_4),
+                  "support": float(sup2 if stage == 2 else sup3 if stage == 3 else np.nanmin(l[base_from: w + 1]) if stage == 1 else low4) if stage else None,
+                  "resistance": float(R3 if stage == 3 else np.nanmax(h[base_from: w]) if stage == 1 and w > base_from else H2 if stage == 2
+                                      else ma[w] if stage == 4 else np.nan),
+                  "low13": float(np.nanmin(l[max(0, w - STG["support_weeks"]): w])) if w > 0 else None,
+                  "breakout": breakout if stage == 2 else None, "change": last_change}
+    return out
+
+
+def weekly_stage(P, t, i, spy_w=None):
+    """E6.2（07追補）：週足のステージと細区分。公式の判定は完了した週だけで行い、進行中の週は暫定として別に出す。"""
+    out = {"stage": None, "sub": None, "label": None, "label_ja": None, "qual": None, "since": None, "weeks_in_stage": None, "low_13w": None,
+           "stage2_start": None, "truncated": None, "pct_vs_ma30": None, "ma30": None, "ma30_slope_4w_pct": None,
+           "mansfield_rs": None, "mansfield_rs_4w_ago": None, "support": None, "resistance": None, "breakout": None,
+           "reasons": [], "last_change": None, "week_end": None, "provisional_week": None, "provisional": None,
+           "stage_1w_ago": None, "stage_4w_ago": None, "sub_4w_ago": None, "history": None, "note": None}
+    W, partial = weekly_bars(P, t, i)
+    if len(W) < 36:
         out["note"] = "履歴不足"
         return out
-    # 状態：確定Stageの条件が今週も成立＝confirmed、別Stageの候補が1週だけ＝provisional、どの条件も満たさない＝transition（E6）
-    state = ("unclassified" if conf is None else "confirmed" if cand == conf else "transition" if cand is None else "provisional")
-    out.update({"stage": conf, "candidate": cand, "state": state,
-                "since": str(pd.Timestamp(W["first"].iloc[conf_since]).date()) if conf_since is not None else None,
-                "truncated": bool(conf_since is not None and ready_w is not None and conf_since <= ready_w + 1),
-                "pct_vs_ma30": round(100 * float(W["c"].iloc[-1] / ma.iloc[-1] - 1), 1),
-                "ma30_slope_4w_pct": round(100 * float(s.iloc[-1]), 2),
-                "week_end": str(pd.Timestamp(W["last"].iloc[-1]).date())})
-    if conf == 2:
-        out["stage2_start"] = out["since"]
+    if spy_w is None:
+        spy_w, _ = weekly_bars(P, BENCH, i)
+    res = stage_machine(W, spy_w["c"])
+    k = len(W) - 2 if partial else len(W) - 1          # 公式＝最後の完了週
+    r = res[k] if k >= 0 else None
+    if r is None:
+        out["note"] = "履歴不足（ステージを判定できる週がまだない）"
+        return out
+    wd = lambda j: str(pd.Timestamp(W["first"].iloc[j]).date())
+    lab = r["sub"] + (f"({r['qual']})" if r["qual"] else "")
+    out.update({"stage": r["stage"], "sub": r["sub"], "label": lab, "label_ja": STAGE_JA.get(r["sub"], ""), "qual": r["qual"] or None,
+                "since": wd(r["start"]), "weeks_in_stage": r["weeks"], "truncated": r["trunc"],
+                "pct_vs_ma30": round(r["d"], 1), "ma30": round(r["ma"], 2), "ma30_slope_4w_pct": round(r["s4"], 2),
+                "mansfield_rs": None if r["mrs"] is None else round(r["mrs"], 1), "mansfield_rs_4w_ago": None if r["mrs_4w"] is None else round(r["mrs_4w"], 1),
+                "support": None if r["support"] is None or np.isnan(r["support"]) else round(r["support"], 2),
+                "resistance": None if r["resistance"] is None or np.isnan(r["resistance"]) else round(r["resistance"], 2),
+                "reasons": r["reasons"], "week_end": str(pd.Timestamp(W["last"].iloc[k]).date()),
+                "low_13w": None if r["low13"] is None or np.isnan(r["low13"]) else round(r["low13"], 2)})
+    if r["stage"] == 2 and r["adv_start"] is not None:
+        out["stage2_start"] = wd(r["adv_start"])
+        out["truncated"] = r["adv_trunc"]
+    if r["breakout"]:
+        b = r["breakout"]
+        out["breakout"] = {"week_start": wd(b["week"]), "level": round(b["level"], 2),
+                           "vol_ratio_vs_4w": round(b["vol_ratio"], 2) if b.get("vol_ratio") else None}
+    ch = r["change"]
+    if ch:
+        out["last_change"] = {"week_start": wd(ch["week"]), "from": ch["from"], "to": ch["to"], "why": ch["why"]}
+    if k >= 1 and res[k - 1]:
+        out["stage_1w_ago"] = res[k - 1]["sub"]
+    if k >= 4 and res[k - 4]:
+        out["stage_4w_ago"], out["sub_4w_ago"] = res[k - 4]["stage"], res[k - 4]["sub"]
+    out["history"] = "/".join((x["sub"] if x else "-") for x in res[max(0, k - 7): k + 1])   # 直近8週（古い順）
+    if partial:
+        p = res[-1]
+        out["provisional_week"] = str(pd.Timestamp(W["last"].iloc[-1]).date())
+        if p and (p["sub"] != r["sub"] or p["stage"] != r["stage"]):
+            out["provisional"] = {"label": p["sub"] + (f"({p['qual']})" if p["qual"] else ""), "label_ja": STAGE_JA.get(p["sub"], ""), "reasons": p["reasons"],
+                                  "why": p["change"]["why"] if p["change"] and p["change"]["week"] == len(W) - 1 else None}
+    return out
+
+
+SB_LABEL_JA = {"weak": "弱い（ステージ4が4割以上）", "deteriorating": "悪化中（4週でステージ4が10pt以上増、またはステージ3が4割以上）",
+               "healthy": "健全（ステージ2が5割以上、ステージ4が2割未満）",
+               "improving": "改善中（4週でステージ2が10pt以上増、または上抜け間近と上昇初期が25%以上）", "neutral": "どちらとも言えない"}
+SUBS = ("1A", "1", "1B", "2A", "2", "2B", "3A", "3", "3B", "4A", "4", "4B", "4B-")
+
+
+def _sub_at(st, k):
+    """k週前の細区分（history は直近8週、古い順）。"""
+    h = (st.get("history") or "").split("/")
+    return h[-1 - k] if len(h) > k and h[-1 - k] not in ("", "-") else None
+
+
+def stage_breadth(stages, groups_map):
+    """E6.3（07追補）：業種ごとの個別株ステージの分布と調子のラベル。今・1週前・4週前・5週前。"""
+    def agg(members, k):
+        subs = [_sub_at(stages[t], k) for t in members if t in stages]
+        subs = [x for x in subs if x]
+        n = len(subs)
+        if not n:
+            return None
+        main = {m: sum(1 for x in subs if x[0] == str(m)) for m in (1, 2, 3, 4)}
+        pct = {m: round(100 * main[m] / n, 1) for m in main}
+        fresh = round(100 * sum(1 for x in subs if x in ("1B", "2A")) / n, 1)
+        return {"n": n, "count": main, "pct": pct, "pct_1B_2A": fresh,
+                "by_sub": {x: sum(1 for y in subs if y == x) for x in SUBS if any(y == x for y in subs)}}
+
+    def label(now, w4):
+        if now is None:
+            return None
+        p, q = now["pct"], (w4 or {}).get("pct") or {}
+        d4 = p[4] - q[4] if q else 0
+        d2 = p[2] - q[2] if q else 0
+        if p[4] >= 40:
+            return "weak"
+        if d4 >= 10 or p[3] >= 40:
+            return "deteriorating"
+        if p[2] >= 50 and p[4] < 20:
+            return "healthy"
+        if d2 >= 10 or now["pct_1B_2A"] >= 25:
+            return "improving"
+        return "neutral"
+
+    out = {}
+    for g, members in groups_map.items():
+        now, w1, w4, w5 = (agg(members, k) for k in (0, 1, 4, 5))
+        if now is None:
+            continue
+        lab, lab_1w = label(now, w4), label(w1, w5)
+        above = [stages[t]["pct_vs_ma30"] for t in members if t in stages and stages[t].get("pct_vs_ma30") is not None]
+        tick = {}
+        for t in members:
+            st = stages.get(t) or {}
+            if st.get("sub"):
+                tick.setdefault(st["sub"], []).append(t)
+        out[g] = {"n": now["n"], "pct_stage": now["pct"], "count_stage": now["count"], "by_sub": now["by_sub"],
+                  "pct_1B_2A": now["pct_1B_2A"], "pct_above_ma30": round(100 * sum(1 for x in above if x > 0) / len(above), 1) if above else None,
+                  "pct_stage_4w_ago": (w4 or {}).get("pct"), "pct_stage_1w_ago": (w1 or {}).get("pct"),
+                  "net_2_minus_4": round(now["pct"][2] - now["pct"][4], 1),
+                  "net_2_minus_4_4w_ago": round(w4["pct"][2] - w4["pct"][4], 1) if w4 else None,
+                  "label": lab, "label_ja": SB_LABEL_JA.get(lab), "label_1w_ago": lab_1w,
+                  "tickers_by_sub": {k: sorted(v) for k, v in tick.items()} if len(members) <= 80 else
+                                    {k: sorted(v)[:15] for k, v in tick.items() if k in ("1B", "2A")}}
     return out
 
 
@@ -671,9 +933,9 @@ def base_walk(P, t, i, start):
 def base_number(stage, walk, base_start, base_low):
     """セットアップのベースが何番目か（E9.5）。戻り値は (番号 or None, 状態)。"""
     if stage is None or stage.get("stage") != 2:
-        return None, "Stage2未確認"
+        return None, "対象外（ステージ2でない。次のステージ2で1から数え直す）"
     if stage.get("truncated") or walk is None:
-        return None, "起点が履歴不足"
+        return None, "未確認（上昇の起点がデータより前）"
     done = [b for b in walk["completed"] if b["breakout"] <= base_start]
     if not done:
         return 1, "ok"
@@ -1191,10 +1453,11 @@ HIST_COLS = ["as_of", "generated_utc", "definition_version", "source",
              "spy_model_composite", "spy_model_signal", "spy_model_since",
              "soxx_close", "soxx_pct_from_52w_high", "vix_close",
              "setups_ready", "setups_watch", "key_events_n", "key_event_types",
-             "setups_ready_standard", "pocket_pivots_n"]   # v4.6
+             "setups_ready_standard", "pocket_pivots_n",   # v4.6
+             "semi_stage2_pct", "semi_stage4_pct", "sp500_stage2_pct", "sp500_stage4_pct"]   # v4.6b
 
 
-def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine"):
+def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine", sbreadth=None):
     """履歴1行。値は signals.json と同じ（再計算しない）。backfill では setups・key_events を空にする。"""
     g = lambda d, k: d.get(k) if isinstance(d, dict) else None
     ftd_ok = any(idx_state[k]["ftd_date"] and not idx_state[k]["ftd_failed"] and (idx_state[k]["ftd_days_ago"] or 99) <= 30 for k in idx_state)
@@ -1227,7 +1490,11 @@ def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, s
            "key_event_types": ("/".join(sorted({e["type"] for e in key_events})) if key_events is not None else None),
            "setups_ready_standard": (len({x["ticker"] for x in setups if x.get("status") == "ready" and x.get("setup_type") == "standard"})
                                      if setups is not None else None),
-           "pocket_pivots_n": (sum(1 for e in key_events if e.get("type") == "pocket_pivot") if key_events is not None else None)}
+           "pocket_pivots_n": (sum(1 for e in key_events if e.get("type") == "pocket_pivot") if key_events is not None else None),
+           "semi_stage2_pct": ((sbreadth or {}).get("監視：半導体") or {}).get("pct_stage", {}).get(2),
+           "semi_stage4_pct": ((sbreadth or {}).get("監視：半導体") or {}).get("pct_stage", {}).get(4),
+           "sp500_stage2_pct": ((sbreadth or {}).get("S&P500全体") or {}).get("pct_stage", {}).get(2),
+           "sp500_stage4_pct": ((sbreadth or {}).get("S&P500全体") or {}).get("pct_stage", {}).get(4)}
     return {k: row.get(k) for k in HIST_COLS}
 
 
@@ -1960,16 +2227,28 @@ def main():
                     rs_events.append({"type": "late_break_new", "ticker": t, "bench": cur.loc[t, "res_bench"],
                                       "r_held": cur.loc[t, "r_held"], "r_now": cur.loc[t, "r_now"]})
 
-    # --- v4.6: ステージ（E6.1）とベースカウント（E9.5a）。監視母集団のみ ---
-    stages = {t: weekly_stage(P, t, i) for t in uni_stocks}
-    walks = {t: (base_walk(P, t, i, st["stage2_start"]) if st.get("stage") == 2 and not st.get("truncated") else None)
-             for t, st in stages.items()}
-    screen["stage"] = [stages[t]["stage"] if t in stages else None for t in all_stocks]
-    screen["stage_state"] = [stages[t].get("state") if t in stages else None for t in all_stocks]
-    screen["stage_since"] = [stages[t]["since"] if t in stages else None for t in all_stocks]
-    screen["stage_truncated"] = [stages[t]["truncated"] if t in stages else None for t in all_stocks]
+    # --- v4.6b: 週足ステージ（E6.2。S&P500∪監視母集団と主要ETF）、業種別の分布（E6.3）、ベースカウント（E9.5a。監視母集団のみ） ---
+    spy_w, _ = weekly_bars(P, BENCH, i)
+    stage_etfs = list(dict.fromkeys(t for t in ["SPY", "QQQ", "IWM", "RSP", "DIA"] + TECH_ETFS + SECTOR_ETFS if t in P.C.columns))
+    stages = {t: weekly_stage(P, t, i, spy_w) for t in sorted(set(all_stocks) | set(stage_etfs))}
+    walks = {t: (base_walk(P, t, i, stages[t]["stage2_start"]) if stages[t].get("stage") == 2 and not stages[t].get("truncated") else None)
+             for t in uni_stocks}
+    screen["stage"] = [stages[t]["stage"] for t in all_stocks]
+    screen["stage_label"] = [stages[t]["label"] for t in all_stocks]
+    screen["stage_since"] = [stages[t]["since"] for t in all_stocks]
+    screen["stage_truncated"] = [stages[t]["truncated"] for t in all_stocks]
+    screen["stage_4w_ago"] = [stages[t]["sub_4w_ago"] for t in all_stocks]
+    screen["mansfield_rs"] = [stages[t]["mansfield_rs"] for t in all_stocks]
     screen["base_count_current"] = [((walks.get(t) or {}).get("current") or {}).get("n") for t in all_stocks]
     screen["bases_completed"] = [(walks.get(t) or {}).get("count_completed") for t in all_stocks]
+    grp_members = {}
+    for gname in GROUP_BENCH:
+        grp_members[f"監視：{gname}"] = [t for t in uni_stocks if gname in groups.get(t, "")]
+    sp_members = [t for t in all_stocks if t in sectors]
+    grp_members["S&P500全体"] = sp_members
+    for sec in sorted({sectors[t] for t in sp_members}):
+        grp_members[sec] = [t for t in sp_members if sectors[t] == sec]
+    s_breadth = stage_breadth(stages, grp_members)
 
     screen.sort_values(["leader", "rs_rank"], ascending=[False, False]).to_csv(os.path.join(out, "screen.csv"), index=False)
 
@@ -2034,7 +2313,7 @@ def main():
         s["sector_rs_class"] = srs.loc[t, "sector_rs_class"] if t in srs.index else None  # v4.3
         s["resilience_tier"] = res.loc[t, "tier"] if t in res.index else None          # v4.3
         # v4.6：Stage、ベースカウント、setup_type（E9.5・E12・E14.1）
-        s["stage"], s["stage_state"] = stages[t].get("stage"), stages[t].get("state")
+        s["stage"], s["stage_label"] = stages[t].get("stage"), stages[t].get("label")
         if s["pattern"] in STANDARD_PATTERNS:
             n_, st_ = base_number(stages[t], walks[t], s["base_start"], s["base_low"])
             s["base_count"], s["base_count_status"] = n_, st_
@@ -2057,7 +2336,7 @@ def main():
         if x:
             cur = (walks[t] or {}).get("current")
             x["base_count"] = cur["n"] if (x["kind"] == "in_base" and cur) else None
-            x["stage"], x["stage_state"] = stages[t].get("stage"), stages[t].get("state")
+            x["stage"], x["stage_label"] = stages[t].get("stage"), stages[t].get("label")
             x["group"] = groups.get(t, "")
             x["rs_rank"] = round(float(rank_now.get(t, np.nan)), 1)
             x["leader"] = t in leaders_now
@@ -2113,6 +2392,22 @@ def main():
             key_events.append({"type": "near_pivot", "ticker": s["ticker"], "pattern": s["pattern"], "pivot": s["pivot"], "dist_pct": s["dist_to_pivot_pct"]})
     for e in earnings_soon:
         key_events.append({"type": "earnings_within_5d", **e})
+    # v4.6b: ステージの変化（監視母集団と半導体・テクノロジーETF）と業種の調子の変化。週が完了した日（金曜の足）の実行だけで出す
+    if stages.get(BENCH, {}).get("week_end") == tstr:
+        for t in list(uni_stocks) + [x for x in TECH_ETFS if x in stages]:
+            st = stages[t]
+            prev, sub = st.get("stage_1w_ago"), st.get("sub")
+            if not prev or not sub or prev == sub:
+                continue
+            if prev[0] != sub[0] or (sub == "1B" and prev != "1B"):
+                key_events.append({"type": "stage_change", "ticker": t, "group": groups.get(t, "ETF"), "from": prev, "to": st["label"],
+                                   "to_ja": st["label_ja"], "why": (st.get("last_change") or {}).get("why") if prev[0] != sub[0] else "／".join(st.get("reasons") or []),
+                                   "pct_vs_ma30": st.get("pct_vs_ma30"), "mansfield_rs": st.get("mansfield_rs"),
+                                   "support": st.get("support"), "resistance": st.get("resistance")})
+        for g, b in s_breadth.items():
+            if b.get("label_1w_ago") and b["label"] != b["label_1w_ago"]:
+                key_events.append({"type": "sector_stage_shift", "group": g, "from": b["label_1w_ago"], "to": b["label"], "to_ja": b["label_ja"],
+                                   "pct_stage": b["pct_stage"], "pct_stage_4w_ago": b["pct_stage_4w_ago"]})
     if eff_regime != prev_conf:
         key_events.append({"type": "regime_change", "from": prev_conf, "to": eff_regime, "hysteresis": hyst})
     # v4.4: 前営業日からの変化（同じ基準日の再実行でも同じ結果になるよう、i と i−1 の比較だけで決める）
@@ -2197,7 +2492,7 @@ def main():
     tech_leaders = [{"ticker": t, "group": groups.get(t, ""), "rs_rank": round(float(rank_now[t]), 1), "rel_63_pct": round(100 * float(rs_now.loc[t, "rel_63"]), 1),
                      "pct_from_52w_high": round(100 * float(P.C[t].iloc[i] / P.h252[t].iloc[i] - 1), 1), "tt3_5m": bool(tt_now.loc[t, "tt3_5m"]),
                      "sector_rs_class": srs.loc[t, "sector_rs_class"], "resilience_tier": res.loc[t, "tier"],
-                     "stage": stages[t].get("stage"), "stage_state": stages[t].get("state"),
+                     "stage": stages[t].get("stage"), "stage_label": stages[t].get("label"),
                      "base_count_current": ((walks.get(t) or {}).get("current") or {}).get("n")}   # v4.6
                     for t in leaders_now if t in uni_stocks]
     tech_watch = [{"ticker": t, "group": groups.get(t, ""), "tt_count": int(tt_now.loc[t, "tt_count"]) if not math.isnan(tt_now.loc[t, "tt_count"]) else None,
@@ -2260,14 +2555,20 @@ def main():
     for t in uni_stocks:
         st, wk = stages[t], walks.get(t) or {}
         cur = wk.get("current") or {}
-        stage_rows.append({"ticker": t, "group": groups.get(t, ""), "stage": st.get("stage"), "state": st.get("state"), "since": st.get("since"),
-                           "truncated": st.get("truncated"), "pct_vs_ma30": st.get("pct_vs_ma30"), "ma30_slope_4w_pct": st.get("ma30_slope_4w_pct"),
+        bstat = base_number(st, walks.get(t), "9999-12-31", float("inf"))[1]
+        stage_rows.append({"ticker": t, "group": groups.get(t, ""),
+                           **{k: st.get(k) for k in ("label", "label_ja", "stage", "sub", "qual", "since", "weeks_in_stage", "truncated",
+                                                     "pct_vs_ma30", "ma30", "ma30_slope_4w_pct", "mansfield_rs", "mansfield_rs_4w_ago",
+                                                     "support", "resistance", "breakout", "reasons", "last_change", "history",
+                                                     "sub_4w_ago", "provisional", "note")},
                            "bases_completed": wk.get("count_completed"), "in_base": bool(cur), "current_base": cur.get("n"),
                            "current_base_start": cur.get("start"), "current_base_depth_pct": cur.get("depth_pct"),
-                           "last_bases": wk.get("completed", [])[-3:], "note": st.get("note")})
-    stage_counts = {str(k): sum(1 for r in stage_rows if r["stage"] == k) for k in (1, 2, 3, 4, None)}
-    stage_counts["state"] = {k: sum(1 for r in stage_rows if r["state"] == k) for k in ("confirmed", "provisional", "transition", "unclassified")}
-    stage_counts["stage2_confirmed"] = sum(1 for r in stage_rows if r["stage"] == 2 and r["state"] == "confirmed")
+                           "base_count_status": "ok" if wk else bstat, "last_bases": wk.get("completed", [])[-3:]})
+    stage_counts = {x: sum(1 for r in stage_rows if r["sub"] == x) for x in SUBS}
+    stage_counts["unclassified"] = sum(1 for r in stage_rows if r["sub"] is None)
+    etf_rows = [{"ticker": t, **{k: stages[t].get(k) for k in ("label", "label_ja", "stage", "since", "weeks_in_stage", "pct_vs_ma30",
+                                                             "ma30_slope_4w_pct", "mansfield_rs", "support", "resistance", "history", "sub_4w_ago", "provisional")}}
+                for t in stage_etfs]
 
     signals = {
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -2307,8 +2608,12 @@ def main():
         "profit_tracking": {"definition_version": "PT-1.0", "rows": pt_rows,
                             "note": "E13.2。ブレイク（PPはシグナル日）から60営業日まで。基準＝ピボット（PPは当日終値）。"
                                     "+20〜25%は利益確定の検討帯、3週以内に+20%なら8週（40営業日）保有ルール。自動売却ではなく、保有を明示した銘柄だけ行動に結びつける。"},
-        "stages": {"definition_version": "ST6-1.0", "counts": stage_counts, "rows": stage_rows,
-                   "note": "E6.1。週足30週SMA、4週変化±1%、2完了週で確定。truncated＝起点がデータの始まりと重なり、ベースカウントは未確認。"},
+        "stages": {"definition_version": "ST6-2.0", "week_end": stages.get(BENCH, {}).get("week_end"),
+                   "counts": stage_counts, "rows": stage_rows, "etfs": etf_rows, "breadth": jsonable(s_breadth),
+                   "label_ja": STAGE_JA, "breadth_label_ja": SB_LABEL_JA,
+                   "note": "E6.2・E6.3（07追補）。週足（完了週）の30週SMAとマンスフィールドRS（対SPY、52週）で、ステージ1〜4と細区分1A〜4B-を状態遷移で決める。"
+                           "＋＝市場比の強さがプラスで改善中、−＝マイナスで悪化中。provisional＝進行中の週の暫定。"
+                           "breadth＝業種ごとの個別株の分布（S&P500は現在の構成銘柄。監視グループは監視母集団）。"},
         "ledger_cohorts": ledger_cohorts(ledger),
         "ledger_open": [s for s in ledger["setups"] if s.get("status") in ("registered", "breakout")],
         "sell_signals": sells,
@@ -2321,7 +2626,8 @@ def main():
     }
     json.dump(signals, open(os.path.join(out, "signals.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     # v4.5b: 判定結果の日次履歴（閾値の検証用。同じ基準日の再実行は上書き）
-    hrow = history_row(tstr, signals["generated_utc"], chk_today, eff_regime, hyst, idx_state, lead_rot, hedge, spym, P, i, setups, key_events)
+    hrow = history_row(tstr, signals["generated_utc"], chk_today, eff_regime, hyst, idx_state, lead_rot, hedge, spym, P, i, setups, key_events,
+                       sbreadth=s_breadth)
     n_hist, hist_src = write_history(out, a.prev_history, a.history_seed, hrow)
     print(json.dumps({"history_signals_rows": n_hist, "history_from": hist_src}, ensure_ascii=False))
     print(json.dumps({"as_of": tstr, "regime": eff_regime, "hysteresis": hyst, "leaders_market": len(leaders_now), "tech_leaders": len(tech_leaders),
