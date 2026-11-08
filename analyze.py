@@ -977,11 +977,12 @@ def detect_cup(P, t, i):
     if handle_len < CUP["handle_min"]:
         return None
     R = h[jR]
-    # 左側高値：右側高値より前で、そこから右側高値までにそれ以上の高値がない最も近い確認済みスイング高値
+    # 左側高値：ハンドル開始より20日以上前の確認済みスイング高値で、そこからハンドル開始までの高値がそれを2%超は上回らない、最も近いもの
+    # （右側がわずかに左側を上回ってからハンドルを作る形も認める。ハンドル高値と左側高値の下限の関係は handle_high_85 で別に見る）
     j0, run_max = None, R
     for j in range(jR - 2 * CUP["side_min_days"], max(2, jR - CUP["max_total_days"]) - 1, -1):
         run_max = max(run_max, h[j + 1])
-        if h[j] >= run_max and h[j] > h[j - 1] and h[j] > h[j - 2] and h[j] > h[j + 1] and h[j] > h[j + 2] and R >= h[j] / CUP["right_max_vs_left"]:
+        if h[j] * CUP["right_max_vs_left"] >= run_max and h[j] > h[j - 1] and h[j] > h[j - 2] and h[j] > h[j + 1] and h[j] > h[j + 2]:
             j0 = j
             break
     if j0 is None:
@@ -1055,7 +1056,7 @@ def detect_flat_base(P, t, i):
         "pattern": "flat_base", "status": status, "base_start": _d(P, js), "base_low": round(lo, 2), "base_days": int(i - js),
         "depth_pct": round(100 * depth, 1), "ideal_depth": depth <= FLAT["ideal_depth"], "prior_up_pct": round(100 * prior),
         "footprint": f"{round((i - js) / 5)}W {round(100 * depth)}%",
-        "pivot": round(pivot, 2), "stop": round(stop, 2), "risk_pct": round(100 * risk, 1),
+        "pivot": round(pivot, 2), "stop": round(stop, 2), "invalidation": round(lo * 0.995, 2), "risk_pct": round(100 * risk, 1),
         "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1), "dry5": round(dry5, 2) if dry5 is not None else None, "checks": checks,
     }
 
@@ -1087,9 +1088,9 @@ def detect_double_bottom(P, t, i):
             continue
         if (M - La) / (H0 - La) < DB["mid_min_frac"]:
             continue
-        after = c[jb + 1: i]
+        after = c[jb + 1: i + 1]
         if len(after) and np.nanmax(after) > M:
-            continue                                  # 二番底の後、すでに真ん中の高値を終値で上抜けた
+            continue                                  # 二番底の後（今日を含む）、すでに真ん中の高値を終値で上抜けた
         prior = _prior_up(l, j0, H0)
         if not prior >= DB["prior_up"]:
             return None
@@ -1106,8 +1107,8 @@ def detect_double_bottom(P, t, i):
             "undercut_pct": round(100 * (1 - Lb / La), 1), "middle_high_date": _d(P, jM), "low2_vol_ratio": round(float(low_vol), 2),
             "prior_up_pct": round(100 * prior), "left_high": round(float(H0), 2),
             "footprint": f"{round((i - j0) / 5)}W {round(100 * depth)}% W",
-            "pivot": round(pivot, 2), "trigger_ibd": round(pivot + 0.10, 2), "stop": round(stop, 2), "risk_pct": round(100 * risk, 1),
-            "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1),
+            "pivot": round(pivot, 2), "trigger_ibd": round(pivot + 0.10, 2), "stop": round(stop, 2), "invalidation": round(float(Lb) * 0.995, 2),
+            "risk_pct": round(100 * risk, 1), "dist_to_pivot_pct": round(100 * (c[-1] / pivot - 1), 1),
             "dry5": round(float(P.dry5[t].iloc[i]), 2) if not math.isnan(P.dry5[t].iloc[i]) else None, "checks": checks,
         }
     return None
@@ -1658,9 +1659,9 @@ def update_ledger(ledger, P, universe_setups, today, i):
             elif h > Pv and c <= Pv:
                 s["squat_dates"] = s.get("squat_dates", []) + [tstr]
                 events.append({"type": "squat", "ticker": t, "pattern": s["pattern"], "pivot": Pv, "close": round(float(c), 2)})
-            elif l <= Sv:
+            elif l <= s.get("invalidation", Sv):
                 s["status"] = "failed"
-                events.append({"type": "setup_failed", "ticker": t, "pattern": s["pattern"], "stop": Sv})
+                events.append({"type": "setup_failed", "ticker": t, "pattern": s["pattern"], "level": s.get("invalidation", Sv), "stop": Sv})
             elif (pd.Timestamp(tstr) - pd.Timestamp(s["registered"])).days > 45:
                 s["status"] = "expired"
         else:
@@ -1688,6 +1689,10 @@ def update_ledger(ledger, P, universe_setups, today, i):
         same = [s for s in setups if s["ticker"] == u["ticker"] and s["pattern"] == u["pattern"] and s.get("status") in ("registered", "breakout")]
         if any(abs(s["pivot"] - u["pivot"]) / u["pivot"] < 0.015 for s in same):
             continue  # 同じセットアップの再登録はしない（ピボット差1.5%未満）
+        if u["pattern"] in STANDARD_PATTERNS and any(
+                s["ticker"] == u["ticker"] and s["pattern"] in STANDARD_PATTERNS and s["pattern"] != u["pattern"]
+                and s.get("status") in ("registered", "breakout") and abs(s["pivot"] - u["pivot"]) / u["pivot"] < 0.015 for s in setups):
+            continue  # v4.6c：同じベースを別の型で二重に登録しない（E14.1。先に登録した型に任せる。signals.setups の also に型名が残る）
         for s in same:
             if s.get("status") == "registered":
                 s["status"] = "superseded"  # 形が変わった。新しい登録に置き換える
@@ -1695,6 +1700,7 @@ def update_ledger(ledger, P, universe_setups, today, i):
             rec = {"setup_id": f"{u['ticker']}-{u['pattern']}-{tstr}", "ticker": u["ticker"], "pattern": u["pattern"], "registered": tstr,
                    "pivot": u["pivot"], "stop": u["stop"], "risk_pct": u["risk_pct"], "status": "registered", "breakout_date": None,
                    "setup_type": u.get("setup_type"), "base_count": u.get("base_count"),   # v4.6（E14.1）
+                   "invalidation": u.get("invalidation", u["stop"]),                         # v4.6c：ブレイク前の無効化水準（フラットベース＝ベース安値、ダブルボトム＝二番底）
                    "definition_version": DEF_VERSION}
             setups.append(rec)
             by_key[key] = rec
@@ -2392,9 +2398,13 @@ def main():
             key_events.append({"type": "near_pivot", "ticker": s["ticker"], "pattern": s["pattern"], "pivot": s["pivot"], "dist_pct": s["dist_to_pivot_pct"]})
     for e in earnings_soon:
         key_events.append({"type": "earnings_within_5d", **e})
-    # v4.6b: ステージの変化（監視母集団と半導体・テクノロジーETF）と業種の調子の変化。週が完了した日（金曜の足）の実行だけで出す
-    if stages.get(BENCH, {}).get("week_end") == tstr:
-        for t in list(uni_stocks) + [x for x in TECH_ETFS if x in stages]:
+    # v4.6b: ステージの変化（監視母集団と主要ETF）と業種の調子の変化。週の最後の取引日の足が入った日の実行だけで出す
+    # （通常は金曜。金曜が休場の週は、その週が完了する次の営業日に出す＝直近の完了週の最終日が前営業日で、それが金曜でないとき）
+    wk_end = stages.get(BENCH, {}).get("week_end")
+    prev_day = P.dates[i - 1] if i >= 1 else None
+    week_closed_now = wk_end == tstr or (prev_day is not None and str(prev_day.date()) == wk_end and prev_day.weekday() != 4)
+    if week_closed_now:
+        for t in list(uni_stocks) + [x for x in ["SPY", "QQQ", "IWM", "RSP", "DIA"] + TECH_ETFS if x in stages]:
             st = stages[t]
             prev, sub = st.get("stage_1w_ago"), st.get("sub")
             if not prev or not sub or prev == sub:
