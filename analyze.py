@@ -269,7 +269,8 @@ def distribution_state(C, V, H, L, i):
         "ftd_date": str(c.index[ftd].date()) if ftd is not None else None,
         "ftd_days_ago": (len(c) - 1 - ftd) if ftd is not None else None,
         "ftd_failed": ftd_failed,
-        "pct_from_52w_high": float(c.iloc[-1] / hi252.iloc[-1] - 1) if not math.isnan(hi252.iloc[-1]) else None,
+        # v4.6d: ほかの pct_from_52w_high と同じ「%・小数1桁」に統一（以前は小数の比率だった）
+        "pct_from_52w_high": round(100 * float(c.iloc[-1] / hi252.iloc[-1] - 1), 1) if not math.isnan(hi252.iloc[-1]) else None,
     }
 
 
