@@ -142,7 +142,9 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
 
 ## 4. Broad（短く）
 - 日々動く項目だけ：S&P500・NASDAQ（signals.market）、SOX（signals.market に無いので SOXX＝signals.tech_etf で代用）、VIX、2年・10年金利、HY OAS、ドル円、原油、当日〜翌営業日のイベント。
-  金利・HY・為替・原油・イベントはWeb検索で取得し、出典と基準日を付ける。
+  金利・HY・為替・原油・イベントはWeb検索で取得し、出典と基準日を付ける（検索は合計3回まで。WebFetch は検索結果に出たURLしか取れない）。
+  ［v2.2］当日値が取れないときの既定：10年実質・名目金利とドル指数は semis-data の data ブランチ macro_daily.csv（FRED、1〜2日遅れ。weekly_runbook 第0節の手順）、
+  それも無理なら直近の週次の値を「転記（週次○/○、reported_unverified）」と明記して使う。推測で埋めない。日次ではマクロ値は補助情報で、Tapeの判定には使わない。
 - Broad点は週次で確定。日次は「据置（前回週次：○点・○○）」を基本とし、判定帯をまたぐ明確な変化がある場合だけ暫定値と理由を書く。
 - マクロ値は state に保存しない（表示のみ。保存は週次）。
 
