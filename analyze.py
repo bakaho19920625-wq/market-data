@@ -52,6 +52,7 @@ import json
 import math
 import os
 import re
+import sys
 from datetime import datetime, timedelta, timezone
 
 import numpy as np
@@ -2080,6 +2081,49 @@ def pct(a, b):
     return round(100 * (a / b - 1), 2) if b and not math.isnan(a) and not math.isnan(b) else None
 
 
+def replay_ledger(P, uni_stocks, i, n_days):
+    """v4.6d（F2.3 補完）：空の台帳から i-n_days..i-1 の登録・ブレイク追跡・PP・利益確定の追跡をやり直す。
+    当日（i）の処理は main の通常の流れで行う。毎日の実行で積み上がった台帳とは完全には一致しない
+    （early_entry はレジーム依存で省略、ベースの番号は付けない、前回スクリーンとの差分イベントは出ない）。"""
+    ledger = {"replayed": True, "replay_days": int(n_days)}
+    start = max(260, i - int(n_days))
+    stages = {}
+    for j in range(start, i):
+        day = P.dates[j]
+        tstr = str(day.date())
+        tt = P.tt7(j)
+        if not stages or (j - start) % 5 == 0:
+            spy_w, _ = weekly_bars(P, BENCH, j)
+            stages = {t: weekly_stage(P, t, j, spy_w) for t in uni_stocks}
+        setups = []
+        for t in uni_stocks:
+            if bool(tt.loc[t, "tt7_pass"]):
+                vcp = detect_vcp(P, t, j)
+                if vcp:
+                    vcp["base_low"] = round(float(P.L[t].iloc[P.dates.get_loc(pd.Timestamp(vcp["base_start"])): j + 1].min()), 2)
+                    setups.append({"ticker": t, **vcp})
+                for det in (detect_cup, detect_flat_base, detect_double_bottom):
+                    x = det(P, t, j)
+                    if x:
+                        setups.append({"ticker": t, **x})
+            pp = detect_power_play(P, t, j)
+            if pp:
+                setups.append({"ticker": t, **pp})
+        for s in setups:
+            s["setup_type"] = "standard" if s["pattern"] in STANDARD_PATTERNS else ("power_play" if s["pattern"] == "power_play" else "early_entry")
+            s["base_count"], s["base_count_status"] = None, "補完（未判定）"
+            s["pattern_ja"] = PATTERN_JA.get(s["pattern"], s["pattern"])
+        pps = []
+        for t in uni_stocks:
+            x = detect_pocket_pivot(P, t, j, tt.loc[t].to_dict(), stages[t])
+            if x and x["qualified"]:
+                pps.append(x)
+        update_ledger(ledger, P, setups, day, j)
+        register_pocket_pivots(ledger, pps, tstr, P, j)
+        profit_tracking(ledger, P, j)
+    return ledger
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="out")
@@ -2088,6 +2132,8 @@ def main():
     ap.add_argument("--prev-screen", default=None, help="前回の screen.csv（v4.3 の差分イベント用。無ければ差分は出さない）")
     ap.add_argument("--prev-history", default=None, help="前回の history_signals.csv（data ブランチ）。無ければ --history-seed から始める")
     ap.add_argument("--history-seed", default="history_seed.csv", help="初回用の履歴（main の backfill）")
+    ap.add_argument("--as-of", default=None, help="（v4.6d 補完用）この日付（YYYY-MM-DD）までの足だけで計算する。配信できなかった日のレポートを後日作るとき。出力先は data ブランチ以外にする")
+    ap.add_argument("--replay-ledger", type=int, default=0, help="（v4.6d 補完用）台帳を空から n 営業日ぶん再生してから当日を処理する（--as-of と併用。前日時点の台帳は残っていないため）")
     a = ap.parse_args()
     out = a.out
     manifest = json.load(open(os.path.join(out, "manifest.json"), encoding="utf-8")) if os.path.exists(os.path.join(out, "manifest.json")) else {}
@@ -2102,6 +2148,12 @@ def main():
     px = pd.concat(frames, ignore_index=True)
     cal = set(uni.loc[uni["ticker"] == BENCH, "date"])
     px = px[px["date"].isin(cal)]
+    if a.as_of:                                                     # v4.6d 補完：as_of より後の足を捨てる
+        asof_ts = pd.Timestamp(a.as_of)
+        px = px[px["date"] <= asof_ts]
+        if px.empty or px["date"].max() != asof_ts:
+            print(json.dumps({"error": "as_of_not_trading_day", "as_of": a.as_of, "last_available": str(px["date"].max().date()) if not px.empty else None}, ensure_ascii=False))
+            sys.exit(2)
     P = Panel(px)
     i = len(P.dates) - 1
     today = P.dates[i]
@@ -2263,6 +2315,8 @@ def main():
     # --- 市場（C7.1） ---
     idx_state = {s: distribution_state(P.C[s], P.V[s], P.H[s], P.L[s], i) for s in ("^GSPC", "^IXIC") if s in P.C.columns}
     bw = load_breadth(out)
+    if bw is not None and a.as_of:
+        bw = bw[bw.index <= today]                                  # v4.6d 補完：市場内部も as_of まで
     fb = breakout_followthrough(P, all_stocks, i)
     fb_4w = breakout_followthrough(P, all_stocks, i - 20)
     fb["d5_hold_rate_4w_ago"] = fb_4w.get("d5_hold_rate")
@@ -2278,7 +2332,14 @@ def main():
     chk_y = checklist(P, bw, l_y, l_y4, {}, breakout_followthrough(P, all_stocks, i - 1), idx_y, i - 1, bx_y)
 
     ledger = {}
-    if a.prev_ledger and os.path.exists(a.prev_ledger):
+    if a.replay_ledger > 0:                                         # v4.6d 補完：前日時点の台帳を再生で近似する
+        ledger = replay_ledger(P, uni_stocks, i, a.replay_ledger)
+        if a.prev_history and os.path.exists(a.prev_history):
+            hh = pd.read_csv(a.prev_history)
+            hh = hh[hh["as_of"].astype(str) < tstr].tail(130)
+            ledger["regime_history"] = [{"date": str(r.as_of), "checklist_regime": r.regime_checklist, "confirmed_regime": r.regime_effective,
+                                         "hysteresis": r.hysteresis, "provisional": bool(r.provisional)} for r in hh.itertuples()]
+    elif a.prev_ledger and os.path.exists(a.prev_ledger):
         try:
             ledger = json.load(open(a.prev_ledger, encoding="utf-8"))
         except Exception:
@@ -2586,6 +2647,9 @@ def main():
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "as_of_market_date": tstr,
         "definition_version": DEF_VERSION,
+        # v4.6d：補完実行（--as-of）のとき。通常は null。レポートは「補完版」と明記し、前回スクリーン差分・台帳の完全一致は保証しない
+        "backfill": ({"as_of_requested": a.as_of, "ledger_replayed_days": a.replay_ledger, "prev_screen_diff": bool(a.prev_screen),
+                      "note": "後日の補完。台帳は空から再生（early_entry・前回スクリーン差分は含まない）"} if a.as_of else None),
         "data": {"universe_tickers": len(uni_stocks), "sp500_tickers": len([t for t in all_stocks if t in sectors]), "rs_rank_population": int(len(rank_now)),
                  "breadth_as_of": chk_today.get("breadth_as_of"), "manifest": {k: manifest.get(k) for k in ("generated_jst", "repo_last_commit_main", "keepalive")},
                  "prices": manifest.get("prices", {}), "note": "市場内部とブレイク追随率は現在のS&P500構成銘柄から計算したproxy（生存者バイアスあり）"},
