@@ -6,7 +6,7 @@
 
 ## 0. 設定
 - 深さ（effort）：xhigh
-  第5節で書き手（Agent）に渡す深さ。変えるときはこの1行だけ直す（low／medium／high／xhigh／max）。
+  第4節で書き手（Agent）に渡す深さ。変えるときはこの1行だけ直す（low／medium／high／xhigh／max）。
 - 動く時刻（日本時間）：日曜 9:07 が1回目。13:07・18:07 は再試行（利用上限などで前の回が動けなかった日のため）。半導体の週次は土曜 10:11。
 - この実行は、会話の記憶がない新しいセッションで動く。
 
@@ -20,7 +20,7 @@
   spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/addendum_v4.6.txt、spec/addendum_v4.7.txt（＝08）、spec/plain_language.txt。
   どちらも読めなければ、その旨を SendUserMessage で送って終了する。
 
-## 2. データの新しさ
+## 2. データの新しさと、リポジトリの活動
 - signals.as_of_market_date が直近の米国取引日（通常は金曜。NYSE休場日を除く）より古ければ、データ更新を自分で起動する：
   - 起動は git の push で行う（日次と同じ）。
     /home/claude/market-data（第1節）で
@@ -31,6 +31,10 @@
   - 完了は git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
     直近の取引日になるまで最大12分待ってから取り直す（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。
   - それでも古ければ、基準日を明記してレポートを作り、冒頭で「GitHubのデータが最新ではありません」と警告する。
+- リポジトリの活動：manifest.repo_last_commit_main から45日以上経過していれば、冒頭で「GitHubのリポジトリを更新してください
+  （tickers.txt に1行コメントを足して保存）」と警告する。
+  manifest.keepalive が failed でも同様。
+  この節の警告（データが古いまま進む／リポジトリの更新／keepalive）に当たったら、第4節で書き手に伝える（レポートの冒頭に書かせる）。
 
 ## 3. 前回の状態と、配信済みの確認
 - 保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）のデータベースから、ArtifactData の get で state/latest_weekly、state/latest_daily、state/scenarios を読む（collection: "state"）。
@@ -43,13 +47,7 @@
   最後の返答を次の1行だけにする：「YYYY-MM-DD（基準日）の週次レポートは配信済みです。レポートはここに並んでいます：https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca」
   配信済みなら、ここで終わる。第4節から先と runbook/weekly_write.txt は読まなくてよい。
 
-## 4. リポジトリの活動
-- manifest.repo_last_commit_main から45日以上経過していれば、冒頭で「GitHubのリポジトリを更新してください
-  （tickers.txt に1行コメントを足して保存）」と警告する。
-  manifest.keepalive が failed でも同様。
-  該当したら、第5節で書き手に伝える（レポートの冒頭に書かせる）。第2節でデータが古いまま進むときの警告も同じ。
-
-## 5. 作成（書き手に任せる）
+## 4. 作成（書き手に任せる）
 - レポートを書く作業は、Agent 1つに任せる（subagent_type: "general-purpose"、effort: 第0節の深さ、run_in_background: false）。
   深さを指定できるのは Agent だけなので、ここでは自分で書かない。
   ほかの作業（準備・点検・保存・配信）は下請けに出さない（出しても速くならず、費用が増えるだけのため）。
@@ -58,17 +56,33 @@
   /home/claude/market-data/runbook/weekly_write.txt を読み、その進め方どおりに進めてください（各項目は、ひな形の表にある節のファイルと仕様の条項を、その項目を書く直前に読みます）。
   入力は /home/claude/mkt/（data ブランチ）、/home/claude/market-data/（仕様、これまでのレポート reports/、reports/flows/fuel_latest.yaml）、/home/claude/state/（前回の状態と、保管ページの最近のレポートの一覧）です。
   出力は /home/claude/market-data/reports/weekly/〔YYYYMMDD-WEEKLY〕.md と、/home/claude/out/〔YYYYMMDD-WEEKLY〕.save.json です。git の操作・保管ページへの保存・配信は、こちらで行うのでしないでください。
-  伝えておくこと：〔第2節・第4節で分かったこと。例：データ更新を起動した／GitHubのデータが最新ではない（基準日○○）／リポジトリの更新を促す警告を冒頭に書く（経過○日）／keepalive が failed／ユーザーが「Fullで」と頼んだ／なし〕
+  伝えておくこと：〔第2節で分かったこと。例：データ更新を起動した／GitHubのデータが最新ではない（基準日○○）／リポジトリの更新を促す警告を冒頭に書く（経過○日）／keepalive が failed／ユーザーが「Fullで」と頼んだ／なし〕
   書き終えたら weekly_write.txt の「書き終えたら」のとおり点検し、最後に、レポートのパス・モード（Standard／Full）とその理由・点検の結果・fuel_latest.yaml を更新したかどうかを返してください。」
 - Agent が道具の一覧に無い環境では、自分で runbook/weekly_write.txt に従って書く（このときは深さを指定できない）。
 
-## 6. 点検
+## 5. 点検
 - 自分でも点検プログラムを実行する（書き手の報告だけで済ませない。数秒で終わる）：
   `python3 /home/claude/market-data/tools/check_report.py us_weekly /home/claude/market-data/reports/weekly/YYYYMMDD-WEEKLY.md --data /home/claude/mkt`
 - 「不合格」の行があれば、同じ書き手に戻して直させる（SendMessage。最大2回）。
   戻すときは、不合格の行をそのまま貼り、「次の項目がまだ残っています。直してから、もう一度点検の結果を返してください」と、残っている項目を名指しする。
 - 2回直しても残った不合格は、配信の4（データ状態で伝えるべきこと）に「点検で残った項目：○○」と1行で書く。配信は止めない。
 - 「注意」の行は不合格ではない。読んで、直す必要があるものだけ直させる。
+
+## 6. 配信
+- SendUserMessage の冒頭サマリは**1画面**（日本語でおよそ800〜1,200字）。
+  全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
+  1. 冒頭ブロック（レポートの冒頭と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安はここに入っている）
+  2. 前回から変わった点：Tape・Broad の変化（定義変更があればその旨）、持っている分の上限とヘッジの上限（L/H）が変わったか、先導セクターの入れ替わり、半導体・テクノロジーの先導株数（4週前比）。
+     モードが Full ならその理由を1行
+  3. 1行ずつ：買い戻しの燃料計（棒の行と読み方。追補08）／強気の材料・弱気の材料を各2点まで
+  4. 来週のイベント（日付つきで3〜5件）と、データ状態で伝えるべきこと（未更新・missing の多い分野・補完。なければ書かない）
+  土台と値動きの一致（Alignment）の説明、27項目の中身、ステージの表は配信に書かない（本文にある）。
+  最後に「全文は添付のファイルと、保管ページ（これまでの週次が並ぶ）：https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca」と1行（このリンクは毎回出す）。
+  すべて05の言葉で、記号は括弧。
+- 本文全体を「YYYYMMDD-WEEKLY.md」として書き、SendUserFile で送る。
+  1回に収まらなければ分割し、途中までのものを完成版と表示しない。
+- 配信の冒頭サマリは、専門用語を知らない人が読んでも分かる文にする。
+- 送る前に、配信の文を /home/claude/delivery.txt に書き、`python3 /home/claude/market-data/tools/check_report.py delivery /home/claude/delivery.txt --max 1200 --link https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca` で長さと最後の行を確かめる。
 
 ## 7. 保存
 - report_id：YYYYMMDD-WEEKLY（基準日）。
@@ -101,30 +115,17 @@
 - 保存に失敗したら、その旨をユーザーに伝える。
 - 読む用の保管ページ「米国株 週次レポート」への保存：GitHub への push のあとに、runbook/archive_page.txt の手順を種類 us_weekly で行う。
 
-## 8. 配信
-- SendUserMessage の冒頭サマリは**1画面**（日本語でおよそ800〜1,200字）。
-  全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
-  1. 冒頭ブロック（レポートの冒頭と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安はここに入っている）
-  2. 前回から変わった点：Tape・Broad の変化（定義変更があればその旨）、持っている分の上限とヘッジの上限（L/H）が変わったか、先導セクターの入れ替わり、半導体・テクノロジーの先導株数（4週前比）。
-     モードが Full ならその理由を1行
-  3. 1行ずつ：買い戻しの燃料計（棒の行と読み方。追補08）／強気の材料・弱気の材料を各2点まで
-  4. 来週のイベント（日付つきで3〜5件）と、データ状態で伝えるべきこと（未更新・missing の多い分野・補完。なければ書かない）
-  土台と値動きの一致（Alignment）の説明、27項目の中身、ステージの表は配信に書かない（本文にある）。
-  最後に「全文は添付のファイルと、保管ページ（これまでの週次が並ぶ）：https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca」と1行（このリンクは毎回出す）。
-  すべて05の言葉で、記号は括弧。
-- 本文全体を「YYYYMMDD-WEEKLY.md」として書き、SendUserFile で送る。
-  1回に収まらなければ分割し、途中までのものを完成版と表示しない。
-- 配信の冒頭サマリは、専門用語を知らない人が読んでも分かる文にする。
-- 送る前に、配信の文を /home/claude/delivery.txt に書き、`python3 /home/claude/market-data/tools/check_report.py delivery /home/claude/delivery.txt --max 1200 --link https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca` で長さと最後の行を確かめる。
+## 8. 欠けた週の補完
+- ユーザーが頼んだときだけ行う（定期実行では行わない）。手順は runbook/weekly_backfill.txt。
 
 ## 9. この実行での注意（無人で動くため）
 - この実行には、途中で答える人がいない。道具を呼ばずに文だけを返すと、そこで実行が終わり、続きは誰も頼まない。
-  第7節の保存と第8節の配信が終わるまで、次の作業の道具を呼び続ける。
+  第6節の配信と第7節の保存が終わるまで、次の作業の道具を呼び続ける。
 - 次の4つの止まり方をしない：(1)「次は○○をします」と書いただけで終える、(2)「続けますか」と尋ねて待つ、
   (3) 決めなくても進められることを並べて判断を求める、(4) 区切り（書き手が書き終えた、点検が通った、push できた）で終える。
   途中経過を書くときは、次の道具の呼び出しと同じ返答の中に書く。
-- 止まってよいのは、この手順書が「終了」と書いている場面だけ：仕様を読めない（第1節）、配信済み（第3節）、そして第7節の保存と第8節の配信がすべて終わったとき。
-- 最初に、第1節〜第8節をやることリストに入れ（TaskCreate が使えるとき）、1つ終えるごとに消す。
+- 止まってよいのは、この手順書が「終了」と書いている場面だけ：仕様を読めない（第1節）、配信済み（第3節）、そして第6節の配信と第7節の保存がすべて終わったとき。
+- 最初に、第1節〜第7節をやることリストに入れ（TaskCreate が使えるとき）、1つ終えるごとに消す。
 - 障害（エラー、タイムアウト、空の結果、取得の失敗）は、原因を見て別の方法を試す。代わりの手順が決まっているものは、その節に書いてあるとおりにする。
 - 保管ページへの書き込みが version の食い違いで断られたときは、get で version を読み直して、もう一度書く。
 - GitHubのリポジトリのファイルは変更しない。

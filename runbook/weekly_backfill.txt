@@ -16,4 +16,4 @@
   state/latest_weekly は、補完した週より新しい週次がすでにあるなら更新しない（`--no-latest` を付ける）。
   state/scenarios には補完した週のシナリオも追加する（期日順に並べる）。
   読む用の保管ページにも入れる（runbook/archive_page.txt。補完した週が新しい4本に入らないときは、手順1を `--id YYYYMMDD-WEEKLY` に替えてその1本を作る）。
-  配信の最後に weekly_runbook.txt 第8節と同じ保管ページの1行。
+  配信の最後に weekly_runbook.txt 第6節と同じ保管ページの1行。

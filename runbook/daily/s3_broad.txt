@@ -25,7 +25,7 @@
   （例「VIX 19.9。目先と3か月先の差は小さい（VIX÷VIX3M 0.97、11/6 まで逆転）」）。
   vol_term が無い・vix3m が null の日は書かない。
 - この節の最後に「買い戻しの燃料」を1行：reports/flows/fuel_latest.yaml（main。/home/claude/market-data にクローン済みならそのファイル）の line_ja をそのまま転記する。
-  配信（daily_runbook.txt 第9節の SendUserMessage）にも同じ1行を入れる。
+  配信（daily_runbook.txt 第8節の SendUserMessage）にも同じ1行を入れる。
   冒頭ブロックには入れない。
   水準が前回の日次から変わった日だけ、重要ポイントの末尾に1行足す。
   ファイルが読めなければ「買い戻しの燃料：未取得」、updated_jst が21日より古ければ「（古いデータ）」を付ける。

@@ -28,7 +28,7 @@
     /home/claude/market-data（第1節）で
     `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
     この push で .github/workflows/update.yml が動く（refresh/README.md）。
-    push が断られたら第8節の「push が断られたとき」に従い、それでも駄目なときだけ
+    push が断られたら第9節の「push が断られたとき」に従い、それでも駄目なときだけ
     `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data` を1回試す（エラーなら起動できなかったものとして先へ進む）。
     完了は git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
     直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。
@@ -56,7 +56,7 @@
   manifest.keepalive が "failed" なら、その旨も添える。
   該当したら、第6節で書き手に伝える（レポートの冒頭に書かせる）。
 - 前回の状態：保管ページ（Artifact「米国株指標チェック」https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）のデータベースから、ArtifactData の get で state/latest_daily と state/scenarios を読む（collection: "state"）。
-  out_dir: "/home/claude/state" を付けて、ファイルに保存する（書き手が読む）。state/latest_daily の version を控える（第8節の保存で使う）。
+  out_dir: "/home/claude/state" を付けて、ファイルに保存する（書き手が読む）。state/latest_daily の version を控える（第9節の保存で使う）。
   同じ基準日の日次が保存済みなら二重保存しない。
 
 ## 6. 作成（書き手に任せる）
@@ -80,7 +80,20 @@
 - 2回直しても残った不合格は、配信の4（データ状態で伝えるべきこと）に「点検で残った項目：○○」と1行で書く。配信は止めない。
 - 「注意」の行は不合格ではない。読んで、直す必要があるものだけ直させる。
 
-## 8. 保存
+## 8. 配信
+- SendUserMessage は**1画面**（日本語でおよそ600〜900字。重要な変化が多い日でも1,200字まで）。
+  全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
+  1. 冒頭ブロック（レポートの冒頭と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安は「やること」の行と4行目に入っている）
+  2. 重要ポイント（レポートの1節。前日から変わったこと。なければ「本日の重要イベントなし」）
+  3. 1行ずつ：Daily Plan の候補数（候補があれば銘柄とピボット）／買い戻しの燃料（Broad の節の1行）
+  4. 今夜〜明日のイベント（当日と翌営業日のものだけ）と、データ状態で伝えるべきこと（未更新・取得失敗・補完・週次未作成。なければ書かない）
+  Tape の表、先導セクター、テック内部の内訳、ステージ、RSライン、セットアップの一覧は配信に書かない（本文にある。その日に変わったものは 2 に入っている）。
+  最後に「全文は添付のファイルと、保管ページ（これまでの日次が並ぶ）：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」と1行（このリンクは毎回出す）。
+  すべて05の言葉で、記号は括弧。
+- 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
+- 送る前に、配信の文を /home/claude/delivery.txt に書き、`python3 /home/claude/market-data/tools/check_report.py delivery /home/claude/delivery.txt --max 1200 --link https://claude.ai/artifact/DLehq35r7icxPU4odqs13R` で長さと最後の行を確かめる。
+
+## 9. 保存
 - report_id：YYYYMMDD-DAILY（基準日）。
 - GitHubへの保存（全履歴の置き場。F9）：第1節で用意した /home/claude/market-data で `git pull -q --ff-only`。
   書き手が書いた reports/daily/YYYYMMDD-DAILY.md を確かめ（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md`（書き手が reports/flows/fuel_latest.yaml を更新した日はそれも）→
@@ -107,32 +120,19 @@
   失敗したらユーザーに伝える。
 - 読む用の保管ページ「米国株 日次レポート」への保存：GitHub への push のあとに、runbook/archive_page.txt の手順を種類 us_daily で行う。
 
-## 9. 配信
-- SendUserMessage は**1画面**（日本語でおよそ600〜900字。重要な変化が多い日でも1,200字まで）。
-  全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
-  1. 冒頭ブロック（レポートの冒頭と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安は「やること」の行と4行目に入っている）
-  2. 重要ポイント（レポートの1節。前日から変わったこと。なければ「本日の重要イベントなし」）
-  3. 1行ずつ：Daily Plan の候補数（候補があれば銘柄とピボット）／買い戻しの燃料（Broad の節の1行）
-  4. 今夜〜明日のイベント（当日と翌営業日のものだけ）と、データ状態で伝えるべきこと（未更新・取得失敗・補完・週次未作成。なければ書かない）
-  Tape の表、先導セクター、テック内部の内訳、ステージ、RSライン、セットアップの一覧は配信に書かない（本文にある。その日に変わったものは 2 に入っている）。
-  最後に「全文は添付のファイルと、保管ページ（これまでの日次が並ぶ）：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」と1行（このリンクは毎回出す）。
-  すべて05の言葉で、記号は括弧。
-- 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
-- 送る前に、配信の文を /home/claude/delivery.txt に書き、`python3 /home/claude/market-data/tools/check_report.py delivery /home/claude/delivery.txt --max 1200 --link https://claude.ai/artifact/DLehq35r7icxPU4odqs13R` で長さと最後の行を確かめる。
-
 ## 10. この実行での注意（無人で動くため）
 - この実行には、途中で答える人がいない。道具を呼ばずに文だけを返すと、そこで実行が終わり、続きは誰も頼まない。
-  第8節の保存と第9節の配信が終わるまで、次の作業の道具を呼び続ける。
+  第8節の配信と第9節の保存が終わるまで、次の作業の道具を呼び続ける。
 - 次の4つの止まり方をしない：(1)「次は○○をします」と書いただけで終える、(2)「続けますか」と尋ねて待つ、
   (3) 決めなくても進められることを並べて判断を求める、(4) 区切り（書き手が書き終えた、点検が通った、push できた）で終える。
   途中経過を書くときは、次の道具の呼び出しと同じ返答の中に書く。
-- 止まってよいのは、この手順書が「終了」と書いている場面だけ：休場とGitHubデータ未更新（第2節）、配信済み（第3節）、そして第8節の保存と第9節の配信がすべて終わったとき。
+- 止まってよいのは、この手順書が「終了」と書いている場面だけ：休場とGitHubデータ未更新（第2節）、配信済み（第3節）、そして第8節の配信と第9節の保存がすべて終わったとき。
 - 最初に、第1節〜第9節をやることリストに入れ（TaskCreate が使えるとき）、1つ終えるごとに消す。
 - 障害（エラー、タイムアウト、空の結果、取得の失敗）は、原因を見て別の方法を試す。代わりの手順が決まっているものは、その節に書いてあるとおりにする。
 - 保管ページへの書き込みが version の食い違いで断られたときは、get で version を読み直して、もう一度書く。
 - GitHubのリポジトリのファイルは変更しない。
-  例外は、データが古いときのワークフロー起動（daily_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第8節）、週の最初の日次での reports/flows/fuel_latest.yaml の更新（Broad の節）だけ。
+  例外は、データが古いときのワークフロー起動（daily_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第9節）、週の最初の日次での reports/flows/fuel_latest.yaml の更新（Broad の節）だけ。
   data ブランチには書かない。口座・保有・売買ログは扱わない（未提供として扱う）。
-- GitHub への書き込みは git の push だけで行う（第2節のデータ更新の起動と、第8節の保存）。
-  add_repo と gh は、第8節の「push が断られたとき」以外では使わない。
+- GitHub への書き込みは git の push だけで行う（第2節のデータ更新の起動と、第9節の保存）。
+  add_repo と gh は、第9節の「push が断られたとき」以外では使わない。
   `gh auth status` も実行しない（gh が使えるときでも「The token in GH_TOKEN is invalid.」と出るので、判断材料にならない。2026-11-10 に確認）。

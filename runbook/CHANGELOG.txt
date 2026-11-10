@@ -19,10 +19,11 @@
   本文が200KBを超えたときは、要約ではなく先頭から200KBまでを保存して truncated=true にする（完全版は GitHub の reports/。これまで200KBを超えたことはない）。
 - 無人で動くための注意を足した：道具を呼ばずに文だけ返すと実行が終わること、しない止まり方4つ、止まってよい場面の名指し、やることリスト（daily_runbook 第10節、weekly_runbook 第9節）。
 - 場所を移した決まり（日次）：旧 第0節 原則・分量・書き方 → runbook/daily_write.txt。旧 第1節 → daily_runbook 第1〜5節。旧 第1.5節 → runbook/daily/a_opening.txt。旧 第2節（key_events の種類と書き方）→ runbook/daily/s1_key_events.txt。
-  旧 第3節 → s2_tape.txt。旧 第4節 → s3_broad.txt。旧 第5節 → s4_tech.txt。旧 第6節 → s5_daily_plan.txt。旧 第7節 → daily_runbook 第8節（保存）・第9節（配信）と runbook/archive_page.txt。旧 第8節 → runbook/daily_backfill.txt。
+  旧 第3節 → s2_tape.txt。旧 第4節 → s3_broad.txt。旧 第5節 → s4_tech.txt。旧 第6節 → s5_daily_plan.txt。旧 第7節 → daily_runbook 第8節（配信）・第9節（保存）と runbook/archive_page.txt。旧 第8節 → runbook/daily_backfill.txt。
   短縮形（分量の決まり）は、それぞれの節のファイルに置いた。
-- 場所を移した決まり（週次）：旧 第0節 原則・Web取得の注意・書き方、旧 第1節 仕様を読む、旧 第4節 モード → runbook/weekly_write.txt。旧 第2節 → weekly_runbook 第1・2・4節。旧 第3節 → 同 第3節。
-  旧 第5節 → runbook/weekly/ の節ごとのファイル（a_opening、s02、s05、s13、s14、s16、s17b、s18、s23、s27、z_glossary）。旧 第6節 → weekly_runbook 第8節。旧 第7節 → 同 第7節と runbook/archive_page.txt。旧 第8節 → runbook/weekly_backfill.txt。
+- 場所を移した決まり（週次）：旧 第0節 原則・Web取得の注意・書き方、旧 第1節 仕様を読む、旧 第4節 モード → runbook/weekly_write.txt。旧 第2節 → weekly_runbook 第1・2節。旧 第3節 → 同 第3節。
+  旧 第5節 → runbook/weekly/ の節ごとのファイル（a_opening、s02、s05、s13、s14、s16、s17b、s18、s23、s27、z_glossary）。旧 第6節 → weekly_runbook 第6節。旧 第7節 → 同 第7節と runbook/archive_page.txt。旧 第8節 → runbook/weekly_backfill.txt（weekly_runbook 第8節は、その案内だけ）。
+  配信と保存の順番は、どちらもこれまでどおり（配信が先）。
 - 週次のひな形で決めたこと（これまで決まりが無く、回によって違っていた点）：
   27項目の番号は 00 の B10 のまま。「ステージ分析」は番号を付けずに17項と18項の間に置く（11/6 の週次は18番にして以降が1つずつずれ、28項目になっていた）。
   5項の中の順番は Tape の表 → 中身のまとめ → 4週間の推移 → 先導セクターの推移 → ヘッジ → 長期SPY配分モデル（旧 第5節に書いてあった順）。

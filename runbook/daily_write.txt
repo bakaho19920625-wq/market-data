@@ -39,7 +39,7 @@
   未提供なら数量を出さない。
 - 冒頭ブロック → 重要ポイントの順に先頭に置く。
 - GitHubのリポジトリのファイルは変更しない。
-  例外は、データが古いときのワークフロー起動（daily_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第8節）、週の最初の日次での reports/flows/fuel_latest.yaml の更新（Broad の節）だけ。
+  例外は、データが古いときのワークフロー起動（daily_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第9節）、週の最初の日次での reports/flows/fuel_latest.yaml の更新（Broad の節）だけ。
 
 ## 分量の決まり
 - 本文の目安は表を含めて約7,000字（重要な変化が多い日は超えてよい）。
@@ -100,5 +100,5 @@
     "github_path": "reports/daily/<report_id>.md"}, "state_yaml": "UNIFIED_MARKET_STATE: …"}
    state_yaml には Tape、L/H、候補、key_events、データ状態を入れる（マスター仕様 D部の状態の形。前回の state/latest_daily の yaml と同じ項目）。
 4. git の操作・保管ページへの保存・配信はしない（定期実行では流れの側が行う）。
-   チャットで単独に頼まれたときは daily_runbook.txt の第8節・第9節に従う。
+   チャットで単独に頼まれたときは daily_runbook.txt の第9節・第8節に従う。
 5. 最後に返す：レポートのパス、点検の結果（合格／残った項目）、Web検索の回数、reports/flows/fuel_latest.yaml を更新したかどうか。

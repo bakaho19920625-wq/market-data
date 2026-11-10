@@ -19,10 +19,10 @@
      Daily Plan は出さない（過去日のため）。
      history_signals.csv の同じ日の行と regime_effective・IX2・BR1・LD1 が一致することを確かめ、
      違えばその旨を書く（定義の版が違う日は列の有無が異なるので、その差は書くだけでよい）。
-  4. 保存：reports/daily/YYYYMMDD-DAILY.md（commit「report YYYYMMDD-DAILY (backfill)」）、保管ページ reports/<id>（mode: daily_backfill）、report_bodies/<id>（daily_runbook.txt 第8節と同じ手順。`--mode daily_backfill`）。
+  4. 保存：reports/daily/YYYYMMDD-DAILY.md（commit「report YYYYMMDD-DAILY (backfill)」）、保管ページ reports/<id>（mode: daily_backfill）、report_bodies/<id>（daily_runbook.txt 第9節と同じ手順。`--mode daily_backfill`）。
      state/latest_daily は、補完した日より新しい日次がすでにあるなら更新しない。
      読む用の保管ページにも入れる（runbook/archive_page.txt。補完した日が新しい7本に入らないときは、手順1を `--id YYYYMMDD-DAILY` に替えてその1本を作る）。
-  5. 配信：SendUserMessage で冒頭ブロックと重要ポイントだけ（短く。「補完版」と明記。最後に daily_runbook.txt 第9節と同じ保管ページの1行）。
+  5. 配信：SendUserMessage で冒頭ブロックと重要ポイントだけ（短く。「補完版」と明記。最後に daily_runbook.txt 第8節と同じ保管ページの1行）。
      SendUserFile で本文。
 - 補完は今日の日次より先に、古い日から順に作る。
   補完で時間がかかりすぎる（1日分に5分超）ときは、今日の日次を先に出し、補完は件数だけ知らせる。

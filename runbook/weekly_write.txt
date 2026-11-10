@@ -165,5 +165,5 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
     "scenarios": {"updated_jst": "…", "items": [{"report_id", "as_of_market_et", "due_date_et", "bull", "base", "bear", "outcome", "realized_return_pct", "brier"}, …]}}
    scenarios は、/home/claude/state/ の state/scenarios の items に今週のシナリオを足し、期日到来分を採点して更新したもの（F9。直近60件）。
 5. git の操作・保管ページへの保存・配信はしない（定期実行では流れの側が行う）。
-   チャットで単独に頼まれたときは weekly_runbook.txt の第7節・第8節に従う。
+   チャットで単独に頼まれたときは weekly_runbook.txt の第6節・第7節に従う。
 6. 最後に返す：レポートのパス、モード（Standard／Full）とその理由、点検の結果（合格／残った項目）、reports/flows/fuel_latest.yaml を更新したかどうか。
