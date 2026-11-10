@@ -917,4 +917,10 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except SystemExit:
+        raise
+    except Exception as e:  # noqa: BLE001  点検の不具合でレポートの配信を止めない
+        print("注意｜点検プログラム｜途中で止まりました（%s: %s）。この点検は飛ばして先へ進み、配信に「点検プログラムが動かなかった」と1行書く" % (type(e).__name__, e))
+        sys.exit(0)
