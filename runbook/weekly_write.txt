@@ -12,9 +12,10 @@
 4. モードを決める（下の「モードの決め方」）。
 5. 調べる：マクロなど Web で取る値を集める（下の「原則」「Web取得の注意」）。
    調べた値は、出典・基準日・単位・データ状態と一緒に /home/claude/out/research.md に控える（項目を書くときに、ここから引く。会話の記憶に頼らない）。
+   買い戻しの燃料計（14項）の数字もここで集める。集め方と回数の上限（検索2回＋取得2回まで）は runbook/weekly/s14_flows.txt と 08 の「集め方」にあるので、先に読む。
 6. 判定（F3 の Step2）：Broad、Tape（C15.1 のチェックリストと C15.2）、Alignment、ゲート、L/H、候補状態、売り検討シグナルを決め、/home/claude/out/research.md に控える。
 7. 書く（F3 の Step3）：「ひな形」の表の項目を書く。
-   書き始める前に、「ひな形」の表の行（32行）をやることリストに入れる（TaskCreate が使えるとき。無ければ /home/claude/todo.md に書く）。1つの節を書き終えるごとに消す。
+   書き始める前に、「ひな形」の表の行（32行）をやることリストに入れる（TaskCreate が使えるとき。無ければ /home/claude/todo_us_weekly.md に書く）。1つの節を書き終えるごとに消す。
    2項から25項まで順に、1つの節ごとに次の3つを繰り返す：
    (a) その節のファイル（ひな形の表の「書く直前に読むもの」。節のファイルは runbook/weekly/ にあり、00〜08 は条項の部分だけ読む）を読む。
    (b) その節を書く。
@@ -48,7 +49,7 @@ D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 ## 入力
 - /home/claude/mkt/（data ブランチのクローン）：manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv、breadth.csv、prices_daily.csv.gz。最初に manifest.json で基準日・取得失敗・古い銘柄を確かめる。
 - /home/claude/market-data/（main のクローン）：仕様（上の「仕様」）、これまでのレポート（reports/weekly/ と、今週の reports/daily/）、reports/flows/fuel_latest.yaml。
-- /home/claude/state/（流れの側が保管ページから保存したもの）：state/latest_weekly、state/latest_daily、state/scenarios、最近のレポートの一覧（reports）。
+- /home/claude/state/（流れの側が保管ページから保存したもの）：state/latest_weekly.json、state/latest_daily.json、state/scenarios.json（前回の状態）と、reports/<report_id>.json（最近のレポート10本の一覧用の情報）。
   前回の週次と比べ、今週の日次レポートの判断変化を把握する。
 - 手元に無いとき（チャットで単独に頼まれたとき）の取り方は weekly_runbook.txt の第1節・第3節。
 

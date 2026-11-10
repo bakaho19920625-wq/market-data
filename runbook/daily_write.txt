@@ -8,8 +8,9 @@
 ## 進め方（この順に）
 1. このファイルを最後まで読む。
 2. 入力を読む（下の「入力」）。
+   この段階では Web 検索をしない（値動きの理由やニュースを探し始めない）。Web 検索が使える場面と回数は、下の「Web検索」で決まっている。
 3. 書く：「ひな形」の表の節を書く。
-   書き始める前に、「ひな形」の表の行（10行）をやることリストに入れる（TaskCreate が使えるとき。無ければ /home/claude/todo.md に書く）。1つの節を書き終えるごとに消す。
+   書き始める前に、「ひな形」の表の行（10行）をやることリストに入れる（TaskCreate が使えるとき。無ければ /home/claude/todo_us_daily.md に書く）。1つの節を書き終えるごとに消す。
    1節（重要ポイント）から「読み方」まで順に、1つの節ごとに次の3つを繰り返す：
    (a) その節のファイル（runbook/daily/ にある。ひな形の表に名前がある）を読む。
    (b) その節を書く。
@@ -22,7 +23,7 @@
 ## 入力
 - /home/claude/mkt/（data ブランチのクローン）：manifest.json、signals.json、screen.csv、setups.csv、history_signals.csv。最初に manifest.json で基準日・取得失敗・古い銘柄を確かめる。
 - /home/claude/market-data/02_User_Settings.txt（ユーザー設定。null の項目は未設定として扱う）。
-- /home/claude/state/（前回の状態：state/latest_daily、state/scenarios。流れの側が保管ページから保存したもの）。無ければ「前回比較不能」と書く。
+- /home/claude/state/state/latest_daily.json と /home/claude/state/state/scenarios.json（前回の状態。流れの側が保管ページの state/latest_daily・state/scenarios を保存したもの）。無ければ「前回比較不能」と書く。
 - 言葉づかい：/home/claude/market-data/05_Plain_Language_Glossary.txt（下の「書き方」）。
 - 定義の確認が必要なときだけ、マスター仕様と追補の該当条項を読む（/home/claude/market-data/ にある）：
   C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -49,6 +50,13 @@
   短縮形の形は、それぞれの節のファイルにある（半導体・テクノロジーのステージ分析／相対強度・調整耐性・RSライン／tech_watch など、Daily Plan、データ状態）。
 - 短縮しないもの：冒頭ブロック、重要ポイント、Tape の表と中身のまとめ、Broad、半導体・テクノロジーの「テック内部」1行と ETF の表とセットアップ。
 - 同じ数字を2つの節に書かない（冒頭ブロックに書いた数字は、該当の節で内訳を足すときだけ再掲する）。
+
+## Web検索（使える場面と回数の上限）
+- Web検索は、当日〜翌営業日のイベント（経済指標・決算・FOMC）と、指数が大きく動いた日の理由の確認だけに使う（合計2回まで。WebFetch は検索結果に出たURLしか取れない）。
+  指数・金利・為替・原油の数字を記事から取らない。
+  原油の水準（WTI の価格）が要る日だけ、理由の記事にある値を reported_unverified と明記して1つ書いてよい。
+- 別枠：その週の最初の日次だけ、買い戻しの燃料の控えの更新に検索1回＋取得1回（runbook/daily/s3_broad.txt の最後の項目）。
+- 使った回数を数えておき、最後に返す。上限に達したら、残りは「未確認」と書いて先へ進む。
 
 ## 数字の出所と基準
 - 個別銘柄・ETF・指数の騰落率と出来高は、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書く。
