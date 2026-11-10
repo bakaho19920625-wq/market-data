@@ -1,0 +1,85 @@
+# 買い戻しの燃料計の控え（追補08 B4.6a、FG-1.0）。定期実行（週次と、その週の最初の日次）が更新する。
+# 数字は公表・報道されたものの転記（reported_unverified）。4本のレポートがこのファイルを読む。項目名は変えない。
+schema: FG-1.0
+updated_jst: "2026-11-10 10:05 JST"
+week_ending: 2026-11-06
+inputs:
+  hf_net:
+    percentile: 0
+    window: "5年"
+    value_pct: null
+    chg_pt: -3.7
+    publisher: "Goldman Sachs プライムブック（米国株ファンダメンタル・ロングショートのネット・レバレッジ）"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-06
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+    status: reported_unverified
+  discretionary:
+    percentile: 3
+    z: -1.1
+    publisher: "Deutsche Bank（discretionary investor positioning）"
+    via: "Tickmill「Institutional Insights: Deutsche Bank Investor Flows & Positioning 9/11/26」、Investing.com 2026-11-07"
+    as_of: 2026-11-06
+    url: "https://www.tickmill.com/blog/institutional-insights-deutsche-bank-investor-flows-positioning-91126"
+    status: reported_unverified
+  systematic:
+    percentile: 44
+    z: 0.1
+    publisher: "Deutsche Bank（systematic strategies positioning）"
+    via: "Tickmill「Institutional Insights: Deutsche Bank Investor Flows & Positioning 9/11/26」"
+    as_of: 2026-11-06
+    url: "https://www.tickmill.com/blog/institutional-insights-deutsche-bank-investor-flows-positioning-91126"
+    status: reported_unverified
+fuel:
+  inputs_used: 3
+  position_avg_pct: 15.7
+  remaining_pct: 80
+  level: "多い"
+  bar: "■■■■■■■■□□"
+  prev: {week_ending: null, remaining_pct: null}
+flows:
+  cta_next_week_usd_bn:
+    flat: -28
+    up: null
+    down: null
+    scope: "S&P500先物"
+    publisher: "Goldman Sachs（基本想定）"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-06
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+  cta_next_month_usd_bn:
+    flat: -45
+    up: null
+    down: null
+    scope: "S&P500先物"
+    publisher: "Goldman Sachs（基本想定）"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-06
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+  cta_percentile:
+    sp500: 53
+    nasdaq100: 24
+    publisher: "Deutsche Bank"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-06
+  buyback_open_window_pct:
+    value: 85
+    publisher: "Citadel Securities"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-06
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+  retail:
+    note: "個人は11/3まで22営業日連続の買い越し（計約330億ドル。Citadel Securities）。11/5は個別株を売り越し（15時時点で3.38億ドル。Vanda）"
+    publisher: "Citadel Securities、Vanda"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-05
+  leveraged_etf:
+    note: "レバレッジ・インバース型ETFの残高は1,400億ドル弱（20日で約550億ドル減）。11/5の引け前の機械的な売りはS&P500 約40億ドル・ナスダック100 約130億ドルで過去最大（BofA）"
+    publisher: "BofA、Goldman Sachs"
+    via: "TheStreet Pro「The Week Ahead」2026-11-08"
+    as_of: 2026-11-05
+sector_note: "Deutsche Bank：テックの持ち高は市場全体を下回り、4月の急落時（Liberation Day）の安値より下（百分位の公表なし）"
+line_ja: "買い戻しの燃料：残り約8割（多い。11/6 週のデータ）。プロの買い持ちは過去5年でいちばん軽い（Goldman Sachs）。機械的な売りはあと1週間でS&P500先物 約280億ドルの見込み、自社株買いは約85%が解禁"
+notes:
+  - "初回の値（2026-11-10 に作成）。前回比は次の更新から"
+  - "hf_net の水準（%）は記事に記載がなく null。前週比−3.7pt と5年で0%の位置だけを転記"

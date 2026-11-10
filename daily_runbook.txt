@@ -148,6 +148,14 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
   それも無理なら直近の週次の値を「転記（週次○/○、reported_unverified）」と明記して使う。推測で埋めない。日次ではマクロ値は補助情報で、Tapeの判定には使わない。
 - Broad点は週次で確定。日次は「据置（前回週次：○点・○○）」を基本とし、判定帯をまたぐ明確な変化がある場合だけ暫定値と理由を書く。
 - マクロ値は state に保存しない（表示のみ。保存は週次）。
+- ［追補08］VIX の後に期間構造を1句：signals.vol_term の vix_over_vix3m と state_ja、unwinding が真なら「逆転が解けてヘッジ外しが進んだ形」
+  （例「VIX 19.9。目先と3か月先の差は小さい（VIX÷VIX3M 0.97、11/6 まで逆転）」）。vol_term が無い・vix3m が null の日は書かない。
+- ［追補08］この節の最後に「買い戻しの燃料」を1行：reports/flows/fuel_latest.yaml（main。/home/claude/market-data にクローン済みならそのファイル）の line_ja をそのまま転記する。
+  配信（第7節の SendUserMessage）にも同じ1行を入れる。冒頭ブロックには入れない。水準が前回の日次から変わった日だけ、第2節の末尾に1行足す。
+  ファイルが読めなければ「買い戻しの燃料：未取得」、updated_jst が21日より古ければ「（古いデータ）」を付ける。
+  その週の最初の日次（火曜の配信。月曜が休場なら次の配信）だけ、08 の「集め方」で更新を1回試みる（検索1回＋取得1回。上の3回とは別枠）。
+  更新できたらファイルを上書きし、第7節の保存で `git add reports/flows/fuel_latest.yaml` も行う。ほかの日は転記だけで Web確認はしない。
+  定義と言葉は 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/08_Addendum_v4.7_Flows_Fuel_VolTerm.txt）。買い・売りの合図として書かない。
 
 ## 5. 半導体・テクノロジー
 - ［v4.4］最初に「テック内部」を1行（signals.breadth_ext）：tech の pct_down20 と4週前、pct_above_50sma、ラベル（label_ja）、
