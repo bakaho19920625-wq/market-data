@@ -3736,6 +3736,6 @@ daily_runbook v2.2 第8節・weekly_runbook v2.0 第8節に置く（判定の履
 2026-11-10（総点検。判定・ST-1.5b／engine 1.4b・specification_version 4.6 は不変）：
 ・追補08（B4.6a 買い戻しの燃料計、B4.5a 不安の指数の期間構造。signals.json の vol_term、reports/flows/fuel_latest.yaml）。
 ・個別銘柄の騰落率の出所として signals.json に movers（MV-1.0）、screen.csv に chg_1d_pct・chg_1w_pct を追加（観察専用）。11/9 の日次が記事の騰落率（NVDA −4.6%、AMD +9.2%）を載せ、データ（−4.27%、+13.26%）と食い違ったため。
-・daily_runbook v2.5／weekly_runbook v2.2：配信は1画面、本文は変化を先に（変わっていない節は短縮形）、Broad の値は機械取得（ETF の前日比と FRED）を先に読み Web検索は理由とイベントだけ、高値からの位置と倍率の基準をそろえる、休場日の 12:07 の扱い。週次の再試行に夕方の回を追加（米国株 日曜 18:07、半導体 土曜 19:11）。
+・daily_runbook v2.5／weekly_runbook v2.2：配信は1画面、本文は変化を先に（変わっていない節は短縮形）、Broad の値は機械取得（ETF の前日比と FRED）を先に読み Web検索は理由とイベントだけ、高値からの位置と倍率の基準をそろえる、休場日の 12:07 の扱い。
 
 以上。
