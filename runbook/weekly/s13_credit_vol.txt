@@ -1,0 +1,8 @@
+# 週次レポート｜13. クレジット・VIX・オプション
+# runbook/weekly_write.txt の「ひな形」の表から、この項目を書く直前に読む。
+
+- 見出し：`## 13. クレジット・VIX・オプション`
+- 13節（クレジット・VIX・オプション）：VIX3M、VIX÷VIX3M（状態と続いている日数）、VIX9D、VVIX、SKEW を signals.vol_term から転記する
+  （missing と書くのは vol_term.missing にある指数だけ。vol_term が無い古いデータなら従来どおり missing）。
+  解釈に「逆転は○/○に最大、いまは○○」を1行。
+  本文D4の「VIXバックワーデーション」は vol_term.state＝inverted で確認する（08 の B4.5a。逆転だけでゲートを立てない）。

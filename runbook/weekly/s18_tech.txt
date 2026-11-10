@@ -1,0 +1,29 @@
+# 週次レポート｜18. 半導体・テクノロジー重点分析
+# runbook/weekly_write.txt の「ひな形」の表から、この項目を書く直前に読む。
+
+- 見出し：`## 18. 半導体・テクノロジー重点分析`
+- この項目の中の順番：テック内部 → セクター表（セクター相対強度・調整耐性・RSライン）→ 個別表 → ポケットピボット → 利益確定の目安。
+
+## テック内部
+- 半導体・テクノロジー節の冒頭に「テック内部」：signals.breadth_ext の tech（pct_down20 と4週前、pct_above_50sma、ラベル、XLKの位置）、
+  ex_tech との差、megacap_led。
+  stealth／broad_decline／megacap_led の書き方は追補04「レポートでの書き方」。
+  同じ行に監視グループ別の先導株数（signals.leadership.tech.by_group、今／4週前）。
+
+## セクター相対強度・調整耐性・RSライン
+- セクター相対強度・調整耐性・RSライン（追補03）は signals.sector_rs／correction_resilience／rs_lines から転記する。
+  監視候補の順番であり買い判定ではない。
+
+## 個別表
+- 個別表（E15）の Stage 列は stages.rows の label（言葉と記号）、ベースカウント列は setups の base_count（無ければ stages の current_base。ステージ2以外は「対象外」）、
+  setup_type 列は setups の setup_type から転記する。
+  セットアップは型（pattern_ja）ごとに数え（setup_counts）、late_stage は別枠。
+
+## ポケットピボット
+- 「ポケットピボット」の小節：今週の日次の key_events から pocket_pivot を集め（銘柄、日付、種類、支持線、その後の値動き＝ledger の d3／d5）、
+  ledger_cohorts の pocket_pivot（D+3／5／10、件数20未満は参考値）と、今日の excluded の理由を1行。
+  業績は未確認と明記。
+
+## 利益確定の目安
+- 「利益確定の目安」の小節：profit_tracking.rows（上昇率、最大上昇率、20〜25%の帯か、8週ルール中か、50日線の下か）。
+  持っていれば、の条件つきで、オニール流（+20〜25%で利確、3週以内に+20%なら8週保有）とミネルヴィニ流（一部利確＋残りは50日線割れまで）を並べる。

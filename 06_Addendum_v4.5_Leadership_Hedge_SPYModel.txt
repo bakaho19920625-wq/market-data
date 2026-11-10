@@ -97,17 +97,17 @@ checkpoint（D9／D10）には extensions.spy_model として signal・composite
 
 ## レポートでの書き方（05の言葉で。正本は daily_runbook／weekly_runbook。ここは要点だけ）
 
-日次（daily_runbook 第3・5・6節）：
+日次（runbook/daily/ の s2_tape.txt・s4_tech.txt・s5_daily_plan.txt・a_opening.txt）：
 ・Tape表の下に「先導セクター」2行：最多セクター上位3（今／4週前の数）、半導体・テクノロジーの先導株数（今／4週前。半分以下なら明記）。
 ・半導体・テクノロジー節の冒頭「テック内部」の行に、監視グループ別の先導株数（半導体／ソフトウェア／ハードウェア）を添える。
 ・「やること」にヘッジの条件（成立／未成立、損切り）。Daily Planにヘッジ候補1行。
 ・長期SPYモデルは「長く持つ分の目安 ○%（buy／sell、いつから）」を1行。変化があった日だけ重要ポイントに。
-週次（weekly_runbook 第5節）：
+週次（runbook/weekly/ の s05_scorecard.txt・s16_sectors.txt・a_opening.txt）：
 ・「先導セクターの推移」の小節：セクター別の表（今／4週前／増減）、新規・脱落の上位、セクターETFの順位変化。
   マクロ側（B部）の「セクター」項目は、数字をこの小節から引き、重複して集計しない。
 ・ヘッジ：許可・成立・解除の状態と、週内に成立した日。
 ・長期SPYモデル：配分%、シグナル、直近の変化、Tapeとの組み合わせの読み方（長期は買い持ちでも短期は守り、など）。
-半導体（semis-data。daily.md 6b節、judge.md 4c節）：market-data から転記するだけ。先導セクター上位3、半導体・テックの先導株数（4週前比）、
+半導体（semis-data。prompts/daily/s06b_market.md の6b節、prompts/judge/s04c_market_context.md の4c節）：market-data から転記するだけ。先導セクター上位3、半導体・テックの先導株数（4週前比）、
 ヘッジ条件の状態、長期配分モデルの%とシグナル。採点には使わない。
 
 ## 既知の限界

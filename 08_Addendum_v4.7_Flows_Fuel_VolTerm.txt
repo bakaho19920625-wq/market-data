@@ -73,17 +73,17 @@
   2. まとめ記事：TheStreet Pro「The Week Ahead」（Neil Sethi。GS プライムブックのネット・グロス、DB の CTA 百分位、Goldman・BofA の CTA 売買見込み、
      Citadel の自社株買い解禁割合、レバレッジETF、個人の売買を1本にまとめている）。米国の日曜夕方（日本の月曜朝）に出るので、**日曜朝の週次では前週版しか無い**。
   3. Goldman の CTA・自社株買い：Tickmill ブログ「Institutional Insights: Goldman Sachs SP500 Flows & Positioning Update <日付>」。
-・WebFetch は検索結果に出たURLしか取得できない（weekly_runbook 第0節）。先に WebSearch で出してから取得する。
+・WebFetch は検索結果に出たURLしか取得できない（runbook/weekly_write.txt の「Web取得の注意」）。先に WebSearch で出してから取得する。
 ・取れなかった入力は前回の値を基準日つきで残す（14日を過ぎたら計算から外す）。取れなかったことを「データ状態」に1行書く。
 
 ### いつ更新するか
 ・**週次（日曜）**：上の手順で更新を試みる（DB の数字は金曜〜土曜に出るので間に合うことが多い）。
 ・**その週の最初の日次（火曜の配信。月曜が休場なら次の営業日の配信）**：1回だけ更新を試みる（検索1回＋取得1回。TheStreet Pro の The Week Ahead を優先）。
-  日次の Web 検索の上限（daily_runbook 第4節。v2.5 から2回）とは別枠。それ以外の日次は控えのファイルから転記するだけで、Web確認はしない。
+  日次の Web 検索の上限（runbook/daily/s3_broad.txt。2回）とは別枠。それ以外の日次は控えのファイルから転記するだけで、Web確認はしない。
 
 ### 控えのファイル：reports/flows/fuel_latest.yaml（main ブランチ。4本のレポートが同じファイルを読む）
 ・取得：https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/reports/flows/fuel_latest.yaml
-・更新したら、手順書の保存（daily_runbook 第7節・weekly_runbook 第7節）でレポート本文と一緒に `git add reports/flows/fuel_latest.yaml` してコミットする
+・更新したら、手順書の保存（daily_runbook 第8節・weekly_runbook 第7節）でレポート本文と一緒に `git add reports/flows/fuel_latest.yaml` してコミットする
   （reports/ の下なので、手順書の「reports/ 以外のファイルは変更しない」に反しない）。更新しなかった日は触らない。
 ・形（項目名は変えない。値が無ければ null）：
   schema: FG-1.0
@@ -117,7 +117,7 @@
   これから出る売り・買い：<flows を1〜2行。例「機械的に売買するファンドは今後1週間でS&P500先物を約280億ドル売る見込み（Goldman の基本想定）＝まだ出てくる売りがある／
   自社株買いは約85%の企業が買える状態（Citadel）＝下値の支え」>
   注：数字は報道からの転記（reported_unverified）。燃料が多いことは上がる保証ではない
-・配信の冒頭サマリ（weekly_runbook 第6節）にも、棒の行と読み方の1行を入れる。
+・配信の冒頭サマリ（weekly_runbook 第8節）にも、棒の行と読み方の1行を入れる。
 ・Broad の「心理・フロー」分野の採点は本文 B部のまま（AAII・NAAIM・FINRA 等）。燃料計の値で分野点を動かさない。
   ただし 14節の解釈の文で、燃料計と AAII 等が同じ向きか逆向きかを一言添えてよい。
 

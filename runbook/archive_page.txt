@@ -1,0 +1,23 @@
+# 読む用の保管ページへの保存（米国株の日次・週次で共通）
+# レポートだけが基準日の新しい順に並ぶ、読むためのページ（ユーザー専用・非公開の Artifact）。GitHub への push のあとに行う。
+# 保管ページ「米国株指標チェック」の reports・report_bodies・state・spec とは別のページ。ここで書くのは、下の reports と bodies の2つの集まりだけ。
+
+| 種類 | ページ | URL | 新しい本数 | レポートの場所 | id |
+|---|---|---|---|---|---|
+| us_daily | 米国株 日次レポート | https://claude.ai/artifact/DLehq35r7icxPU4odqs13R | 7 | reports/daily/ | YYYYMMDD-DAILY |
+| us_weekly | 米国株 週次レポート | https://claude.ai/artifact/MYKcd2wVF1m2Ym26ExEzca | 4 | reports/weekly/ | YYYYMMDD-WEEKLY |
+
+## 手順（<種類>・<URL>・<本数> は上の表から）
+1. `python3 /home/claude/market-data/tools/archive_doc.py <種類> --recent <本数>`
+   レポートの場所の新しい<本数>本について、/home/claude/archive_docs/<種類>/ に <id>.meta.json と <id>.body.json を作り、id とファイルの場所の一覧を表示する。
+   本文は変えない。どこにも送らない。
+2. ArtifactData の query で、ページにすでにある id を読む。
+   url は <URL>、collection: "reports"、query: {"order_by": {"field": "as_of", "direction": "desc"}, "limit": 30}。
+3. 1 の一覧のうちページに無い id だけを、ArtifactData の batch（url は <URL>）で書く。1本につき2つ：
+   {"op": "set", "collection": "reports", "doc_id": "<id>", "file_path": "<meta_file>"} と {"op": "set", "collection": "bodies", "doc_id": "<id>", "file_path": "<body_file>"}。
+   今回の分と、過去に入れ損ねた分が一緒に入る。無いものが0本なら何も書かない。新しく作る文書なので if_version は要らない。
+   すでにある id を書き直すとき（同じ日・同じ週の訂正版、補完の作り直し）だけ、その2つを get して version を読み、if_version を付けて set する。
+4. 書けなかったときは通知を増やさず、最後の返答に「読む用の保管ページに保存できませんでした」と1行書くだけでよい。
+   次の回の 3 で自動的に入る。レポートの配信と GitHub への保存は続ける。
+
+補完した日・週が新しい<本数>本に入らないときは、手順1を `--id <id>` に替えてその1本を作る。

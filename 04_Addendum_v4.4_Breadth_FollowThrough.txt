@@ -123,7 +123,7 @@ key_events_today に追加（前営業日との比較だけで決めるので、
 
 ## レポートでの書き方（正本は daily_runbook／weekly_runbook。ここは要点だけ）
 
-日次（daily_runbook 第2・3・5節）・週次（weekly_runbook 第5節）とも：
+日次（runbook/daily/ の s1_key_events.txt・s2_tape.txt・s4_tech.txt）・週次（runbook/weekly/ の s05_scorecard.txt・s18_tech.txt）とも：
 1. Tape のチェックリスト表に、FB1 の行を「維持率／平均リターン（D+5・D+10）／伸び判定」の3つで書く。
    stalling なら「抜けた水準は守るが伸びていない（ダマシが多い地合い）」と一言添える。
 2. Tape の表に IX3 と BR4 を加える。IX3 が成立していれば理由（大型株主導の崩れ／指数の崩れ）を書く。

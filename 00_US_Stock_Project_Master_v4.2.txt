@@ -1597,11 +1597,11 @@ FOMC、CPI、雇用、急落・急騰等の臨時更新。
 ［v4.2］Daily（日次レポート）：
 自動配信の既定（F9、火〜土の7:07。データ未更新なら9:07に再試行）。ユーザーが「日次レポート」と依頼した場合も同じ。
 Tape中心の短い更新とDaily Planを1本にまとめる。本文は2〜3画面以内とし、27項目は出さない。
-1. 冒頭（1画面）：［v4.5］冒頭ブロック（今日のひとこと・やること・なぜその判断か。形は05の0節、内容は daily_runbook.txt 第1.5節）、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
-   種類ごとの書き方の正本は daily_runbook.txt 第2節。ここには一覧を重複して置かない）、
+1. 冒頭（1画面）：［v4.5］冒頭ブロック（今日のひとこと・やること・なぜその判断か。形は05の0節、内容は runbook/daily/a_opening.txt）、［v4.2b］日次で逃さない重要ポイント（signals.key_events_today をすべて列挙。
+   種類ごとの書き方の正本は runbook/daily/s1_key_events.txt。ここには一覧を重複して置かない）、
    Tapeレジームと前日比、有効分配日・FTD、適用ゲート、L/Hと新規許容度、データ状態（基準日・欠損）。
    ［v4.2b］日次の詳細手順はdaily_runbook.txtに従う。
-2. Broad：日々動く項目だけを再確認する（項目の一覧と代用の注記は daily_runbook.txt 第4節）。Broad点は週次で確定し、日次では据置を基本とする。
+2. Broad：日々動く項目だけを再確認する（項目の一覧と代用の注記は runbook/daily/s3_broad.txt）。Broad点は週次で確定し、日次では据置を基本とする。
    判定帯をまたぐ明確な変化がある場合だけ暫定値を示し、理由を書く。
 3. 半導体・テクノロジー：SOXX・SMH・IGV等の動き、候補状態の変化
    （新規ready、ブレイク、スクワット、失敗・脱落、売り検討シグナル）、D+3／5／10の更新。
@@ -1704,7 +1704,7 @@ UNIFIED_MARKET_STATE:
     cash_pct: null
   hard_gates: []
   daily:                      # v4.5b 日次（state/latest_daily）だけが使う。週次は null のまま
-    key_events_today: []      # signals.key_events_today をそのまま（種類と書き方は daily_runbook 第2節）
+    key_events_today: []      # signals.key_events_today をそのまま（種類と書き方は runbook/daily/s1_key_events.txt）
     candidates: []            # ready／near_pivot の銘柄（P、S、E_plan、E_max。Daily Plan と同じ値）
   key_changes:
     positive: []
@@ -3450,7 +3450,7 @@ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイ�
 1日1行（基準日、レジーム、チェックリストの主要値、隠れ弱気ラベル、先導セクター上位3、テック・半導体の先導株数、FB1、
 ヘッジの許可・成立、長期SPYモデルの合計点とシグナル、候補数、イベント種類。列は analyze.py の HIST_COLS）。
 前回分を引き継いで追記し、同じ基準日の再実行は上書き。初回は main の history_seed.csv（現行エンジンで2025-11-03から計算した backfill。source=backfill）から始める。
-用途：閾値の校正と「前回との比較」の長期版（週次の推移表、weekly_runbook 第5節）。判定には使わない。
+用途：閾値の校正と「前回との比較」の長期版（週次の推移表、runbook/weekly/s05_scorecard.txt）。判定には使わない。
 増え方：1行約335バイト（年83KB）。3,000行（約12年）を超えたら年ごとのファイルに分割する（それまでは1ファイル）。
 
 範囲と限界：
@@ -3629,7 +3629,7 @@ MarketSurge等のログインが必要なサービスについて、
   月曜は新しい米国取引日がないため配信しない。
 ・週次レポート：日曜の9:07。直近の米国取引日（通常は金曜）の終値を基準とする。
 ・米国の休場日で新しい取引日がない場合は短い通知だけを送り、保存しない。同じ基準日の日次がすでに保存済みの場合
-  （9:07の再試行で7:07が成功しているときなど）は何も送らない（daily_runbook 第1節）。
+  （9:07の再試行で7:07が成功しているときなど）は何も送らない（daily_runbook 第3節）。
 
 保管ページ（Artifact「米国株指標チェック」、ユーザー専用・非公開）：
 URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
@@ -3640,12 +3640,14 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・02_User_Settings.txt（F1のユーザー設定。リポジトリは公開のため、口座情報は書かない）
 ・03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）、04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d）、
   06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4、C10.1、F10）
-・daily_runbook.txt（日次の実行手順書）、weekly_runbook.txt（週次の実行手順書）
+・daily_runbook.txt（日次の実行手順書＝流れ）、weekly_runbook.txt（週次の実行手順書＝流れ）
+・［2026-11-10］runbook/（レポートの書き方：daily_write.txt・weekly_write.txt＝共通部分とひな形、daily/・weekly/＝節ごと、daily_backfill.txt・weekly_backfill.txt＝補完、
+  archive_page.txt＝読む用の保管ページへの保存、CHANGELOG.txt＝手順の変更の履歴）。tools/check_report.py＝書き上がったレポートの点検、tools/state_docs.py＝保管ページに入れる文書づくり
 ・05_Plain_Language_Glossary.txt（やさしい表記の対応表。4本のレポート共通。定義は変えず書き方だけを決める）
 取得：https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<ファイル名>
 保管ページの公開ファイル spec/〜 は、リポジトリに届かない場合の予備のコピーとする
 （spec/master_v4.2.txt、spec/instructions_v4.2.txt＝CLAUDE.md、spec/source_notes.txt、spec/user_settings.txt、
-  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt、spec/plain_language.txt）。
+  spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/daily_runbook.txt、spec/weekly_runbook.txt、spec/plain_language.txt、spec/runbook/〜＝リポジトリの runbook/ と同じ並び）。
 仕様を変えるときはリポジトリのファイルを更新する（更新はリポジトリの活動にもなり、Actionsの60日停止の予防にもなる）。
 ［v4.4］定期実行（スケジュールタスク）の本文には手順を置かず、手順書（daily_runbook.txt／weekly_runbook.txt）を読む指示と
 実行環境の前提だけを書く。手順を変えるときはリポジトリの手順書と保管ページの予備コピーを更新し、定期実行の本文は変えない。
@@ -3666,7 +3668,7 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・［2026-11-10］読む用の保管ページ：レポートだけが基準日の新しい順に並ぶ、読むためのページ（ユーザー専用・非公開の Artifact）。4本のレポートに1つずつある
   （米国株 日次レポート、米国株 週次レポート、半導体・メモリー 日次レポート、半導体・メモリー 週次定点観測）。定期実行が保存のたびに reports/ の本文をそのまま1本足し
   （tools/archive_doc.py が reports/ から文書を作り、ArtifactData で reports/<id>＝一覧用、bodies/<id>＝本文 に書く。ページに無い直近の分もそのとき一緒に入る）、
-  配信の最後と、配信済みで終了する回の最後にページのリンクを出す。URLと手順は daily_runbook.txt・weekly_runbook.txt の第7節（半導体は semis-data の prompts/schedule_daily.md・schedule_weekly.md）。
+  配信の最後と、配信済みで終了する回の最後にページのリンクを出す。URLと手順は runbook/archive_page.txt（半導体は semis-data の prompts/archive_page.md）。
   前回状態（state）と仕様の予備コピー（spec/）は、これまでどおり保管ページ「米国株指標チェック」に置く。判定・レポートの中身は変えない。
 ・state/scenarios：{updated_jst, items}
   itemsは [{report_id, as_of_market_et, due_date_et, bull, base, bear, outcome, realized_return_pct, brier}]、直近60件。

@@ -1,0 +1,169 @@
+# 週次レポートの書き方 weekly_write v1.0（weekly_runbook v2.5 と対）
+# 書き手（定期実行の Agent。チャットで「レポートして」「Fullで」を頼まれたときは Claude 自身）が読む。定期実行の流れは weekly_runbook.txt、変更の履歴は runbook/CHANGELOG.txt。
+
+## 役割
+米国株指標チェックの週次レポート（マスター仕様 v4.2 の D7「週次」）を書く。
+直近の金曜（米国の通常取引の終値）を基準に、マクロ全分野・Broad・Tape・行動・半導体テクノロジーをまとめる。モードは Standard か Full。
+
+## 進め方（この順に。00 の F3 の3段階）
+1. このファイルを最後まで読む。
+2. 仕様を読む（下の「仕様」）。
+3. データ確認（F3 の Step1）：入力を読む（下の「入力」）。
+4. モードを決める（下の「モードの決め方」）。
+5. 調べる：マクロなど Web で取る値を集める（下の「原則」「Web取得の注意」）。
+   調べた値は、出典・基準日・単位・データ状態と一緒に /home/claude/out/research.md に控える（項目を書くときに、ここから引く。会話の記憶に頼らない）。
+6. 判定（F3 の Step2）：Broad、Tape（C15.1 のチェックリストと C15.2）、Alignment、ゲート、L/H、候補状態、売り検討シグナルを決め、/home/claude/out/research.md に控える。
+7. 書く（F3 の Step3）：「ひな形」の表の項目を書く。
+   書き始める前に、「ひな形」の表の行（32行）をやることリストに入れる（TaskCreate が使えるとき。無ければ /home/claude/todo.md に書く）。1つの節を書き終えるごとに消す。
+   2項から25項まで順に、1つの節ごとに次の3つを繰り返す：
+   (a) その節のファイル（ひな形の表の「書く直前に読むもの」。節のファイルは runbook/weekly/ にあり、00〜08 は条項の部分だけ読む）を読む。
+   (b) その節を書く。
+   (c) その節のファイルを上から1行ずつ見て、書いた内容と突き合わせる（1行が1つの決まり。その日は当てはまらない行は飛ばす）。足りないものがあれば、その場で足す。
+   節のファイルを先にまとめて読まない（書く直前に読むほうが、その節の決まりを落とさないため）。
+   題と作成の行・冒頭ブロック（今日のひとこと・なぜその判断か）は、ほかの節を書き終えてから最後に書き、レポートの先頭に置く（全部の節の中身がそろってからまとめるため）。
+   途中で止まらない：全部の節と「書き終えたら」が済むまで、文だけの返答で終えない（返答を終えると、そこで作業が止まる）。
+   まとめの項目（1項・3項・4項・26項・27項）は、2項と5〜25項を書き終えてから書く（中身がそろってからまとめるため）。そのあとで題・冒頭ブロック・「読み方」を書く。置く場所は、ひな形の順のまま。
+   節のファイルが無い項目は、表にある仕様の条項を読み、(c) ではその条項と突き合わせる。
+8. 書き終えたら、下の「書き終えたら」を行う。
+
+## 仕様
+次を読む（/home/claude/market-data/<ファイル名>。無ければ https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<ファイル名>）：
+- CLAUDE.md（プロジェクト指示。どこに何があるかの案内）
+- 00_US_Stock_Project_Master_v4.2.txt（本文）
+- 01_Minervini_Source_Notes.txt（原典メモ）
+- 02_User_Settings.txt（ユーザー設定）
+- 03_Addendum_v4.3_SectorRS_Resilience.txt（E7.1〜E7.3）
+- 04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d。C15.1と食い違えば04を優先）
+- 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4 先導セクターの推移、C10.1 ヘッジの価格セットアップ、F10 長期SPY配分モデル。観察専用）
+- 07_Addendum_v4.6_Setups_PocketPivot_Stage.txt（E6.2 ステージ分析、E6.3 業種別のステージ分布、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット、E13.2 利益確定の目安・8週ルール。本文と食い違えば07を優先）
+- 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（B4.6a 買い戻しの燃料計、B4.5a 不安の指数の期間構造。観察専用）
+- 05_Plain_Language_Glossary.txt（やさしい表記）
+届かなければ、保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）の予備コピーを
+Artifactツールの read（paths）で読む：spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、
+spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/addendum_v4.6.txt、spec/addendum_v4.7.txt（＝08）、spec/plain_language.txt。
+どちらも読めなければ、その旨を返して終える（定期実行では、流れの側がユーザーに伝える）。
+A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）、B10（Fullの27項目）、C15.1（改訂版）と04の C15.1a〜d、
+D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
+
+## 入力
+- /home/claude/mkt/（data ブランチのクローン）：manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv、breadth.csv、prices_daily.csv.gz。最初に manifest.json で基準日・取得失敗・古い銘柄を確かめる。
+- /home/claude/market-data/（main のクローン）：仕様（上の「仕様」）、これまでのレポート（reports/weekly/ と、今週の reports/daily/）、reports/flows/fuel_latest.yaml。
+- /home/claude/state/（流れの側が保管ページから保存したもの）：state/latest_weekly、state/latest_daily、state/scenarios、最近のレポートの一覧（reports）。
+  前回の週次と比べ、今週の日次レポートの判断変化を把握する。
+- 手元に無いとき（チャットで単独に頼まれたとき）の取り方は weekly_runbook.txt の第1節・第3節。
+
+## 原則
+- 計算はGitHubの解析エンジン（analyze.py）が済ませている。
+  Tapeチェックリスト、先導候補、セットアップ、ブレイク追跡、売りシグナル、
+  セクター相対強度・調整耐性・RSライン、市場内部の拡張（breadth_ext）、先導セクターの推移（leadership）、ヘッジ条件（hedge）、
+  長期SPY配分モデル（spy_model）、週足ステージ・業種別のステージ分布・ベースの番号（stages、setups の stage_label・base_count）、ポケットピボット（pocket_pivots）、
+  利益確定の目安・8週ルール（profit_tracking）は signals.json・ledger.json の値を使い、再計算しない
+  （検証目的は可。食い違いは signals.json を優先して報告）。
+  それ以外の時系列計算（SMA、HV等。stages.etfs に無いETFの週足ステージ）はPythonで行い、その場合も07のE6.2の決め方に合わせる。
+- マクロ、金融政策、金利、景気・雇用・物価、企業利益・EPS修正、評価、信用・ボラ、心理・フロー・FINRA、ドル・商品・地政学、
+  セクター、季節性、次週のイベントはWeb検索で取得し、出典・基準日・単位・データ状態を付ける。
+- 推測で埋めない。
+  未確認の値は missing とし、D4のデータゲートを適用する。
+- ユーザーの口座・保有は未提供として扱い、数量は出さない（チャットで示された範囲だけ使う）。
+- 個別分析は半導体・テクノロジーの監視銘柄だけ。
+  市場全体の先導候補はTape判定とセクター分布の表示にだけ使う。
+- GitHubのリポジトリのファイルは変更しない。
+  例外は、データが古いときのワークフロー起動（weekly_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第7節）、reports/flows/fuel_latest.yaml の更新（14項）だけ。
+
+## Web取得の注意
+- WebFetch は「検索結果に出たURL」か「会話中にすでに出たURL」しか取得できない（手順書に書いたURLをそのまま渡すと PROVENANCE_REQUIRED で拒否される）。
+  先に WebSearch で該当ページを出してから取得する。
+  取得できない値は missing（または period_mismatch で前回値）とし、代わりの取得先があれば使う：
+  ・米10年実質金利（DFII10）・米10年名目（DGS10）・広義ドル指数（DTWEXBGS）、米2年金利（DGS2）・HY OAS（BAMLH0A0HYM2）・CCC格のスプレッド（BAMLH0A3HYC。この3つは 2026-11-10 以降のデータにある）：半導体側リポジトリ semis-data の data ブランチ macro_daily.csv（FREDから機械取得、1〜2日遅れ）。
+   Web で探す前に、まずここを読む。
+    `git clone -q --depth 1 --branch data https://github.com/bakaho19920625-wq/semis-data.git /home/claude/sd-data` → macro_daily.csv。
+    出典は FRED、状態は verified（基準日を添える）。
+  ・FactSet Earnings Insight：WebSearch「FactSet Earnings Insight <日付>」で当週のPDFかInsightページを出してから取得。
+   出なければ前週版を period_mismatch で使う。
+  ・財務省のパー利回り：WebSearch「treasury par yield curve rates <年月>」で出た財務省ページを取得。
+   出なければ市場まとめの値を reported_unverified で使う。
+  CNBC・CNN・Bloomberg・WSJ・Reuters の本文は取得できないことが多い（見出しだけ使い reported_unverified）。
+
+## 数字の出所と基準
+- 個別銘柄・ETF・指数の騰落率と出来高は signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）、週の騰落率は prices_daily.csv.gz から計算した値だけを書く（記事の騰落率は書かない。記事は理由の説明に使う）。
+  高値からの位置は pct_from_52w_high（取引時間中の高値が基準）にそろえ、同じ銘柄に2通りの数字を書かない。
+  倍率には基準を書く（rvol50＝出来高が50日平均の○倍。「普段の○倍」とだけ書かない）。
+
+## 書き方（言葉づかい）
+- 状態を表す語は 05_Plain_Language_Glossary.txt（main。届かなければ保管ページの spec/plain_language.txt）の「言葉」で書き、
+  数字と記号を括弧で後ろに付ける。
+  記号は消さない。
+  記号だけ・英語だけの行を作らない。
+  表には「言葉」の列を置くか、数字の横に言葉を添える。
+  冒頭ブロック（今日のひとこと・なぜその判断か）では記号・英語の略語を単独で使わない。
+  初出の記号には必ず言葉を添える
+  （×「Tape C確定」「崩れガード成立」「FTDなし」→ ○「高値圏で売りが増えている段階（C、2日続いたので確定）」「指数が50日線を割って大口の売りが5日以上続く安全装置が立っている（崩れガード IX3）」「反発が本物になった合図（FTD）はまだない」）。
+  Full の27項目・YAML の項目名は仕様どおり（YAMLは機械が読むので言葉に置き換えない）。
+
+## モードの決め方
+- 前回の週次が無ければ初回として Full にし、「前回比較不能」と明記する。
+- Standard を基本とし、D7の Full 条件（その月の最初の週次、前回の Full から4週以上、Broad判定帯やTapeレジームの変更、重大イベント後、
+  定義変更、前回の週次なし）に当たれば Full。
+- 追補04の適用後で最初の週次は「定義変更」として Full にし、前回のレジームとの比較には「定義変更（v4.4）」と明記する
+  （判定条件が変わったため、前回のEと今回のCは同じ定義での変化ではない）。
+- どちらにしたかと理由を、レポートの冒頭に書く。
+- ユーザーが「Fullで」と頼んだときは Full。
+- Standard でも、ひな形の見出しは全部残す。重要な変化がない項目は、再確認日と据置の理由、または未取得を1〜3行で書く（00 の A3「無言で省略しない」）。
+
+## ひな形（この順番・この見出しで書く）
+見出しは省かない・順番を変えない・番号を変えない（27項目は 00 の B10 の番号）。見出しの後ろに括弧で補足を付けるのはよい（例「## 9. 金利・カーブ（11/6）」）。
+「ステージ分析」は番号を付けずに17項と18項の間に置く（18項は半導体・テクノロジー重点分析のまま）。項目の中の小見出し（### 18.1 など）は自由。
+取得できなかった項目も見出しを残し、missing・未取得の理由・判断への影響を書く。
+「Standard」の列：同じ＝Full と同じ決まりで書く／変化中心＝重要な変化を中心に書き、変化がなければ再確認日と据置の理由（または未取得）を1〜3行／短く＝数行でよい／要点＝要点だけ／簡易YAML＝D9。
+
+| 順 | 見出し | 書く直前に読むもの（節のファイルは runbook/ の下） | Standard |
+|---|---|---|---|
+| 1 | `# 米国株指標チェック 週次レポート YYYYMMDD-WEEKLY（Full）` または `…（Standard）` と、市場基準日・作成・モード・前回の週次の行 | weekly/a_opening.txt | 同じ |
+| 2 | `## 今日のひとこと` | weekly/a_opening.txt | 同じ |
+| 3 | `## なぜその判断か` | weekly/a_opening.txt | 同じ |
+| 4 | `## 1. 最初に押さえるポイント` | 00 の B10（冒頭サマリに含めるもの。最大10項目） | 短く |
+| 5 | `## 2. データ基準・検証状態・整合性フラグ` | weekly/s02_data.txt、00 の A5・F2.1・F3（Step1） | 要点 |
+| 6 | `## 3. エグゼクティブサマリー` | 00 の B3・B10（事実／解釈／懸念／行動） | 短く |
+| 7 | `## 4. なぜこのレジーム・スコア・行動になったか` | 00 の B10（判断理由に含めるもの）、D2、D11 | 同じ |
+| 8 | `## 5. 総合スコアカード` | weekly/s05_scorecard.txt、00 の B7・C15.1・C15.2・A6・D6、04 | 同じ |
+| 9 | `## 6. 主要指標ダッシュボード` | 00 の B10 | 短く |
+| 10 | `## 7. 株価・モメンタム・市場内部` | 00 の B4.1 | 変化中心 |
+| 11 | `## 8. FRB・流動性・財政` | 00 の B4.2 | 変化中心 |
+| 12 | `## 9. 金利・カーブ` | 00 の B4.3・B3 | 変化中心 |
+| 13 | `## 10. 景気・雇用・物価` | 00 の B4.3 | 変化中心 |
+| 14 | `## 11. 企業利益・EPS修正` | 00 の B4.4 | 変化中心 |
+| 15 | `## 12. バリュエーション` | 00 の B4.4 | 変化中心 |
+| 16 | `## 13. クレジット・VIX・オプション` | weekly/s13_credit_vol.txt、00 の B4.5、08 の B4.5a | 変化中心 |
+| 17 | `## 14. 心理・フロー・FINRA市場レバレッジ` | weekly/s14_flows.txt、00 の B4.6・B5、08 の B4.6a | 変化中心 |
+| 18 | `## 15. ドル・商品・地政学` | 00 の B4.7 | 変化中心 |
+| 19 | `## 16. 11セクター・スタイル` | weekly/s16_sectors.txt、00 の B4.8 | 変化中心 |
+| 20 | `## 17. 季節性` | 00 の B4.8 | 変化中心 |
+| 21 | `## ステージ分析` | weekly/s17b_stages.txt、07 の E6.2・E6.3 | 同じ |
+| 22 | `## 18. 半導体・テクノロジー重点分析` | weekly/s18_tech.txt、00 の B6・E15、03、04、07 | 同じ |
+| 23 | `## 19. トリガー充足状況` | 00 の D8・B8 | 同じ |
+| 24 | `## 20. 強気／基本／弱気シナリオ` | 00 の F6 | 同じ |
+| 25 | `## 21. 投資行動マトリクス` | 00 の B9・D3・D4・D5・F5 | 同じ |
+| 26 | `## 22. 次回イベント` | 00 の B10 | 同じ |
+| 27 | `## 23. 前回差分` | weekly/s23_diff.txt、00 の A7・D8・F6 | 同じ |
+| 28 | `## 24. 時間軸別の結論` | 00 の B10・C3 | 同じ |
+| 29 | `## 25. データギャップ` | 00 の A6・D6 | 同じ |
+| 30 | `## 26. 人間向けスナップショット` | 00 の B10 | 短く |
+| 31 | `## 27. 継続チェックポイント` | weekly/s27_checkpoint.txt、00 の D9・D10・B11 | 簡易YAML |
+| 32 | `## 読み方` | weekly/z_glossary.txt | 同じ |
+
+## 書き終えたら
+1. 見出しが「ひな形」の順にそろっているか見る。
+2. 点検プログラムを実行し、「不合格」の行を直す（直したらもう一度実行する）：
+   `python3 /home/claude/market-data/tools/check_report.py us_weekly <レポートのパス> --data /home/claude/mkt`
+   「注意」の行は不合格ではない。読んで、直す必要があるものだけ直す。
+3. 出力前の点検：CLAUDE.md 8節の点検（構成、根拠、日付、基準日、計算ログ、Tapeチェックリスト、配分、確率合計100%、トリガー、本文とYAMLの一致）を行う。
+4. 保管ページに保存するための控えを /home/claude/out/<report_id>.save.json に書く（流れの側が tools/state_docs.py で文書にする）。形：
+   {"meta": {"id": "<report_id>", "report_id": "<report_id>", "mode": "weekly_standard または weekly_full", "as_of_market_et": "YYYY-MM-DD", "created_jst": "YYYY-MM-DD HH:MM JST", "title": "米国株 週次レポート YYYY-MM-DD",
+    "headline": "一文結論", "broad_score": 数値, "broad_regime": "…", "tape_regime": "A〜F", "alignment": "…", "long_level": "…", "hedge_level": "…", "gates": ["…"], "data_status": "…",
+    "github_path": "reports/weekly/<report_id>.md"},
+    "state_yaml": "UNIFIED_MARKET_STATE: …（27項の YAML と同じもの）",
+    "scenarios": {"updated_jst": "…", "items": [{"report_id", "as_of_market_et", "due_date_et", "bull", "base", "bear", "outcome", "realized_return_pct", "brier"}, …]}}
+   scenarios は、/home/claude/state/ の state/scenarios の items に今週のシナリオを足し、期日到来分を採点して更新したもの（F9。直近60件）。
+5. git の操作・保管ページへの保存・配信はしない（定期実行では流れの側が行う）。
+   チャットで単独に頼まれたときは weekly_runbook.txt の第7節・第8節に従う。
+6. 最後に返す：レポートのパス、モード（Standard／Full）とその理由、点検の結果（合格／残った項目）、reports/flows/fuel_latest.yaml を更新したかどうか。
