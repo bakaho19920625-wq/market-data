@@ -37,6 +37,7 @@ RSライン（対SPY・対QQQ、RS新高値、株価に先行、21日EMA。追�
 追補「06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt」（E7.4 先導セクターの推移、C10.1 ヘッジ・指数ショートの価格セットアップ、F10 長期SPY配分モデル。v4.5、engine 1.3）も正本の一部とする。
 値は signals.json の leadership／hedge／spy_model から読む。3つとも観察専用で、Tapeレジーム・L/H・買い判定・Broadの点数には使わない。ヘッジはエンジンが条件の成立を出すだけで、置くかどうかはその都度判断する（C10）。
 追補「07_Addendum_v4.6_Setups_PocketPivot_Stage.txt」（E6.2 ステージ分析（1A〜4B-の細区分、支え・抵抗、マンスフィールドRS）、E6.3 業種別のステージ分布、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット（本文E10.1を改訂）、E13.2 利益確定の目安と8週ルール、E14.1a setup_type。v4.6、engine 1.4）も正本の一部とする。値は signals.json の stages（rows・etfs・breadth）／setups（stage_label・base_count・setup_type）／setup_counts／pocket_pivots／profit_tracking から読む。業種別のステージ分布は半導体・テクノロジーとほかの業種の調子を見る材料として毎回表示する。Tape・Broad・L/Hの判定は変えない。
+追補「08_Addendum_v4.7_Flows_Fuel_VolTerm.txt」（B4.6a 買い戻しの燃料計、B4.5a 不安の指数（VIX）の期間構造。2026-11-10）も正本の一部とする。燃料計はプロの持ち高の百分位（公表・報道された数字だけ）から「残り約○割」を出し、控えは reports/flows/fuel_latest.yaml（週次と、その週の最初の日次が更新。4本のレポートが同じファイルを読む）。期間構造は signals.json の vol_term から読む。2つとも観察専用で、Tapeレジーム・Broadの点数・L/H・買い判定には使わない（本文D4の「VIXバックワーデーション」の確認には vol_term を使う）。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape

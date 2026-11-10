@@ -5,6 +5,10 @@
 ^GSPC   # S&P500指数
 ^IXIC   # Nasdaq Composite
 ^VIX    # VIX（出来高はなし）
+^VIX9D  # VIXの9日版（追補08 B4.5a：不安の指数の期間構造。観察専用）
+^VIX3M  # VIXの3か月版
+^VVIX   # VIXそのものの荒れ具合
+^SKEW   # 大きな下落に備える保険の割高さ
 SPY
 QQQ
 IWM

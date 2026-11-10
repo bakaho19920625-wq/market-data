@@ -2124,6 +2124,63 @@ def replay_ledger(P, uni_stocks, i, n_days):
     return ledger
 
 
+# ---------- 追補08 B4.5a：不安の指数（VIX）の期間構造。観察専用（Tape・Broad・L/H・買い判定には使わない） ----------
+VOL_TERM = {"inverted_ge": 1.0, "calm_lt": 0.9, "recent_bars": 10, "window": 20}
+VOL_TERM_JA = {"inverted": "逆転（目先の不安が3か月先より大きい。あわてた保険買いが入っている形）",
+               "tight": "差が小さい（警戒が残っている）", "normal": "平常（目先より先のほうが高い）"}
+
+
+def vol_term(P, i):
+    """VIX（30日）÷VIX3M（3か月）ほか。tickers.txt に ^VIX3M・^VIX9D・^VVIX・^SKEW が無い・未取得なら該当項目は null。"""
+    C = P.C
+
+    def val(t, k):
+        if t not in C.columns or k < 0:
+            return None
+        v = C[t].iloc[k]
+        return None if pd.isna(v) else round(float(v), 2)
+
+    names = ["^VIX", "^VIX9D", "^VIX3M", "^VVIX", "^SKEW"]
+    out = {"definition_version": "VT-1.0", "as_of": str(P.dates[i].date()),
+           "vix": val("^VIX", i), "vix9d": val("^VIX9D", i), "vix3m": val("^VIX3M", i), "vvix": val("^VVIX", i), "skew": val("^SKEW", i),
+           "missing": [t for t in names if val(t, i) is None],
+           "vix_over_vix3m": None, "vix_over_vix3m_5d_ago": None, "state": None, "state_ja": None, "days_in_state": None,
+           "inverted_days_in_window": None, "last_inverted_date": None, "bars_since_inverted": None, "peak_ratio_in_window": None, "peak_ratio_date": None,
+           "vix9d_over_vix": None, "unwinding": None,
+           "definition": "vix_over_vix3m＝VIX（今後30日の不安）÷VIX3M（今後3か月）。1以上＝逆転、0.9未満＝平常。"
+                         "unwinding＝直近10営業日に逆転があり、いまは逆転が解けて比率が5営業日前より低い（急いで買った保険を外す動きが進んだ形）。"
+                         "VVIX＝VIXそのものの荒れ具合、SKEW＝大きな下落に備える保険の割高さ。観察専用"}
+    if out["vix"] is not None and out["vix9d"] is not None and out["vix"] > 0:
+        out["vix9d_over_vix"] = round(out["vix9d"] / out["vix"], 3)
+    if "^VIX" not in C.columns or "^VIX3M" not in C.columns:
+        return out
+    r = (C["^VIX"] / C["^VIX3M"]).iloc[:i + 1].replace([np.inf, -np.inf], np.nan).dropna()
+    if r.empty or r.index[-1] != P.dates[i]:
+        return out
+
+    def state_of(x):
+        return "inverted" if x >= VOL_TERM["inverted_ge"] else ("normal" if x < VOL_TERM["calm_lt"] else "tight")
+
+    st = r.apply(state_of)
+    days = 0
+    for v in st.iloc[::-1]:
+        if v != st.iloc[-1]:
+            break
+        days += 1
+    w = r.iloc[-VOL_TERM["window"]:]
+    inv = st[st == "inverted"]
+    last_inv = inv.index[-1] if not inv.empty else None
+    since = int(len(r) - 1 - r.index.get_loc(last_inv)) if last_inv is not None else None
+    r5 = float(r.iloc[-6]) if len(r) > 5 else None
+    out.update({"vix_over_vix3m": round(float(r.iloc[-1]), 3), "vix_over_vix3m_5d_ago": round(r5, 3) if r5 is not None else None,
+                "state": st.iloc[-1], "state_ja": VOL_TERM_JA[st.iloc[-1]], "days_in_state": days,
+                "inverted_days_in_window": int((st.iloc[-VOL_TERM["window"]:] == "inverted").sum()),
+                "last_inverted_date": str(last_inv.date()) if last_inv is not None else None, "bars_since_inverted": since,
+                "peak_ratio_in_window": round(float(w.max()), 3), "peak_ratio_date": str(w.idxmax().date()),
+                "unwinding": bool(st.iloc[-1] != "inverted" and since is not None and 0 < since <= VOL_TERM["recent_bars"] and r5 is not None and float(r.iloc[-1]) < r5)})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="out")
@@ -2669,6 +2726,7 @@ def main():
                                                f"megacap_led＝QQQのSPY比1か月<={BRX['megacap_qqq_rel_1m']}%かつRSP/SPY 4週>=+{BRX['megacap_rsp_spy_4w']}%。"
                                                "Tapeレジームに使うのはS&P500のstealthだけ（Cの支持）。techは半導体・テクノロジー節の環境認識に使う。"}),
         "market": market, "sector_etf": sector_etf, "tech_etf": tech_etf,
+        "vol_term": jsonable(vol_term(P, i)),   # 追補08 B4.5a（観察専用）
         "leaders_market": {"count": len(leaders_now), "count_4w_ago": len(leaders_4w), "by_sector": sec_counts, "tickers": leaders_now[:60]},
         "leadership": jsonable(lead_rot),   # v4.5 (A)
         "hedge": jsonable(hedge),           # v4.5 (B)
