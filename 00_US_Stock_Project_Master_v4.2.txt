@@ -3663,6 +3663,11 @@ URL：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 ・［v4.5b］保存の役割分担：レポート本文の全履歴は GitHub main の reports/daily/・reports/weekly/（定期実行が保存。口座・保有・数量は書かない）。
   保管ページの report_bodies は直近180日だけ残し、それより前は週次が削除して reports/<id> に body_pruned・body_archive を付ける（見出しは残す）。
   これで無期限に増える保存場所をなくす。
+・［2026-11-10］読む用の保管ページ：レポートだけが基準日の新しい順に並ぶ、読むためのページ（ユーザー専用・非公開の Artifact）。4本のレポートに1つずつある
+  （米国株 日次レポート、米国株 週次レポート、半導体・メモリー 日次レポート、半導体・メモリー 週次定点観測）。定期実行が保存のたびに reports/ の本文をそのまま1本足し
+  （tools/archive_doc.py が reports/ から文書を作り、ArtifactData で reports/<id>＝一覧用、bodies/<id>＝本文 に書く。ページに無い直近の分もそのとき一緒に入る）、
+  配信の最後と、配信済みで終了する回の最後にページのリンクを出す。URLと手順は daily_runbook.txt・weekly_runbook.txt の第7節（半導体は semis-data の prompts/schedule_daily.md・schedule_weekly.md）。
+  前回状態（state）と仕様の予備コピー（spec/）は、これまでどおり保管ページ「米国株指標チェック」に置く。判定・レポートの中身は変えない。
 ・state/scenarios：{updated_jst, items}
   itemsは [{report_id, as_of_market_et, due_date_et, bull, base, bear, outcome, realized_return_pct, brier}]、直近60件。
   期日到来分はF6で採点して更新する。

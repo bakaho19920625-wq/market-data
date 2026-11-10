@@ -4,7 +4,7 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml）と、仕様ファイル（00〜08、daily_runbook.txt、weekly_runbook.txt）、
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml、tools/archive_doc.py＝読む用の保管ページに入れる文書を reports/ から作る）と、仕様ファイル（00〜08、daily_runbook.txt、weekly_runbook.txt）、
   レポート本文の全履歴 reports/daily/・reports/weekly/（定期実行が手順書どおり保存する。保管ページの本文は直近180日だけ）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
   ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06・07・08 の追補が上書きする。
@@ -138,3 +138,6 @@ BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱�
 スケジュールタスクが、火〜土の7:07に日次レポート（データ未更新や利用上限で動けなければ9:07・12:07に再試行。半導体の日次は7:21・9:21・12:21）、日曜の9:07に週次レポート（再試行13:07・18:07。半導体の週次は土曜10:11・14:11・19:11）を配信する（F9）。定期実行のモデルは2026-11-09から claude-opus-5-5（それまで Fable）。配信（通知で届く文）は1画面で、冒頭ブロックと前日・前回から変わった点を中心に書き、全文は添付の本文にする（daily_runbook v2.5 第7節・weekly_runbook v2.2 第6節）。利用上限などで配信できなかった日のレポートは、後日「補完」で作る（daily_runbook 第8節・weekly_runbook 第8節、semis-data の schedule_daily 第5節・schedule_weekly 第7節。データは GitHub Actions が毎日作るので欠けない）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次は冒頭ブロックの直後に signals.json の key_events_today をすべて列挙する（種類と書き方は daily_runbook.txt 第2節）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
 保管ページ：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 このプロジェクトのチャットで最新レポートや前回比較を求められたら、保管ページのデータベース（reports、report_bodies、state）を読む。口座残高・保有数量・売買明細は保管ページに保存しない。
+読む用の保管ページ（2026-11-10。レポートだけが基準日の新しい順に並ぶ、読むためのページ。4本のレポートに1つずつある。定期実行が保存のたびに1本足し、配信の最後と「配信済みで終了する回」の最後にリンクを出す）：
+米国株 日次レポート／米国株 週次レポート（URLと手順は daily_runbook.txt・weekly_runbook.txt の第7節）、半導体・メモリー 日次レポート／週次定点観測（semis-data の prompts/schedule_daily.md・schedule_weekly.md）。
+前回状態（state）と仕様の予備コピー（spec/）は、これまでどおり上の保管ページ「米国株指標チェック」に置く。読む用の保管ページにも口座残高・保有数量・売買明細は保存しない。
