@@ -21,7 +21,7 @@
   ・短縮しないもの：冒頭ブロック、第2節、第3節の Tape 表、第4節、第5節の「テック内部」1行と ETF の表とセットアップ。
   ・同じ数字を2つの節に書かない（冒頭ブロックに書いた数字は、該当の節で内訳を足すときだけ再掲する）。
 - ［v2.5］数字の出所と基準：
-  ・個別銘柄・ETF・指数の騰落率と出来高は、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書く。記事に載っている騰落率は取引時間中の値のことがあるので書かない（11/9 の日次は記事の「NVDA −4.6%、AMD +9.2%」を載せたが、データは −4.27%、+13.26% だった）。記事は値動きの理由の説明にだけ使う。
+  ・個別銘柄・ETF・指数の騰落率と出来高は、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書く。記事に載っている騰落率は取引時間中の値のことがあるので書かない（11/9 の日次は記事の「NVDA −4.6%、AMD +9.2%」を載せたが、データは −4.27%、+13.26% だった）。記事は値動きの理由の説明にだけ使う。signals.json に movers が無い日（エンジンを更新する前に作られたデータ）は、prices_daily.csv.gz の終値から前日比を計算して書く（その旨をデータ状態に1行）。
   ・高値からの位置は、tape.checklist・market・tech_etf・screen の pct_from_52w_high（取引時間中の高値が基準）にそろえる。同じ銘柄に2通りの数字を書かない（rs_lines.spy_pct_from_52w_high は終値が基準で少し違う値になるので、本文には書かない）。
   ・倍率には基準を書く：rvol50 は「出来高が50日平均の○倍」。「普段の○倍」とだけ書かない（半導体の日次は20日平均が基準で、同じ銘柄でも別の数字になる）。
 - ［v1.4］書き方：状態を表す語は 05_Plain_Language_Glossary.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/05_Plain_Language_Glossary.txt。
