@@ -2130,6 +2130,41 @@ VOL_TERM_JA = {"inverted": "逆転（目先の不安が3か月先より大きい
                "tight": "差が小さい（警戒が残っている）", "normal": "平常（目先より先のほうが高い）"}
 
 
+MOVERS_CORE = ["NVDA", "AVGO", "AMD", "TSM", "MU", "MSFT", "ORCL", "AAPL", "ASML", "AMAT"]
+
+
+def movers(P, i, uni_stocks, groups, top_n=5):
+    """監視銘柄の当日の騰落（MV-1.0、2026-11-10）。レポートが個別銘柄の騰落率を書くときの出所。
+    記事に載る騰落率は取引時間中の値のことがあり、2026-11-09 の日次で NVDA・AMD の数字がデータと食い違ったため追加。
+    観察専用：Tape・Broad・L/H・買い判定・セットアップには使わない。"""
+    rows = []
+    for t in uni_stocks:
+        if t not in P.C.columns or i < 1:
+            continue
+        c1 = pct(float(P.C[t].iloc[i]), float(P.C[t].iloc[i - 1]))
+        if c1 is None:
+            continue
+        rv = P.rvol50[t].iloc[i] if t in P.rvol50.columns else float("nan")
+        rows.append({"ticker": t, "group": groups.get(t, ""), "close": round(float(P.C[t].iloc[i]), 2), "chg_1d_pct": c1,
+                     "chg_1w_pct": pct(float(P.C[t].iloc[i]), float(P.C[t].iloc[i - 5])) if i >= 5 else None,
+                     "rvol50": None if pd.isna(rv) else round(float(rv), 2)})
+    if not rows:
+        return {"definition_version": "MV-1.0", "as_of": str(P.dates[i].date()), "status": "no_data"}
+    vals = sorted(r["chg_1d_pct"] for r in rows)
+    mid = len(vals) // 2
+    median = vals[mid] if len(vals) % 2 else round((vals[mid - 1] + vals[mid]) / 2, 2)
+    by = {r["ticker"]: r for r in rows}
+    up = sorted(rows, key=lambda r: -r["chg_1d_pct"])
+    down = sorted(rows, key=lambda r: r["chg_1d_pct"])
+    return {"definition_version": "MV-1.0", "as_of": str(P.dates[i].date()), "status": "ok",
+            "universe": {"n": len(rows), "up": sum(1 for r in rows if r["chg_1d_pct"] > 0), "down": sum(1 for r in rows if r["chg_1d_pct"] < 0),
+                         "median_chg_1d_pct": median},
+            "top_up": [r for r in up[:top_n] if r["chg_1d_pct"] > 0], "top_down": [r for r in down[:top_n] if r["chg_1d_pct"] < 0],
+            "core": [by[t] for t in MOVERS_CORE if t in by],
+            "note": "監視銘柄の当日の騰落（終値の前日比）。rvol50＝当日の出来高÷直前50日の平均。全銘柄の値は screen.csv の chg_1d_pct・chg_1w_pct・rvol50。"
+                    "レポートで個別銘柄の騰落率を書くときはこの値を使い、記事の数字は書かない。観察専用"}
+
+
 def vol_term(P, i):
     """VIX（30日）÷VIX3M（3か月）ほか。tickers.txt に ^VIX3M・^VIX9D・^VVIX・^SKEW が無い・未取得なら該当項目は null。"""
     C = P.C
@@ -2243,6 +2278,9 @@ def main():
         "in_universe": [t in uni_stocks for t in all_stocks],
         "group": [groups.get(t, "") for t in all_stocks],
         "close": [round(float(P.C[t].iloc[i]), 2) for t in all_stocks],
+        # 個別銘柄の騰落率（2026-11-10 追加。レポートが記事の数字ではなくこの値を使うため。判定には使わない）
+        "chg_1d_pct": [pct(float(P.C[t].iloc[i]), float(P.C[t].iloc[i - 1])) if i >= 1 else None for t in all_stocks],
+        "chg_1w_pct": [pct(float(P.C[t].iloc[i]), float(P.C[t].iloc[i - 5])) if i >= 5 else None for t in all_stocks],
         "tt_count": [tt_now.loc[t, "tt_count"] for t in all_stocks],
         "tt7_pass": [bool(tt_now.loc[t, "tt7_pass"]) for t in all_stocks],
         "tt3_5m": [tt_now.loc[t, "tt3_5m"] for t in all_stocks],
@@ -2727,6 +2765,7 @@ def main():
                                                "Tapeレジームに使うのはS&P500のstealthだけ（Cの支持）。techは半導体・テクノロジー節の環境認識に使う。"}),
         "market": market, "sector_etf": sector_etf, "tech_etf": tech_etf,
         "vol_term": jsonable(vol_term(P, i)),   # 追補08 B4.5a（観察専用）
+        "movers": jsonable(movers(P, i, uni_stocks, groups)),   # MV-1.0（2026-11-10。個別銘柄の騰落率の出所。観察専用）
         "leaders_market": {"count": len(leaders_now), "count_4w_ago": len(leaders_4w), "by_sector": sec_counts, "tickers": leaders_now[:60]},
         "leadership": jsonable(lead_rot),   # v4.5 (A)
         "hedge": jsonable(hedge),           # v4.5 (B)

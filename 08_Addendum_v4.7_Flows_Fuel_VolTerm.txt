@@ -79,7 +79,7 @@
 ### いつ更新するか
 ・**週次（日曜）**：上の手順で更新を試みる（DB の数字は金曜〜土曜に出るので間に合うことが多い）。
 ・**その週の最初の日次（火曜の配信。月曜が休場なら次の営業日の配信）**：1回だけ更新を試みる（検索1回＋取得1回。TheStreet Pro の The Week Ahead を優先）。
-  日次の Web 検索の上限（daily_runbook 第4節の3回）とは別枠。それ以外の日次は控えのファイルから転記するだけで、Web確認はしない。
+  日次の Web 検索の上限（daily_runbook 第4節。v2.5 から2回）とは別枠。それ以外の日次は控えのファイルから転記するだけで、Web確認はしない。
 
 ### 控えのファイル：reports/flows/fuel_latest.yaml（main ブランチ。4本のレポートが同じファイルを読む）
 ・取得：https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/reports/flows/fuel_latest.yaml
