@@ -215,7 +215,7 @@ history（直近8週の細区分、古い順）、sub_4w_ago、provisional（進
     ダブルボトム：first_low、second_low、undercut、middle_high_date、low2_vol_ratio、trigger_ibd。
   setup_counts、pocket_pivots（today、excluded）、profit_tracking（rows）、stages（counts、rows、etfs、breadth。E6.2・E6.3）。
   tech_leaders[]：stage、stage_label、base_count_current。
-・key_events：pocket_pivot、profit_zone、eight_week_hold、eight_week_end、stage_change、sector_stage_shift（書き方は daily_runbook.txt 第2節）。new_ready に setup_type・base_count。
+・key_events：pocket_pivot、profit_zone、eight_week_hold、eight_week_end、stage_change、sector_stage_shift（書き方は runbook/daily/s1_key_events.txt）。new_ready に setup_type・base_count。
 
 ## 校正記録（P。2025-01-21〜2026-11-06の21.6か月、監視母集団72銘柄、日ごとに当日までのデータだけで再現）
 

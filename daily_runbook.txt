@@ -1,287 +1,140 @@
-# 日次レポート 実行手順書（daily_runbook v2.7、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.6追補・追補08とやさしい表記を反映）
-# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）、v1.9 gh が使えないときは refresh/ の push で起動、v2.0 v4.6（ポケットピボット、カップ・フラットベース・ダブルボトム、ステージとベースの番号、利益確定の目安・8週ルール）、v2.1 v4.6b（ステージの細区分と業種別のステージ分布）、v2.2 欠けた日の補完（第8節、analyze.py --as-of）、再試行の増加（12:07）、やることに「持っている分の上限」、冒頭ブロックの記号の禁止を明記。v2.3 第8節が使う data ブランチのクローン先 /home/claude/mkt を第1節で定義、12:07 の再試行の扱いを明記。v2.4 GitHub への書き込みを git の push に一本化（add_repo と gh の確認を手順から外す。add_repo は push が断られたときだけ試す。データ更新の起動は refresh/ の push が主な経路）。v2.5（2026-11-10、総点検）個別銘柄の騰落率は signals.movers・screen.csv の値だけを書く（記事の数字を書かない）、分量の決まり（第0節。変化のない節は短縮形、配信は1画面）、Broad の値は機械取得を先に読み Web検索は理由とイベントだけ（第4節）、高値からの位置と倍率の基準をそろえる、休場日の 12:07 の扱い、ベースの番号が null のときの書き方。v2.6（2026-11-10）読む用の保管ページ「米国株 日次レポート」への保存（第7節。日次レポートだけが基準日順に並ぶページ）、配信の最後と「配信済みで終了する回」の最後にそのページのリンクを出す（第1節の手順3、第7節、第8節）。v2.7（2026-11-10）Tape の表のすぐ下に「中身のまとめ」3行を毎回書く（第3節。広がり／引っ張る銘柄／指数との関係。書き方と目安は05の3節）。
-# 日次の自動実行（火〜土 7:07 JST、データ未更新や利用上限で動けなかったときの再試行 9:07・12:07。半導体の日次は 7:21）はこの手順書に従う。
+# 日次レポート 実行手順書（流れ） daily_runbook v2.8
+# マスター仕様 v4.2 の D7「Daily」の実装。日次の自動実行（定期実行）は、この手順書を上から順に進める。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
-# マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
-# 追補03のE7.1〜E7.3、追補04のC15.1a〜d、追補06のE7.4・C10.1・F10、追補07のE6.2・E6.3・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2、追補08のB4.5a・B4.6a。C15.1と04が食い違えば04を優先。本文と07が食い違えば07を優先）。
+# レポートの書き方は runbook/daily_write.txt と runbook/daily/（節ごと）。欠けた日の補完は runbook/daily_backfill.txt。読む用の保管ページへの保存は runbook/archive_page.txt。変更の履歴は runbook/CHANGELOG.txt（本文には履歴を書かない）。
+# どのファイルも、第1節でクローンした /home/claude/market-data/<パス> にある。クローンできないときは https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/<パス>、それも届かなければ保管ページ（Artifact「米国株指標チェック」）の予備コピー spec/<パス>。
 
-## 0. 原則
-- 計算はGitHubの解析エンジン（analyze.py）が済ませている。signals.json の値を再計算しない。
-  検証のための再計算は可。食い違いがあれば signals.json を優先し、食い違いを報告する。
-- 推測で埋めない。null や missing はそのまま「未確認」と書く。
-- 口座・保有・売買ログはユーザーがチャットで示した範囲だけ使う。未提供なら数量を出さない。
-- 冒頭ブロック（第1.5節）→ 重要ポイント（第2節）の順に先頭に置く。
-- ［v2.5］分量の決まり：本文の目安は表を含めて約7,000字（10/30 は約6,700字、11/9 は約11,000字まで増えていた。重要な変化が多い日は超えてよい）。最初の1画面（冒頭ブロックと重要ポイント）で判断でき、残りは必要なときに読む形にする。
-  ・変化を先に、変わっていないものは短く。その節に関わる key_events が無い日は、次の短縮形で書く：
-    第5節のステージ分析＝週の途中の日（基準日が月〜木）は3行まで（監視3グループのラベルと下落（ステージ4）の割合を1行／SOXX・SMH・XLK・QQQ のステージを1行／今週このままなら変わる見込みを1行）。全部を書くのは、週の最後の取引日の足が入った日（通常は土曜朝の配信）と、stage_change・sector_stage_shift がある日だけ。
-    第5節のセクター内の相対強度・調整耐性・RSライン＝各1行（上位3・下位3／次の候補の上位3と後崩れ／RS新高値と先行、EMA21の上の数）。core の表は、RSラインの event（rs_line_lead・rs_line_new_high）がある日と土曜朝の配信だけ。
-    第5節の tech_watch＝RSの高い順に5銘柄まで。ledger_cohorts・profit_tracking・pocket_pivots は該当が無ければ合わせて1行（「追跡中の銘柄・ポケットピボット・型別の成績：該当なし」）。
-    第6節 Daily Plan＝候補が0件の日は3行まで（前提と新規の可否／候補0件と理由／ヘッジ）。
-    データ状態＝問題のない項目は「問題なし」と1行にまとめ、対応が要るもの（未更新・取得失敗・補完・missing）だけ個別に書く。
-  ・短縮しないもの：冒頭ブロック、第2節、第3節の Tape 表と中身のまとめ、第4節、第5節の「テック内部」1行と ETF の表とセットアップ。
-  ・同じ数字を2つの節に書かない（冒頭ブロックに書いた数字は、該当の節で内訳を足すときだけ再掲する）。
-- ［v2.5］数字の出所と基準：
-  ・個別銘柄・ETF・指数の騰落率と出来高は、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書く。記事に載っている騰落率は取引時間中の値のことがあるので書かない（11/9 の日次は記事の「NVDA −4.6%、AMD +9.2%」を載せたが、データは −4.27%、+13.26% だった）。記事は値動きの理由の説明にだけ使う。signals.json に movers が無い日（エンジンを更新する前に作られたデータ）は、prices_daily.csv.gz の終値から前日比を計算して書く（その旨をデータ状態に1行）。
-  ・高値からの位置は、tape.checklist・market・tech_etf・screen の pct_from_52w_high（取引時間中の高値が基準）にそろえる。同じ銘柄に2通りの数字を書かない（rs_lines.spy_pct_from_52w_high は終値が基準で少し違う値になるので、本文には書かない）。
-  ・倍率には基準を書く：rvol50 は「出来高が50日平均の○倍」。「普段の○倍」とだけ書かない（半導体の日次は20日平均が基準で、同じ銘柄でも別の数字になる）。
-- ［v1.4］書き方：状態を表す語は 05_Plain_Language_Glossary.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/05_Plain_Language_Glossary.txt。
-  届かなければ保管ページの spec/plain_language.txt）の「言葉」で書き、数字と記号を括弧で後ろに付ける（例：大口が売った日が7日（IX2＝7、6日以上は危険水準））。
-  記号は消さない。記号だけ・英語だけの行を作らない。表には「言葉」の列を置くか、数字の横に言葉を添える。巻末に「読み方」（使った記号だけ、1行ずつ）。
-  ［v2.2］冒頭ブロック（今日のひとこと・なぜその判断か）では、記号・英語の略語を単独で使わない（×「Tape C確定」「崩れガード成立」「FTDなし」「分配日7」→
-  ○「高値圏で売りが増えている段階（C、2日続いたので確定）」「指数が50日線を割って大口の売りが5日以上続く安全装置が立っている（崩れガード IX3）」
-  「反発が本物になった合図（FTD）はまだない」「大口が売った日が直近5週で7日（IX2＝7、危険水準）」）。初出の記号には必ず言葉を添える。
-- GitHubのリポジトリのファイルは変更しない。例外は、データが古いときのワークフロー起動（第1節）と、レポート本文の reports/ への保存（第7節）だけ。
+## 0. 設定
+- 深さ（effort）：xhigh
+  第6節で書き手（Agent）に渡す深さ。変えるときはこの1行だけ直す（low／medium／high／xhigh／max）。
+- 動く時刻（日本時間）：火〜土 7:07 が1回目。9:07・12:07 は再試行（データ未更新や利用上限で前の回が動けなかった日のため）。半導体の日次は 7:21。
+- この実行は、会話の記憶がない新しいセッションで動く。
 
-## 1. 取得と確認
-0. ［v2.4］最初に作業用のコピーを用意する（データ更新の起動と reports/ への保存に使う。データが新しくても先に行う）：
-   - `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`（公開リポジトリなので事前の準備は要らない。すでにあれば `git -C /home/claude/market-data pull -q --ff-only`）。
-   - GitHub への書き込みは git の push だけで行う（この節のデータ更新の起動と、第7節の保存）。add_repo と gh は、下の「push が断られたとき」以外では使わない。
-     `gh auth status` も実行しない（gh が使えるときでも「The token in GH_TOKEN is invalid.」と出るので、判断材料にならない。2026-11-10 に確認）。
-   - push が断られたとき：
-     ・「fetch first」「non-fast-forward」と出た（ほかの更新が先に入っただけで、権限の問題ではない）→ `git pull -q --rebase origin main` のあと、もう一度 push する。
-     ・それ以外（403 など、書き込みが許可されていない）→ このときだけ ToolSearch（query: "add_repo"）で名前が add_repo で終わるツールを探し、見つかれば
-       add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼んでから、同じ push をもう1回だけ試す。
-       それでも断られたら、エラー文をそのまま控え、配信の最後に「GitHub に保存できませんでした：（エラー文）」と1行で書く（推測で原因を書かない）。レポートの配信と保管ページへの保存は続ける。
-   - push が実際に断られたとき以外は、add_repo・gh・書き込みの道具の状態を、レポートにも配信にも書かない（何も送らず終了する回でも同じ）。
-1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
-2. GitHub data ブランチから manifest.json、signals.json、setups.csv を取得する。
-   https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>
-   届かなければ git clone --depth 1 -b data https://github.com/bakaho19920625-wq/market-data.git /home/claude/mkt
-   ［v2.3］第8節の補完（欠けた日）を行う日は、raw で取れた場合でも data ブランチ一式を /home/claude/mkt にクローンしておく（補完の作業用コピーの元になる）。
-3. データの新しさ：
-   - 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
-   - 前日が休場日 → 7:07 の1回目は「新しい取引日はありません（休場）」と短く送って終了（保存しない）。9:07・12:07 の再試行では何も送らずに終了する（v2.5 で 12:07 を明記）。
-   - signals.as_of_market_date がその取引日より古い（GitHubの予約実行は数時間遅れることがある）：
-     ・［v1.6］まず自分でデータ更新を起動して待つ（GitHub の予約実行は数時間遅れたり来なかったりするので、これが主な経路）。［v2.4］起動は git の push で行う：
-       /home/claude/market-data（手順0）で
-       `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
-       この push で .github/workflows/update.yml が動く（refresh/README.md）。push が断られたら手順0の「push が断られたとき」に従い、それでも駄目なときだけ
-       `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data` を1回試す（エラーなら起動できなかったものとして先へ進む）。
-       完了は git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
-       直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。
-       （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
-     ・それでも古く、日本時間9時より前の実行（7:07の1回目）→ ユーザーには何も送らず終了（保存しない）。9:07の再試行に任せる。
-     ・それでも古く、日本時間9時以降の実行（9:07・12:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない。12:07 は 9:07 が利用上限で動けなかった日のためのもので、同じ文が2回届くことがある）。
-       manifest.prices.yahoo_incomplete に基準日より新しい日付があれば、原因として「Yahooが○○日の終値を未確定（空欄）のまま配信しているため。修正されしだい自動で取り込みます」と添える。
-   - 同じ基準日の日次がすでに保存済み（state/latest_daily の as_of_market_et が一致、または reports/daily/YYYYMMDD-DAILY.md がある）なら、1回目でも再試行でも何も送らず終了する。
-     ［v2.2］12:07 の再試行は、7:07・9:07 が利用上限などで動けなかった日のためのもの。すでに配信済みならこの規則で静かに終わる。
-     ［v2.6］この回は SendUserMessage を使わない（通知を出さない）。第7節の「読む用の保管ページ」の手順 1〜3 だけを行い（ページに入っていない日次があれば入れる）、
-     最後の返答を次の1行だけにする：「YYYY-MM-DD（基準日）の日次レポートは配信済みです。レポートはここに並んでいます：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」
-   - ［v2.2］第8節の「欠けた日」の確認をここで行う（reports/daily/ に無い直近の取引日があれば、今日の日次の前に補完版を作る。最大3日分）。
-4. リポジトリの活動（60日停止の予防）：
-   - manifest.repo_last_commit_main から経過日数を出す。45日以上なら、レポート冒頭に
-     「GitHubのリポジトリを更新してください（tickers.txt を開いて1行コメントを足して保存するだけで足ります）」と警告する。
-   - manifest.keepalive が "failed" なら、その旨も添える。
-5. 前回状態：保管ページDBの state/latest_daily、state/scenarios を読む。同じ基準日の日次が保存済みなら二重保存しない。
+## 1. 準備
+- 作業用のコピー（データ更新の起動と reports/ への保存に使う。データが新しくても先に行う）：
+  - `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`（公開リポジトリなので事前の準備は要らない。すでにあれば `git -C /home/claude/market-data pull -q --ff-only`）。
+- ユーザー設定：02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。
+  ほかの仕様ファイルは必要なときだけ読む。
+- data ブランチ：`rm -rf /home/claude/mkt && git clone -q --depth 1 -b data https://github.com/bakaho19920625-wq/market-data.git /home/claude/mkt`（manifest.json、signals.json、screen.csv、setups.csv、history_signals.csv など一式）。
+  クローンできないときは https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名> から manifest.json、signals.json、screen.csv、setups.csv を /home/claude/mkt に保存する。
 
-## 1.5 冒頭ブロック（レポートの先頭。第2節より前。05の0節の形）
-- 「今日のひとこと」3〜4行：
-  - 相場：レジームを05の1節の言葉で（記号を括弧に）。仮の判定ならその旨。例「高値圏で売りが増えている。大型株だけが崩れて指数を押し下げている（C、確定）」
-  - 半導体・テクノロジー：テック内部のラベル（05の3節）と SOXX の位置を1行。例「IT銘柄の6割が高値から2割以上下げ、下げが表に出た（broad_decline）。SOXXは最高値から28%下」
-    ［v2.1］同じ行に、半導体の個別株のステージ分布（stages.breadth の「監視：半導体」）を添える。例「半導体38銘柄のうち下落（ステージ4）が74%（4週前8%）、業種の調子は弱い（weak）」
-    ［v2.5］個別銘柄の値動きに触れるときは signals.movers の値を使う（core＝主要銘柄、top_up・top_down＝上げ・下げの上位、universe＝監視銘柄の上げ・下げの数）。例「監視72銘柄のうち67が上昇。NVDAだけ出来高が50日平均の3.95倍で −4.3%」。記事の騰落率は書かない。
-  - やること：05の5節の言い方でレジームから決める。ゲート該当があればそれを先に。候補数、決算が近い銘柄の扱い、FB1_stalling の条件も1行に収める。
-    例「新規は原則見送り（C）。候補なし。持ち株は崩れの合図（21EMAと50日線の同日割れ）を確認」
-    ［v2.2］同じ行の最後に、持っている分の上限を直近の週次から転記する：「持っている分の上限はお試しまで（L1、週次11/6）」。
-    「新規」（これから買うか＝値動きで決める）と「持っている分の上限」（土台で決める）は別の軸なので、両方を毎回書く。日次ではこの上限を変えない（週次だけが変える）。
-    ［v4.5］ヘッジ：signals.hedge.allowed が真なら同じ行に「ヘッジ：条件成立（SPY、H1、損切り774。置くかは判断）」または「ヘッジ：検討できる地合いだが今日は条件未成立」。偽なら書かない。
-    ［v4.5］4行目に「長く持つ分の目安 ○%（buy／sell、○月○日から）」（signals.spy_model）。短期の「やること」と混ぜない。
-- 「なぜその判断か」3〜5行：
-  - signals.tape.reasons を言葉にしたものを最初に。続けて、判定を押し上げた要因と抑えた要因を分けて、チェックリストの値から1行ずつ（言葉 → 数字（記号））。
-    例「押し下げ：大口が売った日が直近5週で7日（IX2＝7、危険水準）／指数が50日線を割った（SPY・QQQとも）／抜けても伸びないブレイクが続く（FB1_stalling、平均リターン−0.6%）」
-    例「支え：上向きの銘柄は6割（BR1＝60%、4週前25%）／中小型のほうが強い（BR3＝+6%）」
-  - 最後の1行は「判断が変わる条件」を数値で。例「SPY・QQQが終値で50日線を回復し、大口の売りが4日以下に減れば回復（E）に戻る／SPYが200日線を割れば底打ち試行（D）」
-- Daily Plan の候補がある日は、やることの行に「候補n件（第6節）」と書く。
-- ［v2.2］直近の金曜（基準日が金曜ならその日）の週次 reports/weekly/YYYYMMDD-WEEKLY.md が無いとき、火・水・木の配信（基準日が月〜水の日次。v2.5 で曜日を明記）では、冒頭ブロックの直後に
-  「先週の週次レポートは未作成です（定期実行が動かなかった可能性）。「週次を補完して」で作れます」と1行出す。日次の中で週次は作らない。
+## 2. データの新しさ
+- 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
+- 前日が休場日 → 7:07 の1回目は「新しい取引日はありません（休場）」と短く送って終了（保存しない）。
+  9:07・12:07 の再試行では何も送らずに終了する。
+- signals.as_of_market_date がその取引日より古い（GitHubの予約実行は数時間遅れることがある）：
+  ・まず自分でデータ更新を起動して待つ（GitHub の予約実行は数時間遅れたり来なかったりするので、これが主な経路）。
+   起動は git の push で行う：
+    /home/claude/market-data（第1節）で
+    `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
+    この push で .github/workflows/update.yml が動く（refresh/README.md）。
+    push が断られたら第9節の「push が断られたとき」に従い、それでも駄目なときだけ
+    `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data` を1回試す（エラーなら起動できなかったものとして先へ進む）。
+    完了は git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
+    直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。
+    （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
+  ・それでも古く、日本時間9時より前の実行（7:07の1回目）→ ユーザーには何も送らず終了（保存しない）。
+   9:07の再試行に任せる。
+  ・それでも古く、日本時間9時以降の実行（9:07・12:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない。12:07 は 9:07 が利用上限で動けなかった日のためのもので、同じ文が2回届くことがある）。
+    manifest.prices.yahoo_incomplete に基準日より新しい日付があれば、原因として「Yahooが○○日の終値を未確定（空欄）のまま配信しているため。修正されしだい自動で取り込みます」と添える。
 
-## 2. 日次で逃さない重要ポイント（必ず冒頭ブロックの直後に列挙）
-signals.key_events_today をすべて書く。空なら「本日の重要イベントなし」と書く。［v2.5］起きなかった種類を1つずつ並べない（「ほかの種類のイベントはなし」の1行でよい）。同じ種類が4件以上あるときは1行にまとめる（銘柄と要点を並べる。削らない）。種類ごとの扱い：
-- regime_change：Tapeレジームの変更（hysteresisがprovisionalなら「確認待ち」と明記）。
-- new_ready：新しいセットアップready（銘柄、型（pattern。05の言葉で：VCP／カップウィズハンドル／フラットベース／ダブルボトム／パワープレイ／チート）、P、S、リスク幅、
-  ［v2.0］何番目のベースか（base_count。3なら「3番目で注意」、4以上なら「後期のベース（late_stage）で別枠」、null なら base_count_status をそのまま「未確認（Stage2未確認／起点が履歴不足）」）。決算5営業日以内なら「見送り」。
-- near_pivot：ピボットまで3%以内。Daily Planの候補。
-- breakout：価格ブレイク。rvol50と出来高確認、weak（弱いブレイク）を併記。
-- squat：ブレイク未達で押し戻し。「5営業日以内の回復待ち（原典メモでは最長10日程度）」と書く（E11.1）。
-- pivot_failure / stop_touched：追跡中のブレイクの失敗・ストップ抵触。［v2.0］pattern が pocket_pivot のものは1行にまとめる（例「PPの損切り到達：NET、AMD（当日安値の割れ）」）。
-  PPの損切りは近いので触れやすい、と初回だけ添える。
-- setup_failed：登録セットアップの崩れ（level＝無効化水準。フラットベースはベースの安値、ダブルボトムは二番底、VCP・カップは損切りと同じ）。
-- leader_weakness：先導株の50日線割れなど（弱さの中での売り検討）。
-- climax_watch / climax_alert：強さの中での売り検討（該当項目を書く）。
-- earnings_within_5d：決算5営業日以内（新規通常サイズは見送り、保有はイベント確認）。
-- sector_rs_flip：セクター内区分がリーダー⇄ラガードに変わった（v4.3 E7.1。基準ETFを併記）。
-- next_candidate_new / next_candidate_out：調整耐性の「次の候補」に新しく入った／外れた（v4.3 E7.2。tier A/B/C、下げ耐性・戻りの区分）。監視候補であり買いではない。
-- late_break_new：「後崩れ」（下げに耐えたが戻りで売られている）に新しく入った。保有中なら弱さの中での売り検討の材料。
-- rs_line_lead：RSライン（対SPY）が52週高値を更新したのに株価はまだ高値の下（RSが株価に先行。v4.3b E7.3）。市場が下げている日ほど注目。候補であり買いではない。
-- rs_line_new_high：RSラインと株価がそろって52週高値（前回のRS新高値から20営業日以上あいたもの）。
-- breadth_label_change（v4.4）：S&P500全体（sp500）またはテック内部（tech＝IT＋通信）の隠れ弱気ラベルが変わった。to_ja をそのまま書き、
-  pct_down20（高値から−20%以上の銘柄比率）と基準ETF（SPY／XLK）の高値からの位置を添える。
-- index_breakdown_guard（v4.4）：指数の崩れガード（SPYかQQQが50日線の下、かつ分配日5以上）が on／off になった。
-  on なら「内部が改善していても回復（E）とは判定しない」、megacap_led が真なら「大型株主導の崩れ」と書く。
-- breakout_stalling（v4.4）：ブレイクの「伸び」判定が変わった。on＝抜けた水準は守るが平均リターンがマイナス（ダマシが多い地合い）、
-  off＝伸びが戻った。D+5維持率とD+5・D+10平均リターンを添える。
-- leadership_shift（v4.5 E7.4）：kind=top_sectors は市場を引っ張る業種の上位3が前日から変わった（from→to と数）。
-  kind=tech_halved は半導体・テクノロジーの先導株が4週前の半分以下に初めて減った（tech_now／tech_4w_ago、半導体の数）。「自分の領域が置いていかれ始めた合図」と添える。
-- hedge_setup（v4.5 C10.1）：ヘッジを入れる条件が今日そろった。銘柄、水準（setup_level：H1／H2。D部の最終 hedge_level とは別）、きっかけ、終値、損切り（種類と距離%）、出来高比、解除条件を書く。
-  「置くかどうかは判断。目的（方向性かベータ低下か）を決めてから」と添える。
-- hedge_cover（v4.5）：ヘッジを外す条件がそろった（理由：FTD成立／レジームがA・B・E。損切り到達による解除は自分で管理）。
-- spy_model_signal（v4.5 F10）：長期SPY配分モデルの buy／sell が変わった（合計点、5項目の内訳）。「長く持つ分の目安であり短期の判断とは別」と添える。
-- pocket_pivot（v4.6 E10.1a）：ポケットピボット。銘柄、種類（kind_ja：ベースの中／ブレイク後の10日線沿い／50日線での反発）、支持線（10日線／50日線）、
-  出来高（直近10日の下げた日の最大の何倍か＝vol_vs_max_down、普段の何倍か＝rvol50）、終値、損切り（当日安値の0.5%下）とリスク幅、
-  with_breakout（同じ日に高値を上抜け）・gap_up、何番目のベースか（ベースの中のとき）、repeat_within_5d（5日以内の再発生）。
-  「業績は未確認。補助の合図で、翌日に入るなら上限は終値の+5%（E_max）」と添える。
-- profit_zone（v4.6 E13.2）：合図の価格から+20%以上に初めて達した（基準、終値、上昇率、抜けてからの日数）。
-  「持っていれば利益確定を検討する帯（オニール流は+20〜25%で利確、ミネルヴィニ流は一部利確して残りは50日線割れまで）」と添える。
-- eight_week_hold（v4.6）：抜けてから3週以内に+20%に達した（8週ルール。いつまで＝until）。「持っていれば8週は持つ目安。損切りと崩れの合図は別」と添える。
-- eight_week_end（v4.6）：8週の期限に達した。「ここから通常の売りの目安に戻る」と書く。
-- stage_change（v4.6b E6.2。週の最後の取引日の足が入った日だけ出る。通常は金曜＝土曜朝の日次）：監視銘柄・主要ETF（SPY、QQQ、IWM、RSP、DIA、半導体・テクノロジーETF）のステージが変わった、または上抜け間近（1B）に入った。
-  銘柄、from→to（05の2節の言葉で：例「上昇の途中（2）→下落入り（4A(-)）」）、理由（why）、30週線からの距離、支え・上限。件数が多い日は同じ変化をまとめて1行に
-  （例「下落入り（4A）に変わった：NVDA、TSM、MU、ASML（いずれも30週線と直近13週の安値を割った）」）。
-- sector_stage_shift（v4.6b E6.3。週が完了した日だけ）：業種の調子のラベルが変わった（05の2節の言葉。ステージ2・4の割合と4週前）。
-決算日は Yahoo の非公式データなので「要確認」と添える。
+## 3. 配信済みの確認
+- 同じ基準日の日次がすでに保存済み（state/latest_daily の as_of_market_et が一致、または reports/daily/YYYYMMDD-DAILY.md がある）なら、1回目でも再試行でも何も送らず終了する。
+  12:07 の再試行は、7:07・9:07 が利用上限などで動けなかった日のためのもの。
+  すでに配信済みならこの規則で静かに終わる。
+  この回は SendUserMessage を使わない（通知を出さない）。
+  runbook/archive_page.txt の手順 1〜3（種類 us_daily）だけを行い（ページに入っていない日次があれば入れる）、
+  最後の返答を次の1行だけにする：「YYYY-MM-DD（基準日）の日次レポートは配信済みです。レポートはここに並んでいます：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」
+  配信済みなら、ここで終わる。第4節から先と runbook/daily_write.txt は読まなくてよい。
 
-## 3. Tape（signals.tape）
-- regime_effective、regime_checklist、hysteresis、provisional、reasons、previous_confirmed。
-- チェックリスト表：SPY/QQQ（50日線・200日線・200日線の向き・52週高値比）、IX2（有効分配日）、
-  BR1（50日線上比率と4週前）、BR2（新高値−新安値5日平均と4週前）、BR3（RSP/SPY 4週）、
-  LD1（市場全体の先導候補数と4週前、セクター数）、FB1（ブレイク追随率 D+5 と4週前、件数）、
-  index_state（分配日の日付、ストーリング、ラリーアテンプト、FTD）。
-- ［v4.4］表に次の行を加える（04追補）：
-  ・FB1は「D+5維持率／平均リターン D+5・D+10／伸び判定（FB1_extends・FB1_stalling）」の3つで書く。
-    FB1_stalling なら「抜けた水準は守るが伸びていない（ダマシが多い地合い）。新規は抜けた後の続き（D+3〜5）を確認してから」と一言添える。
-  ・IX3（指数の崩れガード、IX3_index_breakdown_guard）。成立なら理由（大型株主導の崩れ／指数の崩れ）。
-  ・BR4（S&P500で高値から−20%以上の銘柄比率と4週前、ラベル）。ラベルが stealth なら「隠れ弱気」と明記。
-  ・C_support_met（Cの支持件数）。
-- ［v2.7］Tape表のすぐ下（先導セクターの行の前）に「中身のまとめ」を3行で毎回書く：広がり／引っ張る銘柄／指数との関係。
-  書き方と目安は 05 の3節「中身のまとめ」のとおり（例も同じ場所にある）。表の数字（signals.json の tape.checklist と breadth_ext）を言葉に並べ直すだけで、計算も新しい判定もしない。
-  変化のない日も省かない。配信（SendUserMessage）には入れない（本文だけ）。
-- ［v4.5］Tape表の下に「先導セクター」2行（signals.leadership。05の言葉で）：
-  ・市場を引っ張る業種の上位3（今の数／4週前の数。例「ヘルスケア23（4週前7）、エネルギー12（7）、情報技術7（30）」）と、先導株の合計（今／4週前）。
-  ・半導体・テクノロジーの先導株数（今／4週前。tech.halved_vs_4w が真なら「4週前の半分以下」と明記）。
-- ［v4.5］「ヘッジ」1行（signals.hedge）：許可（allowed）、今日の成立（setups）、解除（cover_signal）。許可外なら「検討できる地合いではない」。
-- ［v4.5］「長く持つ分の目安」1行（signals.spy_model）：配分%、buy／sell、いつから、5項目のうち×の項目。
-- 市場内部とFB1は現在のS&P500構成銘柄からのproxy（生存者バイアス）と注記する。
-- レジームの定義はマスター仕様C15.1（改訂版）と04追補のC15.1a〜d。判定はエンジンの値をそのまま使う。
+## 4. 欠けた日の確認
+- 欠けた日の確認：reports/daily/ に無い直近の取引日があれば、今日の日次の前に runbook/daily_backfill.txt を読んで補完版を作る（最大3日分）。
 
-## 4. Broad（短く）
-- 日々動く項目だけ：S&P500・NASDAQ（signals.market）、SOX（signals.market に無いので SOXX＝signals.tech_etf で代用）、VIX、2年・10年金利、HY OAS、ドル円、原油、当日〜翌営業日のイベント。
-  ［v2.5］数字は機械取得を先に読む（記事の数字より先。毎朝 Web検索に頼っていたため、出典が弱く、2年金利と HY OAS は「未取得」が続いていた）：
-  ・当日の動き（基準日と同じ日）：signals.market の ^GSPC・^IXIC・^VIX と、ETF の前日比で向きを書く。長期金利＝TLT（上がれば金利は低下）、信用＝HYG、ドル＝UUP、原油＝USO、金＝GLD。「原油（USO）−4.0%」のように ETF 名を添え、先物や指数そのものの値と混ぜない。
-  ・水準（1〜2営業日遅れでよい。必ず日付を添える）：semis-data の data ブランチ macro_daily.csv（FRED。`git clone -q --depth 1 --branch data https://github.com/bakaho19920625-wq/semis-data.git /home/claude/sd-data`）から、
-    2年金利（DGS2）、10年金利（DGS10）、10年実質金利（DFII10）、HY OAS（BAMLH0A0HYM2）、ドル指数（DTWEXBGS）の最新の行。状態は verified（出典 FRED）。DGS2 と BAMLH0A0HYM2 は 2026-11-10 以降のデータにある（無い日は「未取得」）。
-    ドル円（USDJPY=X）と10年金利の当日値（^TNX）は同じクローンの daily_signals.json の table にある。semis_manifest.json の us_as_of が今日の基準日と同じときだけ使う（7:07 の時点では前の取引日のままのことがあり、その場合は書かないか、日付を添える）。
-  ・Web検索は、当日〜翌営業日のイベント（経済指標・決算・FOMC）と、指数が大きく動いた日の理由の確認だけに使う（合計2回まで。WebFetch は検索結果に出たURLしか取れない）。指数・金利・為替・原油の数字を記事から取らない。原油の水準（WTI の価格）が要る日だけ、理由の記事にある値を reported_unverified と明記して1つ書いてよい。
-  ・どれも取れない項目は、直近の週次の値を「転記（週次○/○）」と明記して使うか「未取得」と書く。推測で埋めない。日次ではマクロ値は補助情報で、Tapeの判定には使わない。
-- Broad点は週次で確定。日次は「据置（前回週次：○点・○○）」を基本とし、判定帯をまたぐ明確な変化がある場合だけ暫定値と理由を書く。
-- マクロ値は state に保存しない（表示のみ。保存は週次）。
-- ［追補08］VIX の後に期間構造を1句：signals.vol_term の vix_over_vix3m と state_ja、unwinding が真なら「逆転が解けてヘッジ外しが進んだ形」
-  （例「VIX 19.9。目先と3か月先の差は小さい（VIX÷VIX3M 0.97、11/6 まで逆転）」）。vol_term が無い・vix3m が null の日は書かない。
-- ［追補08］この節の最後に「買い戻しの燃料」を1行：reports/flows/fuel_latest.yaml（main。/home/claude/market-data にクローン済みならそのファイル）の line_ja をそのまま転記する。
-  配信（第7節の SendUserMessage）にも同じ1行を入れる。冒頭ブロックには入れない。水準が前回の日次から変わった日だけ、第2節の末尾に1行足す。
-  ファイルが読めなければ「買い戻しの燃料：未取得」、updated_jst が21日より古ければ「（古いデータ）」を付ける。
-  その週の最初の日次（火曜の配信。月曜が休場なら次の配信）だけ、08 の「集め方」で更新を1回試みる（検索1回＋取得1回。上の Web検索2回とは別枠）。
-  更新できたらファイルを上書きし、第7節の保存で `git add reports/flows/fuel_latest.yaml` も行う。ほかの日は転記だけで Web確認はしない。
-  定義と言葉は 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/08_Addendum_v4.7_Flows_Fuel_VolTerm.txt）。買い・売りの合図として書かない。
+## 5. リポジトリの活動と、前回の状態
+- リポジトリの活動（60日停止の予防）：manifest.repo_last_commit_main から経過日数を出す。
+  45日以上なら、レポート冒頭に「GitHubのリポジトリを更新してください（tickers.txt を開いて1行コメントを足して保存するだけで足ります）」と警告する。
+  manifest.keepalive が "failed" なら、その旨も添える。
+  該当したら、第6節で書き手に伝える（レポートの冒頭に書かせる）。
+- 前回の状態：保管ページ（Artifact「米国株指標チェック」https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）のデータベースから、ArtifactData の get で state/latest_daily と state/scenarios を読む（collection: "state"）。
+  out_dir: "/home/claude/state" を付けて、ファイルに保存する（書き手が読む）。state/latest_daily の version を控える（第9節の保存で使う）。
+  同じ基準日の日次が保存済みなら二重保存しない。
 
-## 5. 半導体・テクノロジー
-- ［v4.4］最初に「テック内部」を1行（signals.breadth_ext）：tech の pct_down20 と4週前、pct_above_50sma、ラベル（label_ja）、
-  XLKの高値からの位置、ex_tech との差（tech_minus_ex_tech_down20_pt）。
-  stealth なら「XLKは高値圏だが構成銘柄の過半が高値から20%以上下げている（隠れ弱気）」、broad_decline なら「XLKも−10%超で下げが表面化」。
-  megacap_led が真なら「市場全体の中身は改善しているが、大型・AI株主導で指数が崩れている。市場全体の改善を半導体・テクノロジーの追い風と読まない」と添える。
-  ［v4.5］同じ行に、監視グループ別の先導株数（signals.leadership.tech.by_group：半導体／ソフトウェア／ハードウェア、今／4週前）を添える。
-- tech_etf（SOXX、SMH、XLK、VGT、IGV、CIBR、SKYY、SOXL）：1日・1週・1か月のSPY比、50日線・200日線との位置。
-- tech_leaders（市場全体のRS百分位80以上かつTT価格7項目クリア）：銘柄、区分、RS、SPY比63日、52週高値比、［v2.1］週足のステージ（stage_label）、いま何番目のベースか（base_count_current）。
-  ［v2.5］base_count_current が null のときは「週足ではベースの外」と書く（数えられなかったのではなく、いま週足のベースの中にいないという意味）。「未確認」と書くのは stages.rows の base_count_status が ok 以外のときだけで、その文をそのまま添える。
-  同じ銘柄が setups にあり base_count があるときは、そちらを書く（例「日足のフラットベースは3番目」）。週足の数え方（base_count_current）と日足のセットアップの数え方（base_count）は別なので、片方を「未確認」、もう片方を「3番目」と並べない。
-- ［v2.1］ステージ分析（signals.stages。05の2節の言葉で短く）：
-  ・業種の調子：監視グループ（半導体・ソフトウェア・ハードウェア）は各1行（ステージ1〜4の割合、4週前のステージ2・4の割合、上抜け間近＋上昇初期の割合、ラベル）。
-    S&P500の11業種はラベルごとに業種名を並べた1〜2行（例「健全：ヘルスケア／改善中：素材、公益、不動産、生活必需品、資本財、エネルギー／弱い：情報技術、通信」）。
-  ・ETF：SOXX、SMH、XLK、IGV、SPY、QQQ のステージ（label と言葉、何週目、30週線からの距離）。
-  ・監視銘柄で上抜け間近（1B）と上昇の初期（2A）にいる銘柄（stages.rows。上限・支え、市場比の強さ）。なければ「なし」。
-  ・週の途中の日は、進行中の週で区分が変わりそうな銘柄（provisional）があれば「今週このままなら○○に変わる見込み」と添える（確定は金曜の足）。
-- tech_watch：RS80以上だがTT未達、またはTT達成だがRS未達の銘柄（TT項目数、RS）。
-- setups：ready → watch → forming の順。各行：銘柄、型（pattern_ja）、フットプリント、P、S、リスク幅、ピボットまでの距離、DRY5、
-  ［v2.0］何番目のベースか（base_count）、［v2.1］週足のステージ（stage_label を05の2節の言葉で。例「上昇の途中（2(+)）」）。
-  setup_type が late_stage のものは別枠で書く。also に別の型名があれば「（フラットベースとしても成立）」のように添える。
-  フラットベースの ready には「参考（検証では成績が良くない。07の校正記録）」と添え、Daily Plan ではVCP・カップの候補と分けて書く。
-  件数は signals.setup_counts（setup_type別、銘柄単位）。v4.6 適用後の最初の日次では「定義変更（v4.6）：セットアップの型が増えた。ready件数の前回比は型ごとに見る」と1行添える。
-- ［v2.0］pocket_pivots：today（適格）を1行ずつ（第2節の pocket_pivot と同じ項目）。excluded は件数と理由だけ1行（例「除外2件：V字1、上昇トレンドでない1」）。
-- ［v2.0］profit_tracking：rows のうち gain_pct が+15%以上、または eight_week_active、または below_50sma のものだけを表に（銘柄、型、抜けた日、上昇率、最大上昇率、8週ルール中か、50日線の下か）。
-  なければ「利益確定の目安に近い追跡銘柄なし」。
-- ledger_cohorts：setup_type別のD+3/5/10（件数が20未満なら参考値）。
-- sell_signals：先導株・母集団のクライマックス／弱さ。
-- sector_rs（v4.3）：グループごとにリーダー上位3・ラガード下位3（rel_sec_63_pct）。セクター自体が指数に負けていれば「弱いセクターの中で相対的に強い」と書く。
-- correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low_pct、dd_now_pct）。next_candidates の上位5（tier、r_held、r_now、new_high_after_low）と late_breaks。
-  r_held・r_now は倍率なので dd_low_pct・dd_now_pct を併記する。リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
-- rs_lines（v4.3b、RSライン＝銘柄÷SPY。RSIとは別物）：
-  ・1行目：監視母集団でRSラインが21日EMAの上にある数（summary.above_ema21_count）、［v2.5］SPYの高値からの位置は第3節の Tape 表の値（tape.checklist.SPY.pct_from_52w_high）と同じ数字だけを使い、rs_lines.spy_pct_from_52w_high（終値基準）は書かない、
-    S&P500∪監視母集団でRS新高値の件数（market.rs_new_high_count、市場情報として件数だけ）。
-  ・RS新高値（summary.rs_new_high）とそのうち先行（summary.rs_leads_price）。なければ「なし」。21日EMAの上抜け・下抜け（crossed_up／crossed_down）。
-  ・core（SOXX、SMH、XLK、IGV、NVDA、AVGO、AMD、TSM、MU、MSFT、ORCL）を短い表で：EMA21の上下、EMAとの差%、RSの52週高値からの位置%、株価の52週高値からの位置%、対QQQでEMA21の上下。
-  ・一言添える：「RSラインは強い銘柄を拾う道具で、新高値でも下落しない保証ではない。買いはピボット・ブレイクで判定する」。SOXLはSOXXで代用。
+## 6. 作成（書き手に任せる）
+- レポートを書く作業は、Agent 1つに任せる（subagent_type: "general-purpose"、effort: 第0節の深さ、run_in_background: false）。
+  深さを指定できるのは Agent だけなので、ここでは自分で書かない。
+  ほかの作業（準備・点検・保存・配信）は下請けに出さない（出しても速くならず、費用が増えるだけのため）。
+- 渡す文（そのまま使い、〔 〕だけ埋める）：
+  「米国株指標チェックの日次レポート（基準日 〔YYYY-MM-DD〕、report_id 〔YYYYMMDD-DAILY〕）を書いてください。
+  /home/claude/market-data/runbook/daily_write.txt を読み、その進め方どおりに進めてください（各節は runbook/daily/ の節ごとのファイルを、その節を書く直前に読みます）。
+  入力は /home/claude/mkt/（data ブランチ）、/home/claude/market-data/02_User_Settings.txt、/home/claude/state/（前回の状態）です。
+  出力は /home/claude/market-data/reports/daily/〔YYYYMMDD-DAILY〕.md と、/home/claude/out/〔YYYYMMDD-DAILY〕.save.json です。git の操作・保管ページへの保存・配信は、こちらで行うのでしないでください。
+  伝えておくこと：〔第2節・第5節で分かったこと。例：データ更新を起動した／リポジトリの更新を促す警告を冒頭に書く（経過○日）／keepalive が failed／先週の週次が未作成／なし〕
+  書き終えたら daily_write.txt の「書き終えたら」のとおり点検し、最後に、レポートのパス・点検の結果・Web検索の回数・fuel_latest.yaml を更新したかどうかを返してください。」
+- Agent が道具の一覧に無い環境では、自分で runbook/daily_write.txt に従って書く（このときは深さを指定できない）。
 
-## 6. Daily Plan（F4）
-- 前提：regime_effective と適用ゲート → 新規許容度（なし／Pilot／通常）。
-  F・D・Transition（provisional）は新規なし。Cは原則なし（例外は弱い市場でのPilot＝C9）。E・BはPilot〜選別。Aは通常。
-- 候補：ready と near_pivot の銘柄。各行：P、E_plan（=1.001P、注文トリガー未設定時）、E_max（=min(1.05P, S/0.93)）、
-  S、リスク幅、決算日（要確認）、許容サイズ区分、無効化条件。決算5営業日以内は見送り。
-  ［v2.0］型（pattern_ja）と何番目のベースかを添える。late_stage は通常の候補と分けて「後期のベース」と書く。カップ・ダブルボトムは trigger_ibd（P+0.10ドル）も併記できる。
-  ［v2.0］ポケットピボット（pocket_pivots.today）は翌営業日の候補として別の小表に：基準P＝PP当日の終値、S＝当日安値の0.5%下、E_max＝min(1.05×P, S/0.93)。
-  寄付きがE_maxを超えたら見送り。業績は未確認と明記。新規許容度（レジームとゲート）は ready と同じに従う。
-- ［v4.4］signals.tape.checklist.FB1_stalling が真なら、全候補に「ブレイク後D+3〜5の続き（水準維持と出来高）を確認してから」の条件を添える。
-- ［v4.5］ヘッジ候補を1行（signals.hedge）：許可中で成立した日は、銘柄、水準（setup_level H1／H2＝D部の5〜15%／15〜30%）、損切り、解除条件（FTD成立またはレジームA・B・E。損切りは自分で管理）。置くかは判断。
-  成立していない日は「ヘッジ：条件未成立（許可中）」。許可外なら書かない。数量は出さない。
-- 米国時間（ET 9:30〜16:00。日本時間は夏時間22:30〜5:00、標準時間23:30〜6:00）とユーザー設定の注文手段を前提にする。
-  今夜の米国取引開始までに使える形にする。
-  設定が null なら価格水準と条件だけを示し、注文方法の可否は断定しない。
-- 保有銘柄はユーザー提供時のみ扱う。
-- 前回Daily Planの結果：発動・見送り・squat・失敗（判明分のみ）。
+## 7. 点検
+- 自分でも点検プログラムを実行する（書き手の報告だけで済ませない。数秒で終わる）：
+  `python3 /home/claude/market-data/tools/check_report.py us_daily /home/claude/market-data/reports/daily/YYYYMMDD-DAILY.md --data /home/claude/mkt`
+- 「不合格」の行があれば、同じ書き手に戻して直させる（SendMessage。最大2回）。
+  戻すときは、不合格の行をそのまま貼り、「次の項目がまだ残っています。直してから、もう一度点検の結果を返してください」と、残っている項目を名指しする。
+  SendMessage が使えないとき、または書き手が応えないときは、不合格の節だけ自分で直す（その節のファイルを読んでから）。
+- 2回直しても残った不合格は、配信の4（データ状態で伝えるべきこと）に「点検で残った項目：○○」と1行で書く。配信は止めない。
+- 点検プログラムそのものが動かない・途中で止まるときは、点検を飛ばして先へ進み、配信の同じ場所に「点検プログラムが動かなかった」と1行で書く。
+- 「注意」の行は不合格ではない。読んで、直す必要があるものだけ直させる。
 
-## 7. 出力と保存
-- report_id：YYYYMMDD-DAILY（基準日）。
-- ［v2.5］SendUserMessage は**1画面**（日本語でおよそ600〜900字。重要な変化が多い日でも1,200字まで）。全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
-  1. 冒頭ブロック（第1.5節と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安は「やること」の行と4行目に入っている）
-  2. 重要ポイント（第2節。前日から変わったこと。なければ「本日の重要イベントなし」）
-  3. 1行ずつ：Daily Plan の候補数（候補があれば銘柄とピボット）／買い戻しの燃料（第4節の1行）
+## 8. 配信
+- SendUserMessage は**1画面**（日本語でおよそ600〜900字。重要な変化が多い日でも1,200字まで）。
+  全文は添付の本文で読めるので、配信には判断に要るものだけを書く：
+  1. 冒頭ブロック（レポートの冒頭と同じ文：今日のひとこと3〜4行＋なぜその判断か。ヘッジと長く持つ分の目安は「やること」の行と4行目に入っている）
+  2. 重要ポイント（レポートの1節。前日から変わったこと。なければ「本日の重要イベントなし」）
+  3. 1行ずつ：Daily Plan の候補数（候補があれば銘柄とピボット）／買い戻しの燃料（Broad の節の1行）
   4. 今夜〜明日のイベント（当日と翌営業日のものだけ）と、データ状態で伝えるべきこと（未更新・取得失敗・補完・週次未作成。なければ書かない）
-  Tape の表、先導セクター、テック内部の内訳、ステージ、RSライン、セットアップの一覧は配信に書かない（本文にある。その日に変わったものは 2 に入っている）。最後に「全文は添付のファイルと、保管ページ（これまでの日次が並ぶ）：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」と1行（［v2.6］このリンクは毎回出す）。すべて05の言葉で、記号は括弧。
-- 本文の巻末に「読み方」：そのレポートで使った記号だけを05から1行ずつ転記。
+  Tape の表、先導セクター、テック内部の内訳、ステージ、RSライン、セットアップの一覧は配信に書かない（本文にある。その日に変わったものは 2 に入っている）。
+  最後に「全文は添付のファイルと、保管ページ（これまでの日次が並ぶ）：https://claude.ai/artifact/DLehq35r7icxPU4odqs13R」と1行（このリンクは毎回出す）。
+  すべて05の言葉で、記号は括弧。
 - 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
-- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：第1節の手順0で用意した /home/claude/market-data で `git pull -q --ff-only`（無ければ手順0のとおりクローン）。
-  本文を reports/daily/YYYYMMDD-DAILY.md に書き（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md` →
+- 送る前に、配信の文を /home/claude/delivery.txt に書き、`python3 /home/claude/market-data/tools/check_report.py delivery /home/claude/delivery.txt --max 1200 --link https://claude.ai/artifact/DLehq35r7icxPU4odqs13R` で長さと最後の行を確かめる。
+
+## 9. 保存
+- report_id：YYYYMMDD-DAILY（基準日）。
+- GitHubへの保存（全履歴の置き場。F9）：第1節で用意した /home/claude/market-data で `git pull -q --ff-only`。
+  書き手が書いた reports/daily/YYYYMMDD-DAILY.md を確かめ（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md`（書き手が reports/flows/fuel_latest.yaml を更新した日はそれも）→
   `git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "report YYYYMMDD-DAILY"` → `git push origin main`。
-  push が断られたら第1節の手順0の「push が断られたとき」に従う。reports/ 以外のファイルは変更しない。data ブランチには書かない。公開リポジトリなので口座・保有・数量は本文に書かない（第0節の原則どおり）。
-- 保存（ArtifactData batch、F9の形式）：reports/<id>、report_bodies/<id>、state/latest_daily（yamlにはTape、L/H、候補、key_events、データ状態）。保管ページは直近180日の置き場（整理は週次が行う）。
-  state/ledger は使わない（台帳はGitHubの ledger.json が正本）。state/scenarios は週次が更新する。
-  既存ドキュメントは読んだ version を if_version に指定する。失敗したらユーザーに伝える。
-- ［v2.6］読む用の保管ページ「米国株 日次レポート」（https://claude.ai/artifact/DLehq35r7icxPU4odqs13R）への保存。日次レポートだけが基準日の新しい順に並ぶ、読むためのページ
-  （上の保管ページ「米国株指標チェック」の reports・report_bodies・state・spec はこれまでどおり。こちらは別のページで、書くのは次の2つの集まりだけ）。GitHub への push のあとに行う：
-  1. `python3 /home/claude/market-data/tools/archive_doc.py us_daily --recent 7`
-     （reports/daily/ の新しい7本について、/home/claude/archive_docs/us_daily/ に <id>.meta.json と <id>.body.json を作り、id とファイルの場所の一覧を表示する。本文は変えない。どこにも送らない）。
-  2. ArtifactData の query（url は上のURL、collection: "reports"、query: {"order_by": {"field": "as_of", "direction": "desc"}, "limit": 30}）で、ページにすでにある id を読む。
-  3. 1 の一覧のうちページに無い id だけを、ArtifactData の batch（url は上のURL）で書く。1本につき2つ：
-     {"op": "set", "collection": "reports", "doc_id": "<id>", "file_path": "<meta_file>"} と {"op": "set", "collection": "bodies", "doc_id": "<id>", "file_path": "<body_file>"}。
-     今日の分と、過去に入れ損ねた分が一緒に入る。無いものが0本なら何も書かない。新しく作る文書なので if_version は要らない。
-     すでにある id を書き直すとき（同じ日の訂正版、補完の作り直し）だけ、その2つを get して version を読み、if_version を付けて set する。
-  4. 書けなかったときは通知を増やさず、最後の返答に「読む用の保管ページに保存できませんでした」と1行書くだけでよい（次の回の 3 で自動的に入る。レポートの配信と GitHub への保存は続ける）。
+  push が断られたら下の「push が断られたとき」に従う。
+  reports/ 以外のファイルは変更しない。
+  data ブランチには書かない。
+  公開リポジトリなので口座・保有・数量は本文に書かない（原則どおり）。
+- push が断られたとき：
+  ・「fetch first」「non-fast-forward」と出た（ほかの更新が先に入っただけで、権限の問題ではない）→ `git pull -q --rebase origin main` のあと、もう一度 push する。
+  ・それ以外（403 など、書き込みが許可されていない）→ このときだけ ToolSearch（query: "add_repo"）で名前が add_repo で終わるツールを探し、見つかれば
+    add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼んでから、同じ push をもう1回だけ試す。
+    それでも断られたら、エラー文をそのまま控え、配信の最後に「GitHub に保存できませんでした：（エラー文）」と1行で書く（推測で原因を書かない）。
+    レポートの配信と保管ページへの保存は続ける。
+- push が実際に断られたとき以外は、add_repo・gh・書き込みの道具の状態を、レポートにも配信にも書かない（何も送らず終了する回でも同じ）。
+- 保管ページ（Artifact「米国株指標チェック」。前回の状態と直近180日の本文の置き場。F9の形式）への保存：
+  1. `python3 /home/claude/market-data/tools/state_docs.py /home/claude/out/YYYYMMDD-DAILY.save.json /home/claude/market-data/reports/daily/YYYYMMDD-DAILY.md --mode daily`
+     （書き手が作った save.json と本文から、reports/<id>・report_bodies/<id>・state/latest_daily の3つの文書を /home/claude/out/ に作り、ArtifactData の batch に渡す writes を表示する。本文は変えない。どこにも送らない）。
+  2. 表示された writes で ArtifactData の batch を呼ぶ（url は https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）。state/latest_daily には第5節で控えた version を if_version に付ける。
+     同じ id の reports・report_bodies がすでにあるとき（訂正版）は、get で version を読んで if_version を付ける。
+  保管ページは直近180日の置き場（整理は週次が行う）。
+  state/ledger は使わない（台帳はGitHubの ledger.json が正本）。
+  state/scenarios は週次が更新する。
+  失敗したらユーザーに伝える。
+- 読む用の保管ページ「米国株 日次レポート」への保存：GitHub への push のあとに、runbook/archive_page.txt の手順を種類 us_daily で行う。
 
-## 8. 欠けた日の補完（v2.2。F2.3。利用上限などで日次が配信できなかった日を後日作る）
-- 対象：reports/daily/ に YYYYMMDD-DAILY.md が無い米国取引日（history_signals.csv の as_of の列が取引日の一覧。判定の履歴はGitHub Actionsが毎朝作るので欠けない。欠けるのはレポートだけ）。
-  直近の3日分まで自動で作る。それより古い欠けは件数と日付だけ配信に書き、ユーザーが「○月○日を補完して」と頼んだときに作る。
-- 作り方（1日分ごと）：
-  1. data ブランチのファイル一式を作業用ディレクトリにコピーする（`rm -rf /home/claude/bf_D && mkdir /home/claude/bf_D && cp /home/claude/mkt/* /home/claude/bf_D/`。/home/claude/mkt は data ブランチのクローン）。
-  2. `cd /home/claude/market-data && python3 analyze.py --out /home/claude/bf_D --tickers tickers.txt --as-of D --replay-ledger 130 --prev-history /home/claude/bf_D/history_signals.csv`
-     （D は YYYY-MM-DD。約40秒。as_of より後の足を捨てて当日の判定・候補・イベントを計算し、台帳は空から130営業日ぶん再生する。
-     出力の signals.json に backfill が入る。data ブランチには書かない。取引日でなければ as_of_not_trading_day で止まる）。
-  3. 補完版の日次を書く：第1.5節〜第5節を /home/claude/bf_D/signals.json から通常どおり（タイトルは「日次レポート YYYYMMDD-DAILY（補完版）」、冒頭に
-     「この日の日次は配信できなかったため、後日 D までのデータで作り直したもの。判定・候補・ステージはエンジンの再計算で当時と同じ。台帳（ブレイク追跡）は再生のため
-     完全には一致しないことがある。前日の screen との差分イベント（sector_rs_flip など）とニュースの確認は含まない」と書く）。
-     Web確認はしない。Daily Plan（第6節）は出さない（過去日のため）。history_signals.csv の同じ日の行と regime_effective・IX2・BR1・LD1 が一致することを確かめ、
-     違えばその旨を書く（定義の版が違う日は列の有無が異なるので、その差は書くだけでよい）。
-  4. 保存：reports/daily/YYYYMMDD-DAILY.md（commit「report YYYYMMDD-DAILY (backfill)」）、保管ページ reports/<id>（mode: daily_backfill）、report_bodies/<id>。
-     state/latest_daily は、補完した日より新しい日次がすでにあるなら更新しない。
-     ［v2.6］読む用の保管ページにも入れる（第7節の手順 1〜3。補完した日が新しい7本に入らないときは、手順1を `--id YYYYMMDD-DAILY` に替えてその1本を作る）。
-  5. 配信：SendUserMessage で冒頭ブロックと重要ポイントだけ（短く。「補完版」と明記。最後に第7節と同じ保管ページの1行）。SendUserFile で本文。
-- 補完は今日の日次より先に、古い日から順に作る。補完で時間がかかりすぎる（1日分に5分超）ときは、今日の日次を先に出し、補完は件数だけ知らせる。
-- 週次が欠けたとき（日曜の定期実行が動かなかった）は、この節では作らない。第1.5節の警告だけ出し、ユーザーの依頼で weekly_runbook の第8節（補完）に従って作る。
-
+## 10. この実行での注意（無人で動くため）
+- この実行には、途中で答える人がいない。道具を呼ばずに文だけを返すと、そこで実行が終わり、続きは誰も頼まない。
+  第8節の配信と第9節の保存が終わるまで、次の作業の道具を呼び続ける。
+- 次の4つの止まり方をしない：(1)「次は○○をします」と書いただけで終える、(2)「続けますか」と尋ねて待つ、
+  (3) 決めなくても進められることを並べて判断を求める、(4) 区切り（書き手が書き終えた、点検が通った、push できた）で終える。
+  途中経過を書くときは、次の道具の呼び出しと同じ返答の中に書く。
+- 止まってよいのは、この手順書が「終了」と書いている場面だけ：休場とGitHubデータ未更新（第2節）、配信済み（第3節）、そして第8節の配信と第9節の保存がすべて終わったとき。
+- 最初に、第1節〜第9節をやることリストに入れ（TaskCreate が使えるとき）、1つ終えるごとに消す。
+- 障害（エラー、タイムアウト、空の結果、取得の失敗）は、原因を見て別の方法を試す。代わりの手順が決まっているものは、その節に書いてあるとおりにする。
+- 保管ページへの書き込みが version の食い違いで断られたときは、get で version を読み直して、もう一度書く。
+- GitHubのリポジトリのファイルは変更しない。
+  例外は、データが古いときのワークフロー起動（daily_runbook.txt 第2節）、レポート本文の reports/ への保存（同 第9節）、週の最初の日次での reports/flows/fuel_latest.yaml の更新（Broad の節）だけ。
+  data ブランチには書かない。口座・保有・売買ログは扱わない（未提供として扱う）。
+- GitHub への書き込みは git の push だけで行う（第2節のデータ更新の起動と、第9節の保存）。
+  add_repo と gh は、第9節の「push が断られたとき」以外では使わない。
+  `gh auth status` も実行しない（gh が使えるときでも「The token in GH_TOKEN is invalid.」と出るので、判断材料にならない。2026-11-10 に確認）。

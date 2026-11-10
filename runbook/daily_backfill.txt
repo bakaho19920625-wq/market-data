@@ -1,0 +1,30 @@
+# 日次レポート｜欠けた日の補完
+# 利用上限などで日次が配信できなかった日を、後日作る手順（F2.3）。daily_runbook.txt 第4節で「欠けた日がある」と分かったときだけ読む。
+
+- 対象：reports/daily/ に YYYYMMDD-DAILY.md が無い米国取引日（history_signals.csv の as_of の列が取引日の一覧。判定の履歴はGitHub Actionsが毎朝作るので欠けない。欠けるのはレポートだけ）。
+  直近の3日分まで自動で作る。
+  それより古い欠けは件数と日付だけ配信に書き、ユーザーが「○月○日を補完して」と頼んだときに作る。
+- 作り方（1日分ごと）：
+  1. data ブランチのファイル一式を作業用ディレクトリにコピーする（`rm -rf /home/claude/bf_D && mkdir /home/claude/bf_D && cp /home/claude/mkt/* /home/claude/bf_D/`。/home/claude/mkt は data ブランチのクローン）。
+  2. `cd /home/claude/market-data && python3 analyze.py --out /home/claude/bf_D --tickers tickers.txt --as-of D --replay-ledger 130 --prev-history /home/claude/bf_D/history_signals.csv`
+     （D は YYYY-MM-DD。約40秒。as_of より後の足を捨てて当日の判定・候補・イベントを計算し、台帳は空から130営業日ぶん再生する。
+     出力の signals.json に backfill が入る。
+     data ブランチには書かない。
+     取引日でなければ as_of_not_trading_day で止まる）。
+  3. 補完版の日次を書く（daily_runbook.txt 第6節と同じく書き手に任せ、下の条件を「伝えておくこと」に入れる）：冒頭ブロックから半導体・テクノロジーまでを /home/claude/bf_D/signals.json から通常どおり（タイトルは「日次レポート YYYYMMDD-DAILY（補完版）」、冒頭に
+     「この日の日次は配信できなかったため、後日 D までのデータで作り直したもの。判定・候補・ステージはエンジンの再計算で当時と同じ。台帳（ブレイク追跡）は再生のため
+     完全には一致しないことがある。
+     前日の screen との差分イベント（sector_rs_flip など）とニュースの確認は含まない」と書く）。
+     Web確認はしない。
+     Daily Plan は出さない（過去日のため）。
+     history_signals.csv の同じ日の行と regime_effective・IX2・BR1・LD1 が一致することを確かめ、
+     違えばその旨を書く（定義の版が違う日は列の有無が異なるので、その差は書くだけでよい）。
+  4. 保存：reports/daily/YYYYMMDD-DAILY.md（commit「report YYYYMMDD-DAILY (backfill)」）、保管ページ reports/<id>（mode: daily_backfill）、report_bodies/<id>（daily_runbook.txt 第9節と同じ手順。`--mode daily_backfill`）。
+     state/latest_daily は、補完した日より新しい日次がすでにあるなら更新しない。
+     読む用の保管ページにも入れる（runbook/archive_page.txt。補完した日が新しい7本に入らないときは、手順1を `--id YYYYMMDD-DAILY` に替えてその1本を作る）。
+  5. 配信：SendUserMessage で冒頭ブロックと重要ポイントだけ（短く。「補完版」と明記。最後に daily_runbook.txt 第8節と同じ保管ページの1行）。
+     SendUserFile で本文。
+- 補完は今日の日次より先に、古い日から順に作る。
+  補完で時間がかかりすぎる（1日分に5分超）ときは、今日の日次を先に出し、補完は件数だけ知らせる。
+- 週次が欠けたとき（日曜の定期実行が動かなかった）は、この節では作らない。
+  冒頭の警告だけ出し、ユーザーの依頼で runbook/weekly_backfill.txt に従って作る。

@@ -1,0 +1,59 @@
+# 4. 半導体・テクノロジー
+
+- 見出し：`## 4. 半導体・テクノロジー`
+- 中の項目は、下の順に書く（項目の名前を太字で先頭に置く）。
+- 短縮形（その項目に関わる key_events が無い日）：
+  ステージ分析＝週の途中の日（基準日が月〜木）は3行まで（監視3グループのラベルと下落（ステージ4）の割合を1行／SOXX・SMH・XLK・QQQ のステージを1行／今週このままなら変わる見込みを1行）。
+  全部を書くのは、週の最後の取引日の足が入った日（通常は土曜朝の配信）と、stage_change・sector_stage_shift がある日だけ。
+  セクター内の相対強度・調整耐性・RSライン＝各1行（上位3・下位3／次の候補の上位3と後崩れ／RS新高値と先行、EMA21の上の数）。
+  core の表は、RSラインの event（rs_line_lead・rs_line_new_high）がある日と土曜朝の配信だけ。
+  tech_watch＝RSの高い順に5銘柄まで。
+  ledger_cohorts・profit_tracking・pocket_pivots は該当が無ければ合わせて1行（「追跡中の銘柄・ポケットピボット・型別の成績：該当なし」）。
+- 最初に「テック内部」を1行（signals.breadth_ext）：tech の pct_down20 と4週前、pct_above_50sma、ラベル（label_ja）、
+  XLKの高値からの位置、ex_tech との差（tech_minus_ex_tech_down20_pt）。
+  stealth なら「XLKは高値圏だが構成銘柄の過半が高値から20%以上下げている（隠れ弱気）」、broad_decline なら「XLKも−10%超で下げが表面化」。
+  megacap_led が真なら「市場全体の中身は改善しているが、大型・AI株主導で指数が崩れている。市場全体の改善を半導体・テクノロジーの追い風と読まない」と添える。
+  同じ行に、監視グループ別の先導株数（signals.leadership.tech.by_group：半導体／ソフトウェア／ハードウェア、今／4週前）を添える。
+- tech_etf（SOXX、SMH、XLK、VGT、IGV、CIBR、SKYY、SOXL）：1日・1週・1か月のSPY比、50日線・200日線との位置。
+- tech_leaders（市場全体のRS百分位80以上かつTT価格7項目クリア）：銘柄、区分、RS、SPY比63日、52週高値比、週足のステージ（stage_label）、いま何番目のベースか（base_count_current）。
+  base_count_current が null のときは「週足ではベースの外」と書く（数えられなかったのではなく、いま週足のベースの中にいないという意味）。
+  「未確認」と書くのは stages.rows の base_count_status が ok 以外のときだけで、その文をそのまま添える。
+  同じ銘柄が setups にあり base_count があるときは、そちらを書く（例「日足のフラットベースは3番目」）。
+  週足の数え方（base_count_current）と日足のセットアップの数え方（base_count）は別なので、片方を「未確認」、もう片方を「3番目」と並べない。
+- ステージ分析（signals.stages。05の2節の言葉で短く）：
+  ・業種の調子：監視グループ（半導体・ソフトウェア・ハードウェア）は各1行（ステージ1〜4の割合、4週前のステージ2・4の割合、上抜け間近＋上昇初期の割合、ラベル）。
+    S&P500の11業種はラベルごとに業種名を並べた1〜2行（例「健全：ヘルスケア／改善中：素材、公益、不動産、生活必需品、資本財、エネルギー／弱い：情報技術、通信」）。
+  ・ETF：SOXX、SMH、XLK、IGV、SPY、QQQ のステージ（label と言葉、何週目、30週線からの距離）。
+  ・監視銘柄で上抜け間近（1B）と上昇の初期（2A）にいる銘柄（stages.rows。上限・支え、市場比の強さ）。
+   なければ「なし」。
+  ・週の途中の日は、進行中の週で区分が変わりそうな銘柄（provisional）があれば「今週このままなら○○に変わる見込み」と添える（確定は金曜の足）。
+- tech_watch：RS80以上だがTT未達、またはTT達成だがRS未達の銘柄（TT項目数、RS）。
+- setups：ready → watch → forming の順。
+  各行：銘柄、型（pattern_ja）、フットプリント、P、S、リスク幅、ピボットまでの距離、DRY5、
+  何番目のベースか（base_count）、週足のステージ（stage_label を05の2節の言葉で。例「上昇の途中（2(+)）」）。
+  setup_type が late_stage のものは別枠で書く。
+  also に別の型名があれば「（フラットベースとしても成立）」のように添える。
+  フラットベースの ready には「参考（検証では成績が良くない。07の校正記録）」と添え、Daily Plan ではVCP・カップの候補と分けて書く。
+  件数は signals.setup_counts（setup_type別、銘柄単位）。
+  v4.6 適用後の最初の日次では「定義変更（v4.6）：セットアップの型が増えた。ready件数の前回比は型ごとに見る」と1行添える。
+- pocket_pivots：today（適格）を1行ずつ（重要ポイントの pocket_pivot と同じ項目）。
+  excluded は件数と理由だけ1行（例「除外2件：V字1、上昇トレンドでない1」）。
+- profit_tracking：rows のうち gain_pct が+15%以上、または eight_week_active、または below_50sma のものだけを表に（銘柄、型、抜けた日、上昇率、最大上昇率、8週ルール中か、50日線の下か）。
+  なければ「利益確定の目安に近い追跡銘柄なし」。
+- ledger_cohorts：setup_type別のD+3/5/10（件数が20未満なら参考値）。
+- sell_signals：先導株・母集団のクライマックス／弱さ。
+- sector_rs（v4.3）：グループごとにリーダー上位3・ラガード下位3（rel_sec_63_pct）。
+  セクター自体が指数に負けていれば「弱いセクターの中で相対的に強い」と書く。
+- correction_resilience（v4.3）：基準ETF（SOXX・IGV・XLK）の調整窓を各1行（state、dd_low_pct、dd_now_pct）。
+  next_candidates の上位5（tier、r_held、r_now、new_high_after_low）と late_breaks。
+  r_held・r_now は倍率なので dd_low_pct・dd_now_pct を併記する。
+  リストは監視候補の順番であり、買いはピボット・ブレイクで判定する。
+- rs_lines（v4.3b、RSライン＝銘柄÷SPY。RSIとは別物）：
+  ・1行目：監視母集団でRSラインが21日EMAの上にある数（summary.above_ema21_count）、SPYの高値からの位置は Tape の表の値（tape.checklist.SPY.pct_from_52w_high）と同じ数字だけを使い、rs_lines.spy_pct_from_52w_high（終値基準）は書かない、
+    S&P500∪監視母集団でRS新高値の件数（market.rs_new_high_count、市場情報として件数だけ）。
+  ・RS新高値（summary.rs_new_high）とそのうち先行（summary.rs_leads_price）。
+   なければ「なし」。
+   21日EMAの上抜け・下抜け（crossed_up／crossed_down）。
+  ・core（SOXX、SMH、XLK、IGV、NVDA、AVGO、AMD、TSM、MU、MSFT、ORCL）を短い表で：EMA21の上下、EMAとの差%、RSの52週高値からの位置%、株価の52週高値からの位置%、対QQQでEMA21の上下。
+  ・一言添える：「RSラインは強い銘柄を拾う道具で、新高値でも下落しない保証ではない。買いはピボット・ブレイクで判定する」。
+   SOXLはSOXXで代用。

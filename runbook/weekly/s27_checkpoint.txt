@@ -1,0 +1,7 @@
+# 週次レポート｜27. 継続チェックポイント
+# runbook/weekly_write.txt の「ひな形」の表から、この項目を書く直前に読む。
+
+- 見出し：`## 27. 継続チェックポイント`
+- Full は B10 の27項目すべてと D10 のフルYAML（UNIFIED_MARKET_STATE、checkpoint_version 4.1、specification_version 4.6、
+  extensions.sector_leadership schema 1.3、extensions.breadth_ext BX-1.0、extensions.spy_model SM-1.0、extensions.hedge HG-1.0）。
+  Standard は D9 の簡易YAML。

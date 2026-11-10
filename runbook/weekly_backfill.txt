@@ -1,0 +1,19 @@
+# 週次レポート｜欠けた週の補完
+# 日曜の定期実行が利用上限などで動かなかった週の週次を、後日作る手順。きっかけがあったときだけ読む。
+
+- きっかけ：日次の冒頭の警告（先週の週次が未作成）か、ユーザーの「週次を補完して」。
+  自動では作らない（週次は重い）。
+- 基準日：欠けた週の金曜（休場なら最後の取引日）。
+  それ以降の取引日の足が data ブランチに入っているので、日次の補完（runbook/daily_backfill.txt）と同じ補完実行で当日の値を作る：
+  `python3 analyze.py --out /home/claude/bf_D --tickers tickers.txt --as-of D --replay-ledger 130 --prev-history /home/claude/bf_D/history_signals.csv`
+  （/home/claude/bf_D は data ブランチのコピー。signals.json・screen.csv・setups.csv が D 時点の値になる。history_signals.csv の D の行と Tape の値が一致することを確かめる）。
+- マクロ（B部）は、その週末時点の値を調べて使う（発表日が基準日より後の統計は使わない。取れない値は missing／period_mismatch）。
+- モードは runbook/weekly_write.txt の「モードの決め方」のとおり（欠けた週が月初や定義変更後なら Full）。タイトルに「（補完版）」、冒頭に「この週の週次は配信できなかったため、後日 D 時点のデータで作り直したもの。
+  判定・ステージ・候補はエンジンの再計算で当時と同じ。ニュースとマクロは作成時点で調べ直したもの」と書く。
+- シナリオ（F6）は基準日 D の終値で立て、期日は D の21営業日後。
+  採点対象の過去シナリオがあれば通常どおり採点する。
+- 保存は weekly_runbook.txt 第7節と同じ（`tools/state_docs.py` の `--mode` は weekly_standard か weekly_full。report_id は YYYYMMDD-WEEKLY、commit「report YYYYMMDD-WEEKLY (backfill)」）。
+  state/latest_weekly は、補完した週より新しい週次がすでにあるなら更新しない（`--no-latest` を付ける）。
+  state/scenarios には補完した週のシナリオも追加する（期日順に並べる）。
+  読む用の保管ページにも入れる（runbook/archive_page.txt。補完した週が新しい4本に入らないときは、手順1を `--id YYYYMMDD-WEEKLY` に替えてその1本を作る）。
+  配信の最後に weekly_runbook.txt 第6節と同じ保管ページの1行。

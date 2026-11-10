@@ -4,12 +4,14 @@
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml、tools/archive_doc.py＝読む用の保管ページに入れる文書を reports/ から作る）と、仕様ファイル（00〜08、daily_runbook.txt、weekly_runbook.txt）、
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml、tools/archive_doc.py＝読む用の保管ページに入れる文書を reports/ から作る、tools/check_report.py＝書き上がったレポートを保存の前に点検する、tools/state_docs.py＝保管ページ「米国株指標チェック」に入れる文書を作る）と、仕様ファイル（00〜08、daily_runbook.txt、weekly_runbook.txt、runbook/）、
   レポート本文の全履歴 reports/daily/・reports/weekly/（定期実行が手順書どおり保存する。保管ページの本文は直近180日だけ）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
   ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06・07・08 の追補が上書きする。
-  ・日次の手順と出力の形：daily_runbook.txt。key_events の種類と書き方の一覧は、その第2節だけに置く。
-  ・週次の手順と出力の形：weekly_runbook.txt。
+  ・日次の手順（流れ）：daily_runbook.txt。出力の形：runbook/daily_write.txt（共通部分とひな形）と runbook/daily/（節ごと）。key_events の種類と書き方の一覧は runbook/daily/s1_key_events.txt だけに置く。
+  ・週次の手順（流れ）：weekly_runbook.txt。出力の形：runbook/weekly_write.txt（共通部分とひな形）と runbook/weekly/（項目ごと）。
+  ・欠けた日・週の補完：runbook/daily_backfill.txt・runbook/weekly_backfill.txt。読む用の保管ページへの保存：runbook/archive_page.txt。手順の変更の履歴：runbook/CHANGELOG.txt（手順の本文には履歴を書かない）。
+  ・レポートを書く作業は書き手（Agent）に任せ、深さ（effort）は手順書の「0. 設定」の1行で決める（2026-11-10 から xhigh）。書き上がったレポートは tools/check_report.py で点検してから保存・配信する。
   ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
   ・定期実行（スケジュールタスク）の本文：手順書を読む指示と実行環境の前提だけ。手順を変えるときは手順書を直し、定期実行の本文は変えない。
   ・保管ページ（Artifact）の spec/ は予備コピー。仕様・手順書を変えたら同じ内容に差し替える（F9）。
@@ -44,7 +46,7 @@ C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
 E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03、E7.4は追補06、E6.2・E6.3・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2・E14.1aは追補07）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」、追補「03」「04」「06」「07」「08」、やさしい表記の対応表「05」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」と runbook/、追補「03」「04」「06」「07」「08」、やさしい表記の対応表「05」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 
@@ -135,9 +137,9 @@ BroadとTapeのCoverageを別表示し、対象・分子・分母・proxyの扱�
 仕様書の作成・保存を、プロジェクト設定変更、外部データ契約、全市場走査、自動実行、履歴DB稼働の完了と表現しない。
 
 【9. 自動配信（v4.2）】
-スケジュールタスクが、火〜土の7:07に日次レポート（データ未更新や利用上限で動けなければ9:07・12:07に再試行。半導体の日次は7:21・9:21・12:21）、日曜の9:07に週次レポート（再試行13:07・18:07。半導体の週次は土曜10:11・14:11・19:11）を配信する（F9）。定期実行のモデルは2026-11-09から claude-opus-5-5（それまで Fable）。配信（通知で届く文）は1画面で、冒頭ブロックと前日・前回から変わった点を中心に書き、全文は添付の本文にする（daily_runbook v2.5 第7節・weekly_runbook v2.2 第6節）。利用上限などで配信できなかった日のレポートは、後日「補完」で作る（daily_runbook 第8節・weekly_runbook 第8節、semis-data の schedule_daily 第5節・schedule_weekly 第7節。データは GitHub Actions が毎日作るので欠けない）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次は冒頭ブロックの直後に signals.json の key_events_today をすべて列挙する（種類と書き方は daily_runbook.txt 第2節）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
+スケジュールタスクが、火〜土の7:07に日次レポート（データ未更新や利用上限で動けなければ9:07・12:07に再試行。半導体の日次は7:21・9:21・12:21）、日曜の9:07に週次レポート（再試行13:07・18:07。半導体の週次は土曜10:11・14:11・19:11）を配信する（F9）。定期実行のモデルは2026-11-09から claude-opus-5-5（それまで Fable）。深さ（effort）は手順書の「0. 設定」で xhigh（2026-11-10）。配信（通知で届く文）は1画面で、冒頭ブロックと前日・前回から変わった点を中心に書き、全文は添付の本文にする（daily_runbook 第8節・weekly_runbook 第6節）。利用上限などで配信できなかった日のレポートは、後日「補完」で作る（runbook/daily_backfill.txt・runbook/weekly_backfill.txt、semis-data の prompts/daily_backfill.md・prompts/weekly_backfill.md。データは GitHub Actions が毎日作るので欠けない）。日次はdaily_runbook.txt、週次はweekly_runbook.txtに従う。日次は冒頭ブロックの直後に signals.json の key_events_today をすべて列挙する（種類と書き方は runbook/daily/s1_key_events.txt）。GitHubのmainが45日以上更新されていなければ、冒頭で更新を促す。仕様はこのリポジトリ、前回状態と過去レポートは保管ページ（Artifact「米国株指標チェック」）に保存されている。
 保管ページ：https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq
 このプロジェクトのチャットで最新レポートや前回比較を求められたら、保管ページのデータベース（reports、report_bodies、state）を読む。口座残高・保有数量・売買明細は保管ページに保存しない。
 読む用の保管ページ（2026-11-10。レポートだけが基準日の新しい順に並ぶ、読むためのページ。4本のレポートに1つずつある。定期実行が保存のたびに1本足し、配信の最後と「配信済みで終了する回」の最後にリンクを出す）：
-米国株 日次レポート／米国株 週次レポート（URLと手順は daily_runbook.txt・weekly_runbook.txt の第7節）、半導体・メモリー 日次レポート／週次定点観測（semis-data の prompts/schedule_daily.md・schedule_weekly.md）。
+米国株 日次レポート／米国株 週次レポート（URLと手順は runbook/archive_page.txt）、半導体・メモリー 日次レポート／週次定点観測（semis-data の prompts/archive_page.md）。
 前回状態（state）と仕様の予備コピー（spec/）は、これまでどおり上の保管ページ「米国株指標チェック」に置く。読む用の保管ページにも口座残高・保有数量・売買明細は保存しない。

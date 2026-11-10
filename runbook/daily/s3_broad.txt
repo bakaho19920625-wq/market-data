@@ -1,0 +1,34 @@
+# 3. Broad（短く）
+
+- 見出し：`## 3. Broad`
+- 日々動く項目だけ：S&P500・NASDAQ（signals.market）、SOX（signals.market に無いので SOXX＝signals.tech_etf で代用）、VIX、2年・10年金利、HY OAS、ドル円、原油、当日〜翌営業日のイベント。
+  数字は機械取得を先に読む（記事の数字より先。毎朝 Web検索に頼っていたため、出典が弱く、2年金利と HY OAS は「未取得」が続いていた）：
+  ・当日の動き（基準日と同じ日）：signals.market の ^GSPC・^IXIC・^VIX と、ETF の前日比で向きを書く。
+   長期金利＝TLT（上がれば金利は低下）、信用＝HYG、ドル＝UUP、原油＝USO、金＝GLD。
+   「原油（USO）−4.0%」のように ETF 名を添え、先物や指数そのものの値と混ぜない。
+  ・水準（1〜2営業日遅れでよい。必ず日付を添える）：semis-data の data ブランチ macro_daily.csv（FRED。`git clone -q --depth 1 --branch data https://github.com/bakaho19920625-wq/semis-data.git /home/claude/sd-data`）から、
+    2年金利（DGS2）、10年金利（DGS10）、10年実質金利（DFII10）、HY OAS（BAMLH0A0HYM2）、ドル指数（DTWEXBGS）の最新の行。
+    状態は verified（出典 FRED）。
+    DGS2 と BAMLH0A0HYM2 は 2026-11-10 以降のデータにある（無い日は「未取得」）。
+    ドル円（USDJPY=X）と10年金利の当日値（^TNX）は同じクローンの daily_signals.json の table にある。
+    semis_manifest.json の us_as_of が今日の基準日と同じときだけ使う（7:07 の時点では前の取引日のままのことがあり、その場合は書かないか、日付を添える）。
+  ・Web検索の使い方と回数の上限は、runbook/daily_write.txt の「Web検索」（合計2回まで）。
+  ・どれも取れない項目は、直近の週次の値を「転記（週次○/○）」と明記して使うか「未取得」と書く。
+   推測で埋めない。
+   日次ではマクロ値は補助情報で、Tapeの判定には使わない。
+- Broad点は週次で確定。
+  日次は「据置（前回週次：○点・○○）」を基本とし、判定帯をまたぐ明確な変化がある場合だけ暫定値と理由を書く。
+- マクロ値は state に保存しない（表示のみ。保存は週次）。
+- VIX の後に期間構造を1句：signals.vol_term の vix_over_vix3m と state_ja、unwinding が真なら「逆転が解けてヘッジ外しが進んだ形」
+  （例「VIX 19.9。目先と3か月先の差は小さい（VIX÷VIX3M 0.97、11/6 まで逆転）」）。
+  vol_term が無い・vix3m が null の日は書かない。
+- この節の最後に「買い戻しの燃料」を1行：reports/flows/fuel_latest.yaml（main。/home/claude/market-data にクローン済みならそのファイル）の line_ja をそのまま転記する。
+  配信（daily_runbook.txt 第8節の SendUserMessage）にも同じ1行を入れる。
+  冒頭ブロックには入れない。
+  水準が前回の日次から変わった日だけ、重要ポイントの末尾に1行足す。
+  ファイルが読めなければ「買い戻しの燃料：未取得」、updated_jst が21日より古ければ「（古いデータ）」を付ける。
+  その週の最初の日次（火曜の配信。月曜が休場なら次の配信）だけ、08 の「集め方」で更新を1回試みる（検索1回＋取得1回。上の Web検索2回とは別枠）。
+  更新できたら /home/claude/market-data/reports/flows/fuel_latest.yaml を上書きし、更新したことを最後に返す（流れの側が保存のときに `git add reports/flows/fuel_latest.yaml` も行う）。
+  ほかの日は転記だけで Web確認はしない。
+  定義と言葉は 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/08_Addendum_v4.7_Flows_Fuel_VolTerm.txt）。
+  買い・売りの合図として書かない。
