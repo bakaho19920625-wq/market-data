@@ -1,5 +1,5 @@
-# 日次レポート 実行手順書（daily_runbook v2.3、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.6追補とやさしい表記を反映）
-# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）、v1.9 gh が使えないときは refresh/ の push で起動、v2.0 v4.6（ポケットピボット、カップ・フラットベース・ダブルボトム、ステージとベースの番号、利益確定の目安・8週ルール）、v2.1 v4.6b（ステージの細区分と業種別のステージ分布）、v2.2 欠けた日の補完（第8節、analyze.py --as-of）、再試行の増加（12:07）、やることに「持っている分の上限」、冒頭ブロックの記号の禁止を明記。v2.3 第8節が使う data ブランチのクローン先 /home/claude/mkt を第1節で定義、12:07 の再試行の扱いを明記。
+# 日次レポート 実行手順書（daily_runbook v2.4、マスター仕様v4.2のD7「Daily」の実装。v4.3〜v4.6追補とやさしい表記を反映）
+# 版の履歴：v1.4 やさしい表記（05）、v1.5 v4.4（テック内部・ブレイクの伸び・崩れガード）、v1.6 データが古いときのワークフロー起動、v1.7 reports/ への保存、v1.8 書き込み準備を最初に（add_repo の読み込み手順）、v1.9 gh が使えないときは refresh/ の push で起動、v2.0 v4.6（ポケットピボット、カップ・フラットベース・ダブルボトム、ステージとベースの番号、利益確定の目安・8週ルール）、v2.1 v4.6b（ステージの細区分と業種別のステージ分布）、v2.2 欠けた日の補完（第8節、analyze.py --as-of）、再試行の増加（12:07）、やることに「持っている分の上限」、冒頭ブロックの記号の禁止を明記。v2.3 第8節が使う data ブランチのクローン先 /home/claude/mkt を第1節で定義、12:07 の再試行の扱いを明記。v2.4 GitHub への書き込みを git の push に一本化（add_repo と gh の確認を手順から外す。add_repo は push が断られたときだけ試す。データ更新の起動は refresh/ の push が主な経路）。
 # 日次の自動実行（火〜土 7:07 JST、データ未更新や利用上限で動けなかったときの再試行 9:07・12:07。半導体の日次は 7:21）はこの手順書に従う。
 # 定期実行の本文には手順を書かず、この手順書を読む指示だけを置く。手順を変えるときはこのファイルを直す。
 # マスター仕様は定義の確認が必要なときだけ該当条項を読む（C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
@@ -20,12 +20,16 @@
 - GitHubのリポジトリのファイルは変更しない。例外は、データが古いときのワークフロー起動（第1節）と、レポート本文の reports/ への保存（第7節）だけ。
 
 ## 1. 取得と確認
-0. ［v1.8］最初に GitHub への書き込みを準備する（データ更新の起動と reports/ への保存に要る。データが新しくても先に行う）：
-   - ツール mcp__claude-code-remote__add_repo が一覧に見当たらなければ、ToolSearch（query: "select:mcp__claude-code-remote__add_repo"）で読み込む。
-     接続先の一覧が要るときは ToolSearch（query: "claude-code-remote"）で探す。「ツールが無い」と判断する前に必ずこの検索を行う。
-   - add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼び、結果の指示どおり /home/claude/market-data にクローンする。
-   - `gh auth status` で認証を確かめる（add_repo の後でないと gh は認証エラーになる）。
-   - それでも add_repo を読み込めない・拒否される場合は、エラー文をそのまま控え、レポートの「データ状態」と配信に1行で書く（推測で原因を書かない）。
+0. ［v2.4］最初に作業用のコピーを用意する（データ更新の起動と reports/ への保存に使う。データが新しくても先に行う）：
+   - `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`（公開リポジトリなので事前の準備は要らない。すでにあれば `git -C /home/claude/market-data pull -q --ff-only`）。
+   - GitHub への書き込みは git の push だけで行う（この節のデータ更新の起動と、第7節の保存）。add_repo と gh は、下の「push が断られたとき」以外では使わない。
+     `gh auth status` も実行しない（gh が使えるときでも「The token in GH_TOKEN is invalid.」と出るので、判断材料にならない。2026-11-10 に確認）。
+   - push が断られたとき：
+     ・「fetch first」「non-fast-forward」と出た（ほかの更新が先に入っただけで、権限の問題ではない）→ `git pull -q --rebase origin main` のあと、もう一度 push する。
+     ・それ以外（403 など、書き込みが許可されていない）→ このときだけ ToolSearch（query: "add_repo"）で名前が add_repo で終わるツールを探し、見つかれば
+       add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼んでから、同じ push をもう1回だけ試す。
+       それでも断られたら、エラー文をそのまま控え、配信の最後に「GitHub に保存できませんでした：（エラー文）」と1行で書く（推測で原因を書かない）。レポートの配信と保管ページへの保存は続ける。
+   - push が実際に断られたとき以外は、add_repo・gh・書き込みの道具の状態を、レポートにも配信にも書かない（何も送らず終了する回でも同じ）。
 1. GitHub main ブランチの 02_User_Settings.txt を読む（https://raw.githubusercontent.com/bakaho19920625-wq/market-data/main/02_User_Settings.txt。届かなければ保管ページの spec/user_settings.txt）。他の仕様ファイルは必要時のみ。
 2. GitHub data ブランチから manifest.json、signals.json、setups.csv を取得する。
    https://raw.githubusercontent.com/bakaho19920625-wq/market-data/data/<ファイル名>
@@ -35,15 +39,14 @@
    - 直近の米国取引日（土日・NYSE休場日を除く、日本時間の今日の前日にあたるET日付）を求める。
    - 前日が休場日 → 7:07 の1回目は「新しい取引日はありません（休場）」と短く送って終了（保存しない）。9:07 の再試行では何も送らない。
    - signals.as_of_market_date がその取引日より古い（GitHubの予約実行は数時間遅れることがある）：
-     ・［v1.6］まず自分でデータ更新を起動して待つ（GitHub の予約実行は数時間遅れたり来なかったりするので、これが主な経路）：手順0の準備のあと
-       `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data`、`gh run list -R bakaho19920625-wq/market-data --workflow update.yml -L 1 --json databaseId --jq '.[0].databaseId'` でIDを取り、
-       `gh run watch <ID> -R bakaho19920625-wq/market-data --exit-status --interval 20`（タイムアウト12分）で完了を待ってから取り直す。
-       （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
-     ・［v1.9］gh が使えないとき（add_repo が見つからない、gh が認証エラー、403「access to this repository is not enabled」）は、git の push で起動する：
-       /home/claude/market-data（無ければ `git clone https://github.com/bakaho19920625-wq/market-data /home/claude/market-data`）で
+     ・［v1.6］まず自分でデータ更新を起動して待つ（GitHub の予約実行は数時間遅れたり来なかったりするので、これが主な経路）。［v2.4］起動は git の push で行う：
+       /home/claude/market-data（手順0）で
        `date -u +%Y-%m-%dT%H:%M:%SZ > refresh/request.txt && git add refresh/request.txt && git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "refresh request" && git push origin main`。
-       完了は gh ではなく git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
-       直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。push も拒否されたらエラー文をそのまま控える。
+       この push で .github/workflows/update.yml が動く（refresh/README.md）。push が断られたら手順0の「push が断られたとき」に従い、それでも駄目なときだけ
+       `gh workflow run update.yml --ref main -R bakaho19920625-wq/market-data` を1回試す（エラーなら起動できなかったものとして先へ進む）。
+       完了は git で確かめる：30秒おきに `git -C /home/claude/market-data fetch -q origin data && git -C /home/claude/market-data show FETCH_HEAD:manifest.json` の prices.as_of を見て、
+       直近の取引日になるまで最大12分待つ（raw.githubusercontent.com は数分古い値を返すことがあるので待ち合わせには使わない）。
+       （ワークフローは前営業日の足が入るまで10分おきに最大6回取り直すので、Yahooが未確定なら12分では終わらない。その場合は次へ）
      ・それでも古く、日本時間9時より前の実行（7:07の1回目）→ ユーザーには何も送らず終了（保存しない）。9:07の再試行に任せる。
      ・それでも古く、日本時間9時以降の実行（9:07・12:07の再試行）→ 「GitHubのデータが更新されていません（基準日○○、生成○○）」と送って終了（保存しない。12:07 は 9:07 が利用上限で動けなかった日のためのもので、同じ文が2回届くことがある）。
        manifest.prices.yahoo_incomplete に基準日より新しい日付があれば、原因として「Yahooが○○日の終値を未確定（空欄）のまま配信しているため。修正されしだい自動で取り込みます」と添える。
@@ -217,10 +220,10 @@ signals.key_events_today をすべて書く。空なら「本日の重要イベ�
   Daily Planの候補数、データ状態。すべて05の言葉で、記号は括弧。
 - 本文の巻末に「読み方」：そのレポートで使った記号だけを05から1行ずつ転記。
 - 本文全体を YYYYMMDD-DAILY.md に書き、SendUserFile で送る。
-- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：第1節の手順0で add_repo 済み（していなければ同じ手順で mcp__claude-code-remote__add_repo（owner: "bakaho19920625-wq", repo: "market-data", access: "push"）を呼ぶ）、結果の指示どおり /home/claude/market-data にクローン（あれば `git -C /home/claude/market-data pull -q --ff-only`）。
+- ［v1.7］GitHubへの保存（全履歴の置き場。F9）：第1節の手順0で用意した /home/claude/market-data で `git pull -q --ff-only`（無ければ手順0のとおりクローン）。
   本文を reports/daily/YYYYMMDD-DAILY.md に書き（同じIDは上書き）、`git add reports/daily/YYYYMMDD-DAILY.md` →
   `git -c user.name=claude -c user.email=noreply@anthropic.com commit -m "report YYYYMMDD-DAILY"` → `git push origin main`。
-  push が拒否されたら配信にその旨を書く。reports/ 以外のファイルは変更しない。data ブランチには書かない。公開リポジトリなので口座・保有・数量は本文に書かない（第0節の原則どおり）。
+  push が断られたら第1節の手順0の「push が断られたとき」に従う。reports/ 以外のファイルは変更しない。data ブランチには書かない。公開リポジトリなので口座・保有・数量は本文に書かない（第0節の原則どおり）。
 - 保存（ArtifactData batch、F9の形式）：reports/<id>、report_bodies/<id>、state/latest_daily（yamlにはTape、L/H、候補、key_events、データ状態）。保管ページは直近180日の置き場（整理は週次が行う）。
   state/ledger は使わない（台帳はGitHubの ledger.json が正本）。state/scenarios は週次が更新する。
   既存ドキュメントは読んだ version を if_version に指定する。失敗したらユーザーに伝える。
