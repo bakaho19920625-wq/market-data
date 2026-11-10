@@ -41,11 +41,11 @@ main ブランチから次を読む（https://raw.githubusercontent.com/bakaho19
 - 04_Addendum_v4.4_Breadth_FollowThrough.txt（C15.1a〜d。C15.1と食い違えば04を優先）
 - 06_Addendum_v4.5_Leadership_Hedge_SPYModel.txt（E7.4 先導セクターの推移、C10.1 ヘッジの価格セットアップ、F10 長期SPY配分モデル。観察専用）
 - 07_Addendum_v4.6_Setups_PocketPivot_Stage.txt（E6.2 ステージ分析、E6.3 業種別のステージ分布、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット、E13.2 利益確定の目安・8週ルール。本文と食い違えば07を優先）
-- 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（B4.6a 買い戻しの燃料計、B4.5a 不安の指数の期間構造。観察専用。保管ページの予備コピーには無いので、届かなければこの2項目は「未取得」）
+- 08_Addendum_v4.7_Flows_Fuel_VolTerm.txt（B4.6a 買い戻しの燃料計、B4.5a 不安の指数の期間構造。観察専用。v2.2 から保管ページの予備コピーにもある）
 - 05_Plain_Language_Glossary.txt（やさしい表記）
 届かなければ、保管ページ（Artifact「米国株指標チェック」 https://claude.ai/artifact/6NLifaXuDCqCTrWSoCojyq）の予備コピーを
 Artifactツールの read（paths）で読む：spec/instructions_v4.2.txt（＝CLAUDE.md）、spec/master_v4.2.txt、spec/source_notes.txt、
-spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/addendum_v4.6.txt、spec/plain_language.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
+spec/user_settings.txt、spec/addendum_v4.3.txt、spec/addendum_v4.4.txt、spec/addendum_v4.5.txt、spec/addendum_v4.6.txt、spec/addendum_v4.7.txt（＝08）、spec/plain_language.txt。どちらも読めなければ、その旨を SendUserMessage で送って終了する。
 A部〜F部すべてに従い、特に D7（週次・Standard・Fullの条件）、B10（Fullの27項目）、C15.1（改訂版）と04の C15.1a〜d、
 D9／D10（YAML）、F2.1、F3、F6、F9 を守る。
 
