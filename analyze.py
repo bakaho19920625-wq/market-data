@@ -46,6 +46,9 @@ v4.6 追補（07_Addendum_v4.6_Setups_PocketPivot_Stage.txt）。Tape・Broad・
   E13.2 利益確定の目安（+20〜25%）と8週ルール、E14.1a setup_type。
   signals.json の stages／setup_counts／pocket_pivots／profit_tracking、setups の stage・base_count・setup_type、
   screen.csv の stage 等の列、key_events の pocket_pivot／profit_zone／eight_week_hold／eight_week_end／stage_change／sector_stage_shift。
+追補09（09_Addendum_v4.8_QQQ_Washout.txt、F11、QW-1.0）：QQQの売られ尽くし。観察専用で、Tape・Broad・L/H・買い判定は変えない。
+  breadth.csv の ndx100_ 系列（fetch_data.py がナスダック100の一覧で計算）から、点灯・局面・損切りの線を出す。
+  signals.json の qqq_washout、key_events の qqq_washout_lit／qqq_washout_broken、history_signals.csv の qw_ 4列。
 """
 import argparse
 import json
@@ -1458,10 +1461,11 @@ HIST_COLS = ["as_of", "generated_utc", "definition_version", "source",
              "soxx_close", "soxx_pct_from_52w_high", "vix_close",
              "setups_ready", "setups_watch", "key_events_n", "key_event_types",
              "setups_ready_standard", "pocket_pivots_n",   # v4.6
-             "semi_stage2_pct", "semi_stage4_pct", "sp500_stage2_pct", "sp500_stage4_pct"]   # v4.6b
+             "semi_stage2_pct", "semi_stage4_pct", "sp500_stage2_pct", "sp500_stage4_pct",   # v4.6b
+             "qw_pct50", "qw_pct150", "qw_lit", "qw_state"]   # 追補09 F11
 
 
-def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine", sbreadth=None):
+def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, setups, key_events, source="engine", sbreadth=None, qw=None):
     """履歴1行。値は signals.json と同じ（再計算しない）。backfill では setups・key_events を空にする。"""
     g = lambda d, k: d.get(k) if isinstance(d, dict) else None
     ftd_ok = any(idx_state[k]["ftd_date"] and not idx_state[k]["ftd_failed"] and (idx_state[k]["ftd_days_ago"] or 99) <= 30 for k in idx_state)
@@ -1498,7 +1502,9 @@ def history_row(tstr, gen, chk, eff, hyst, idx_state, lead, hedge, spym, P, i, s
            "semi_stage2_pct": ((sbreadth or {}).get("監視：半導体") or {}).get("pct_stage", {}).get(2),
            "semi_stage4_pct": ((sbreadth or {}).get("監視：半導体") or {}).get("pct_stage", {}).get(4),
            "sp500_stage2_pct": ((sbreadth or {}).get("S&P500全体") or {}).get("pct_stage", {}).get(2),
-           "sp500_stage4_pct": ((sbreadth or {}).get("S&P500全体") or {}).get("pct_stage", {}).get(4)}
+           "sp500_stage4_pct": ((sbreadth or {}).get("S&P500全体") or {}).get("pct_stage", {}).get(4),
+           "qw_pct50": (qw or {}).get("pct50"), "qw_pct150": (qw or {}).get("pct150"),
+           "qw_lit": (qw or {}).get("lit_today"), "qw_state": (qw or {}).get("state")}
     return {k: row.get(k) for k in HIST_COLS}
 
 
@@ -1506,7 +1512,7 @@ def write_history(out, prev_path, seed_path, row):
     """前回の履歴（data ブランチ）に今日の行を追記して保存。無ければ main の seed（backfill）から始める。同じ基準日は上書き。"""
     src = prev_path if prev_path and os.path.exists(prev_path) and os.path.getsize(prev_path) > 0 else (seed_path if seed_path and os.path.exists(seed_path) else None)
     hist = pd.read_csv(src, dtype=str) if src else pd.DataFrame(columns=HIST_COLS)
-    hist = hist.reindex(columns=HIST_COLS)
+    hist = hist.reindex(columns=HIST_COLS).astype(object)   # 追補09：前回の履歴に無い列（qw_ 4列）の真偽値が 0.0／1.0 にならないように
     hist = hist[hist["as_of"] != row["as_of"]]
     hist = pd.concat([hist, pd.DataFrame([row])], ignore_index=True).sort_values("as_of")
     hist.to_csv(os.path.join(out, "history_signals.csv"), index=False)
@@ -2216,6 +2222,82 @@ def vol_term(P, i):
     return out
 
 
+# ---------- 追補09 F11：QQQの売られ尽くし（QW-1.0）。観察専用（Tape・Broad・L/H・買い判定には使わない） ----------
+QW = {"pct50_lt": 5.0, "pct150_lt": 15.0, "gap_bars": 40, "stop_pct": -7.0, "min_coverage": 0.8}
+QW_STATE_JA = {"none": "点いていない", "active": "点灯のあと（損切りの線の上）", "broken": "底割れ（損切りの線を終値で割った）",
+               "handed_over": "200日線の見方に引き継いだ（QQQが200日線の上で、線が上向き）"}
+
+
+def qqq_washout(bw, P, i, ndx_meta=None):
+    """ナスダック100の中身で見た売られ尽くし（F11）。
+    点灯＝50日線の上にいる銘柄が5%未満、かつ150日線の上が15%未満（データのある銘柄が一覧の8割未満の日は判定しない）。
+    局面の起点＝点灯日のうち、直前の点灯日から40営業日以上あいた最初の日。損切りの線＝起点の日のQQQ終値×0.93（終値で判定）。
+    状態：none（起点が無い）／active（起点のあと、線の上）／broken（終値が線以下になった）／handed_over（QQQが200日線の上で線が上向き）。
+    broken・handed_over は、なった日で確定し、次の起点まで変えない。判定は起点の翌日から見る。"""
+    meta = ndx_meta or {}
+    listed = meta.get("members_listed")
+    out = {"definition_version": "QW-1.0", "as_of": str(P.dates[i].date()), "pct50": None, "pct150": None,
+           "members_listed": listed, "members_with_data": None, "coverage_low": None, "list_as_of": meta.get("list_as_of"),
+           "lit_today": None, "last_lit_date": None, "state": None, "state_ja": None, "episode_start": None, "bars_since_start": None,
+           "qqq_close_at_start": None, "stop_line": None, "qqq_pct_vs_stop": None, "ended_date": None, "status": "missing",
+           "thresholds": dict(QW),
+           "definition": "pct50／pct150＝ナスダック100のいまの構成銘柄のうち、終値が50日／150日単純移動平均より上の割合（%。proxy、生存者バイアスあり）。"
+                         "点灯＝pct50が5%未満かつpct150が15%未満。局面の起点＝直前の点灯日から40営業日以上あいた最初の点灯日。"
+                         "損切りの線＝起点の日のQQQ終値の−7%（終値で判定）。handed_over＝QQQが200日線の上で、線が21営業日前より上。"
+                         "2000-08〜2026-11の検証で点灯は10回、うち9回は6か月後にQQQが上（追補09）。観察専用で、買いの指示ではない"}
+    cols = ("ndx100_pct_above_50sma", "ndx100_pct_above_150sma", "ndx100_members_with_data")
+    if bw is None or any(c not in bw.columns for c in cols) or "QQQ" not in P.C.columns:
+        out["note"] = "breadth.csv に ndx100_ 系列が無い（一覧が無いか、取得に失敗）"
+        return out
+    today = P.dates[i]
+    w = bw.loc[bw.index <= today, list(cols)].dropna(how="all")
+    if w.empty:
+        out["note"] = "ndx100_ 系列に基準日以前の値が無い"
+        return out
+    c = P.C["QQQ"].iloc[:i + 1]
+    s200 = P.s200["QQQ"].iloc[:i + 1]
+    w = w[w.index.isin(c.index)]
+    if w.empty or w.index[-1] != today:
+        out["note"] = f"ndx100_ 系列の最終日（{str(w.index[-1].date()) if not w.empty else None}）が基準日と違う"
+        return out
+    p50, p150, nmem = w[cols[0]], w[cols[1]], w[cols[2]]
+    if listed:
+        cov_ok = nmem >= QW["min_coverage"] * listed
+    else:
+        cov_ok = nmem >= QW["min_coverage"] * nmem.max()
+    lit = (p50 < QW["pct50_lt"]) & (p150 < QW["pct150_lt"]) & cov_ok
+    pos = {d: k for k, d in enumerate(c.index)}
+    start, last = None, None
+    for d in lit[lit].index:
+        k = pos[d]
+        if last is None or k - last >= QW["gap_bars"]:
+            start = k
+        last = k
+    v = lambda x: None if pd.isna(x) else round(float(x), 2)
+    out.update({"status": "ok", "pct50": v(p50.iloc[-1]), "pct150": v(p150.iloc[-1]),
+                "members_with_data": int(nmem.iloc[-1]) if not pd.isna(nmem.iloc[-1]) else None,
+                "coverage_low": bool(not cov_ok.iloc[-1]), "lit_today": bool(lit.iloc[-1]),
+                "last_lit_date": str(c.index[last].date()) if last is not None else None})
+    if start is None:
+        out.update({"state": "none", "state_ja": QW_STATE_JA["none"]})
+        return out
+    c0 = float(c.iloc[start])
+    stop = round(c0 * (1 + QW["stop_pct"] / 100), 2)
+    state, ended = "active", None
+    for k in range(start + 1, i + 1):
+        ck, sk, sp = c.iloc[k], s200.iloc[k], (s200.iloc[k - 21] if k >= 21 else np.nan)
+        if ck <= stop:
+            state, ended = "broken", k
+            break
+        if not pd.isna(sk) and not pd.isna(sp) and ck > sk and sk > sp:
+            state, ended = "handed_over", k
+            break
+    out.update({"state": state, "state_ja": QW_STATE_JA[state], "episode_start": str(c.index[start].date()), "bars_since_start": i - start,
+                "qqq_close_at_start": round(c0, 2), "stop_line": stop, "qqq_pct_vs_stop": round(100 * (float(c.iloc[-1]) / stop - 1), 1),
+                "ended_date": str(c.index[ended].date()) if ended is not None else None})
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="out")
@@ -2449,6 +2531,7 @@ def main():
     hedge = hedge_rules(P, chk_today, eff_regime, idx_state, i)
     hedge_y = hedge_rules(P, chk_y, prev_conf or chk_y["regime"], idx_y, i - 1)
     spym = spy_model(P, sectors, i)
+    qw = qqq_washout(bw, P, i, (manifest.get("breadth") or {}).get("ndx100"))   # 追補09 F11（観察専用）
 
     # --- セットアップ（テック・半導体のみ） ---
     setups = []
@@ -2601,6 +2684,11 @@ def main():
         key_events.append({"type": "hedge_cover", "reasons": hedge["cover_reasons"]})
     if spym.get("status") == "ok" and spym["signal_since"] == tstr:
         key_events.append({"type": "spy_model_signal", "signal": spym["signal"], "composite": spym["composite"], "components": spym["components"]})
+    # 追補09 F11：QQQの売られ尽くしの起点の日と、損切りの線を割った日
+    if qw.get("status") == "ok" and qw.get("episode_start") == tstr:
+        key_events.append({"type": "qqq_washout_lit", "pct50": qw["pct50"], "pct150": qw["pct150"], "stop_line": qw["stop_line"], "qqq_close": qw["qqq_close_at_start"]})
+    if qw.get("status") == "ok" and qw.get("state") == "broken" and qw.get("ended_date") == tstr:
+        key_events.append({"type": "qqq_washout_broken", "episode_start": qw["episode_start"], "stop_line": qw["stop_line"], "qqq_pct_vs_stop": qw["qqq_pct_vs_stop"]})
 
     # v4.3b: RSライン新高値（監視母集団の個別株と半導体・テクノロジーETF）。
     # 先行（株価は高値の下）は毎回、株価もそろって高値のときは前回のRS新高値から20営業日以上あいた場合だけ重要イベントにする。
@@ -2770,6 +2858,7 @@ def main():
         "leadership": jsonable(lead_rot),   # v4.5 (A)
         "hedge": jsonable(hedge),           # v4.5 (B)
         "spy_model": jsonable(spym),        # v4.5 (C)
+        "qqq_washout": jsonable(qw),        # 追補09 F11（観察専用）
         "tech_leaders": sorted(tech_leaders, key=lambda x: -x["rs_rank"]),
         "tech_watch": sorted(tech_watch, key=lambda x: -(x["rs_rank"] or 0))[:25],
         "setups": sorted(setups, key=lambda s: ({"ready": 0, "watch": 1, "forming": 2}.get(s["status"], 3), -(s.get("rs_rank") or 0))),
@@ -2800,7 +2889,7 @@ def main():
     json.dump(signals, open(os.path.join(out, "signals.json"), "w", encoding="utf-8"), ensure_ascii=False, indent=1, default=lambda o: o.item() if hasattr(o, "item") else str(o))
     # v4.5b: 判定結果の日次履歴（閾値の検証用。同じ基準日の再実行は上書き）
     hrow = history_row(tstr, signals["generated_utc"], chk_today, eff_regime, hyst, idx_state, lead_rot, hedge, spym, P, i, setups, key_events,
-                       sbreadth=s_breadth)
+                       sbreadth=s_breadth, qw=qw)
     n_hist, hist_src = write_history(out, a.prev_history, a.history_seed, hrow)
     print(json.dumps({"history_signals_rows": n_hist, "history_from": hist_src}, ensure_ascii=False))
     print(json.dumps({"as_of": tstr, "regime": eff_regime, "hysteresis": hyst, "leaders_market": len(leaders_now), "tech_leaders": len(tech_leaders),

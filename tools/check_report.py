@@ -408,7 +408,22 @@ EVENT_WORDS = {
     "regime_change": ["レジーム", "相場の状態", "判定"], "index_breakdown_guard": ["崩れガード", "IX3"], "breakout_stalling": ["伸び", "FB1"],
     "breadth_label_change": ["隠れ弱気", "下げが表", "ラベル"], "leadership_shift": ["先導", "引っ張る"], "hedge_setup": ["ヘッジ"], "hedge_cover": ["ヘッジ"],
     "spy_model_signal": ["長く持つ", "長期"], "sector_stage_shift": ["業種", "調子"],
+    "qqq_washout_lit": ["売られ尽くし"], "qqq_washout_broken": ["売られ尽くし"],   # 09追補 F11
 }
+
+
+def check_qqq_washout(body, sig, r, where):
+    """09追補 F11：signals に qqq_washout があり値（pct50）が出ている日は「QQQの売られ尽くし」の行が要る。値が無い日は「未確認」の行を勧める（注意）。"""
+    qw = sig.get("qqq_washout")
+    if not isinstance(qw, dict):
+        return
+    has = "売られ尽くし" in body
+    if qw.get("pct50") is not None:
+        r.check(has, where, "行がありません：QQQの売られ尽くし（F11。値があるので、05 の8節の文で1行）")
+        if has:
+            r.check(has_number(numbers(body), float(qw["pct50"])), where, "QQQの売られ尽くしの割合がデータ（%s）と合う数字で見つかりません" % qw["pct50"], WARN)
+    else:
+        r.check(has, where, "QQQの売られ尽くしの行がありません（値が無い日は「未確認（理由）」の1行）", WARN)
 
 
 def any_in(text, words):
@@ -477,6 +492,7 @@ def check_us_daily(doc, r, a):
         for name, words in (("中身のまとめ「広がり」", ["広がり"]), ("中身のまとめ「引っ張る銘柄」", ["引っ張る銘柄"]), ("中身のまとめ「指数との関係」", ["指数との関係"]),
                             ("先導セクター", ["先導セクター"]), ("ヘッジ", ["ヘッジ"]), ("長く持つ分の目安", ["長く持つ分"]), ("近似値（proxy）の注記", ["proxy", "近似値"])):
             r.check(any_in(body, words), "2節", "行がありません：%s" % name)
+        check_qqq_washout(body, sig, r, "2節")
 
     k = pos.get("3. Broad")
     if k is not None:
@@ -595,6 +611,7 @@ def check_us_weekly(doc, r, a):
                             ("4週間の推移", ["4週間の推移"]), ("先導セクターの推移", ["先導セクター"]), ("ヘッジ", ["ヘッジ"]), ("長期SPY配分モデル", ["長期SPY", "長期モデル", "長く持つ分"]),
                             ("近似値（proxy）の注記", ["proxy", "近似値"]), ("Coverage", ["Coverage", "カバレッジ"])):
             r.check(any_in(body, words), "5項", "項目がありません：%s" % name)
+        check_qqq_washout(body, sig, r, "5項")
 
     k = pos.get("13. クレジット・VIX・オプション")
     if k is not None and sig.get("vol_term"):

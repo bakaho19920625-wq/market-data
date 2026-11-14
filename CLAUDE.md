@@ -1,13 +1,13 @@
 # 米国株指標チェック｜プロジェクト指示（CLAUDE.md）
-# 仕様版 4.6（本文 00 v4.2 ＋ 追補03 ＋ 追補04 ＋ 追補06 ＋ 追補07 ＋ 追補08。追補08 は観察項目だけなので、ファイル名は v4.7 でも仕様版は 4.6 のまま）
+# 仕様版 4.6（本文 00 v4.2 ＋ 追補03 ＋ 追補04 ＋ 追補06 ＋ 追補07 ＋ 追補08 ＋ 追補09。追補08・09 は観察項目だけなので、ファイル名は v4.7・v4.8 でも仕様版は 4.6 のまま）
 
 <!-- このファイルは、Claudeのプロジェクト「米国株指標チェック」の指示です。リポジトリをプロジェクトにつなぐと自動で読み込まれます。 -->
 
 ## 0. このリポジトリについて（作業の前提）
-- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml、tools/archive_doc.py＝読む用の保管ページに入れる文書を reports/ から作る、tools/check_report.py＝書き上がったレポートを保存の前に点検する、tools/state_docs.py＝保管ページ「米国株指標チェック」に入れる文書を作る）と、仕様ファイル（00〜08、daily_runbook.txt、weekly_runbook.txt、runbook/）、
+- main ブランチ：データ取得・解析のプログラム（fetch_data.py、analyze.py、tickers.txt、.github/workflows/update.yml、tools/archive_doc.py＝読む用の保管ページに入れる文書を reports/ から作る、tools/check_report.py＝書き上がったレポートを保存の前に点検する、tools/state_docs.py＝保管ページ「米国株指標チェック」に入れる文書を作る）と、仕様ファイル（00〜09、daily_runbook.txt、weekly_runbook.txt、runbook/）、ナスダック100の一覧 ndx100_constituents.csv（追補09。入れ替えのたびに手で更新）、
   レポート本文の全履歴 reports/daily/・reports/weekly/（定期実行が手順書どおり保存する。保管ページの本文は直近180日だけ）。
 - どこに何が書いてあるか（同じ内容を複数の場所に書かない）：
-  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06・07・08 の追補が上書きする。
+  ・定義（判定の条件・閾値・計算）：00 の本文を 03・04・06・07・08・09 の追補が上書きする。
   ・日次の手順（流れ）：daily_runbook.txt。出力の形：runbook/daily_write.txt（共通部分とひな形）と runbook/daily/（節ごと）。key_events の種類と書き方の一覧は runbook/daily/s1_key_events.txt だけに置く。
   ・週次の手順（流れ）：weekly_runbook.txt。出力の形：runbook/weekly_write.txt（共通部分とひな形）と runbook/weekly/（項目ごと）。
   ・欠けた日・週の補完：runbook/daily_backfill.txt・runbook/weekly_backfill.txt。読む用の保管ページへの保存：runbook/archive_page.txt。手順の変更の履歴：runbook/CHANGELOG.txt（手順の本文には履歴を書かない）。
@@ -15,7 +15,7 @@
   ・レポートの言葉づかい（状態をやさしい日本語で書き、記号は括弧）：05_Plain_Language_Glossary.txt。4本のレポート共通。
   ・定期実行（スケジュールタスク）の本文：手順書を読む指示と実行環境の前提だけ。手順を変えるときは手順書を直し、定期実行の本文は変えない。
   ・保管ページ（Artifact）の spec/ は予備コピー。仕様・手順書を変えたら同じ内容に差し替える（F9）。
-- data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv＝判定結果の日次履歴、prices_daily.csv.gz、prices_sp500.csv.gz、sp500_constituents.csv、breadth.csv、events.csv）。
+- data ブランチ：GitHub Actionsが毎朝自動で作る最新データ（manifest.json、signals.json、screen.csv、setups.csv、ledger.json、history_signals.csv＝判定結果の日次履歴、prices_daily.csv.gz、prices_sp500.csv.gz、prices_ndx100_extra.csv.gz、sp500_constituents.csv、breadth.csv、events.csv）。
   チャットでは `git fetch origin data && git show origin/data:signals.json` などで読むか、下の【データ取得先】のURLから取得する。
 - このリポジトリは公開（Public）。口座残高・保有数量・取得単価・売買明細などの個人情報は、ファイルに書かずチャット内でだけ扱う。
 - プログラムや仕様ファイルの変更・コミットは、ユーザーが明示的に頼んだときだけ行う（reports/ へのレポート保存と、データ更新を起動するための refresh/request.txt の push だけは定期実行が手順書どおり行う）。data ブランチには書き込まない（Actionsが上書きする）。
@@ -40,13 +40,14 @@ RSライン（対SPY・対QQQ、RS新高値、株価に先行、21日EMA。追�
 値は signals.json の leadership／hedge／spy_model から読む。3つとも観察専用で、Tapeレジーム・L/H・買い判定・Broadの点数には使わない。ヘッジはエンジンが条件の成立を出すだけで、置くかどうかはその都度判断する（C10）。
 追補「07_Addendum_v4.6_Setups_PocketPivot_Stage.txt」（E6.2 ステージ分析（1A〜4B-の細区分、支え・抵抗、マンスフィールドRS）、E6.3 業種別のステージ分布、E9.5a ベースカウント、E9.2a カップ、E9.6 フラットベース、E9.7 ダブルボトム、E10.1a ポケットピボット（本文E10.1を改訂）、E13.2 利益確定の目安と8週ルール、E14.1a setup_type。v4.6、engine 1.4）も正本の一部とする。値は signals.json の stages（rows・etfs・breadth）／setups（stage_label・base_count・setup_type）／setup_counts／pocket_pivots／profit_tracking から読む。業種別のステージ分布は半導体・テクノロジーとほかの業種の調子を見る材料として毎回表示する。Tape・Broad・L/Hの判定は変えない。
 追補「08_Addendum_v4.7_Flows_Fuel_VolTerm.txt」（B4.6a 買い戻しの燃料計、B4.5a 不安の指数（VIX）の期間構造。2026-11-10）も正本の一部とする。燃料計はプロの持ち高の百分位（公表・報道された数字だけ）から「残り約○割」を出し、控えは reports/flows/fuel_latest.yaml（週次と、その週の最初の日次が更新。4本のレポートが同じファイルを読む）。期間構造は signals.json の vol_term から読む。2つとも観察専用で、Tapeレジーム・Broadの点数・L/H・買い判定には使わない（本文D4の「VIXバックワーデーション」の確認には vol_term を使う）。
+追補「09_Addendum_v4.8_QQQ_Washout.txt」（F11 QQQの売られ尽くし。QW-1.0、2026-11-14）も正本の一部とする。ナスダック100の構成銘柄で50日線・150日線の上にいる割合から点灯・局面・損切りの線（点灯日のQQQ終値の−7%）を出す。値は signals.json の qqq_washout から読む（breadth.csv の ndx100_ 系列から計算）。観察専用で、Tapeレジーム・Broadの点数・L/H・買い判定・長期SPY配分モデルには使わない。2倍・3倍ETF（QLD・TQQQ）の判断材料であり、買いの指示ではない。
 A部：全体方針・優先規定
 B部：マクロ・Broad Risk
 C部：Minervini Tape
 D部：統合判定・エクスポージャー・継続状態
 E部：半導体・テクノロジーの詳細定義ST-1.2（本文。E7.1〜E7.3は追補03、E7.4は追補06、E6.2・E6.3・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2・E14.1aは追補07）
 F部：ユーザー設定、データ入力、計算、執行、売買ログ、シナリオ採点、原典メモ
-原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」と runbook/、追補「03」「04」「06」「07」「08」、やさしい表記の対応表「05」も、このリポジトリにある。
+原典メモ「01_Minervini_Source_Notes.txt」（公開要約からの照合、確度M1/M2）、ユーザー設定「02_User_Settings.txt」、手順書「daily_runbook.txt」「weekly_runbook.txt」と runbook/、追補「03」「04」「06」「07」「08」「09」、やさしい表記の対応表「05」も、このリポジトリにある。
 
 最新のユーザー明示指示を優先する。旧資料と競合する箇所は統合版を優先する。資料を参照できない場合はその旨を示し、読んだことにしない。
 
@@ -60,7 +61,7 @@ F部：ユーザー設定、データ入力、計算、執行、売買ログ、�
 【3. データ入力と計算（v4.2）】
 入力ルートは、接続済みの市場データコネクタ、ユーザー提供ファイル（F2の標準CSV）、Web検索の個別値の順。Web検索の個別値は指数終値・経済指標・イベント等に限る。
 
-時系列の計算（TT、RS、Tapeチェックリスト、分配日、週足ステージと業種別のステージ分布、ベースカウント、セットアップ（VCP・カップ・フラットベース・ダブルボトム・パワープレイ・チート）、ポケットピボット、ブレイク追跡、利益確定の目安・8週ルール、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張、先導セクターの推移、ヘッジ条件、長期SPY配分モデル）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。個別銘柄・ETF・指数の騰落率と出来高も、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書き、記事に載っている騰落率は書かない（2026-11-10。取引時間中の値のことがあるため）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
+時系列の計算（TT、RS、Tapeチェックリスト、分配日、週足ステージと業種別のステージ分布、ベースカウント、セットアップ（VCP・カップ・フラットベース・ダブルボトム・パワープレイ・チート）、ポケットピボット、ブレイク追跡、利益確定の目安・8週ルール、売りシグナル、セクター相対強度・調整耐性・RSライン、市場内部の拡張、先導セクターの推移、ヘッジ条件、長期SPY配分モデル、QQQの売られ尽くし）はGitHubの解析エンジンが毎日行い、signals.json等に出力する（F2.1）。レポートはその値を使い、再計算しない（検証目的は可。食い違いは報告）。個別銘柄・ETF・指数の騰落率と出来高も、signals.json（market・tech_etf・sector_etf・movers）と screen.csv（chg_1d_pct・chg_1w_pct・rvol50）の値だけを書き、記事に載っている騰落率は書かない（2026-11-10。取引時間中の値のことがあるため）。それ以外の計算もコード実行で行い、Web検索の断片値、記憶、暗算、チャートの目測で算出しない。入力がなければmissingとし、D4のデータゲートを適用する。
 
 読込時はファイル名、基準日、行数、銘柄数、欠損・重複・分割疑義、出典種別を示す。
 
