@@ -1,0 +1,44 @@
+{
+  "generated_utc": "2026-11-14T11:01:53Z",
+  "generated_jst": "2026-11-14 20:01 JST",
+  "runtime_sec": 162,
+  "source": "Yahoo Finance via yfinance (unofficial)",
+  "yfinance_version": "1.8.0",
+  "prices": {
+    "file": "prices_daily.csv.gz",
+    "as_of": "2026-11-13",
+    "price_basis": "split_adjusted_ex_dividends(yahoo_close)",
+    "rows": 80882,
+    "tickers_requested": 108,
+    "tickers_ok": 108,
+    "tickers_failed": [],
+    "tickers_stale": [],
+    "yahoo_incomplete": {}
+  },
+  "breadth": {
+    "status": "ok",
+    "as_of": "2026-11-13",
+    "members_listed": 503,
+    "members_failed": 0,
+    "source": "computed:sp500_current_constituents:yahoo",
+    "note": "現在の構成銘柄で過去を計算（生存者バイアスあり、proxy）",
+    "ndx100": {
+      "status": "ok",
+      "list_file": "ndx100_constituents.csv",
+      "list_as_of": "2026-11-14",
+      "members_listed": 101,
+      "members_from_sp500": 86,
+      "extra_requested": 15,
+      "extra_failed": [],
+      "members_with_data_latest": 101,
+      "note": "いまの構成銘柄で過去を計算（生存者バイアスあり、proxy）。観察専用（追補09 F11）"
+    }
+  },
+  "earnings": {
+    "status": "ok",
+    "rows": 72,
+    "tickers_with_date": 72
+  },
+  "repo_last_commit_main": "2026-11-14T17:58:39+09:00",
+  "keepalive": "ok"
+}

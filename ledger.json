@@ -1,0 +1,159 @@
+{
+ "setups": [],
+ "folded_counts": {},
+ "regime_history": [
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "initial",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-26",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-27",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-28",
+   "checklist_regime": "B",
+   "confirmed_regime": "E",
+   "hysteresis": "provisional→B（2日連続の確認待ち）",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-29",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-30",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-02",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-03",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-04",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-05",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-06",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-09",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-10",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-11",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-12",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-13",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  }
+ ],
+ "updated": "2026-11-13",
+ "definition_version": "ST-1.5b / engine 1.4b",
+ "day_events": {
+  "date": "2026-11-13",
+  "events": [
+   {
+    "type": "next_candidate_out",
+    "ticker": "AMD",
+    "prev_tier": "B",
+    "bench": "SOXX",
+    "held_class": "同調",
+    "rebound_class": "同調",
+    "r_now": 0.56
+   },
+   {
+    "type": "next_candidate_out",
+    "ticker": "ANET",
+    "prev_tier": "C",
+    "bench": "XLK",
+    "held_class": "崩れた",
+    "rebound_class": "同調",
+    "r_now": 0.57
+   },
+   {
+    "type": "next_candidate_out",
+    "ticker": "MPWR",
+    "prev_tier": "B",
+    "bench": "SOXX",
+    "held_class": "同調",
+    "rebound_class": "同調",
+    "r_now": 0.56
+   }
+  ]
+ }
+}
