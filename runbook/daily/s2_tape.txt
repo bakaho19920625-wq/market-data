@@ -25,6 +25,16 @@
 - 「ヘッジ」1行（signals.hedge）：許可（allowed）、今日の成立（setups）、解除（cover_signal）。
   許可外なら「検討できる地合いではない」。
 - 「長く持つ分の目安」1行（signals.spy_model）：配分%、buy／sell、いつから、5項目のうち×の項目。
+- そのすぐ下に「QQQの売られ尽くし」1行（signals.qqq_washout。09追補 F11、観察専用）。文の形は 05 の8節から、次の順で選ぶ：
+  ・episode_start が基準日：「きょう点灯」。
+  ・state が broken で ended_date が基準日：「底割れの日」。
+  ・state が handed_over で ended_date が基準日：「引き継いだ日」。
+  ・state が active：「点灯のあと」（何営業日前か＝bars_since_start、線からの距離＝qqq_pct_vs_stop）。
+  ・それ以外（none、または broken・handed_over が前の日に確定済み）：「平常」。前の局面があれば括弧で日付を添える。
+  ・status が missing か pct50 が null：「未確認（理由＝note）」。coverage_low が真：「判定していない日」の一言を添える。
+  ・list_as_of が基準日から400日より前：「銘柄の一覧が古い（○年○月時点）」と添える。
+  QQQ の200日線の位置と向きは tape.checklist の QQQ（above_200、ma200_rising）をそのまま書き、再計算しない。
+  「買いの合図」と書かない。
 - 市場内部とFB1は現在のS&P500構成銘柄からのproxy（生存者バイアス）と注記する。
 - レジームの定義はマスター仕様C15.1（改訂版）と04追補のC15.1a〜d。
   判定はエンジンの値をそのまま使う。

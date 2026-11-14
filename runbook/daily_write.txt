@@ -1,4 +1,4 @@
-# 日次レポートの書き方 daily_write v1.0（daily_runbook v2.8 と対）
+# 日次レポートの書き方 daily_write v1.1（daily_runbook v2.8 と対）
 # 書き手（定期実行の Agent。チャットで「日次レポート」を頼まれたときは Claude 自身）が読む。定期実行の流れは daily_runbook.txt、変更の履歴は runbook/CHANGELOG.txt。
 
 ## 役割
@@ -27,7 +27,7 @@
 - 言葉づかい：/home/claude/market-data/05_Plain_Language_Glossary.txt（下の「書き方」）。
 - 定義の確認が必要なときだけ、マスター仕様と追補の該当条項を読む（/home/claude/market-data/ にある）：
   C7.1、C15.1、C15.2、D4、D7、E9〜E14、F2.1、F4、F9、
-  追補03のE7.1〜E7.3、追補04のC15.1a〜d、追補06のE7.4・C10.1・F10、追補07のE6.2・E6.3・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2、追補08のB4.5a・B4.6a。C15.1と04が食い違えば04を優先。本文と07が食い違えば07を優先。
+  追補03のE7.1〜E7.3、追補04のC15.1a〜d、追補06のE7.4・C10.1・F10、追補07のE6.2・E6.3・E9.2a・E9.5a・E9.6・E9.7・E10.1a・E13.2、追補08のB4.5a・B4.6a、追補09のF11。C15.1と04が食い違えば04を優先。本文と07が食い違えば07を優先。
 
 ## 原則
 - 計算はGitHubの解析エンジン（analyze.py）が済ませている。

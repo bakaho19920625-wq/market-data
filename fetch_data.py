@@ -9,6 +9,9 @@
                         50日線・200日線上比率、52週新高値・新安値、騰落数
   prices_sp500.csv.gz : S&P500構成銘柄の日足（約2年、市場全体のRS順位・先導株・ブレイク統計用）
   sp500_constituents.csv : 構成銘柄とGICSセクター
+  prices_ndx100_extra.csv.gz : ナスダック100のうちS&P500に無い銘柄の日足（約2年。追補09 F11「QQQの売られ尽くし」用）。
+                        breadth.csv の ndx100_ 系列（50日線・150日線上比率、データのある銘柄数）は、
+                        prices_sp500 とこのファイルを合わせて ndx100_constituents.csv（main）の銘柄で計算する
   events.csv          : 監視銘柄の次回決算予定日（Yahooから取得できた分）
   manifest.json       : 実行日時、基準日、件数、取得できなかった銘柄、リポジトリ最終更新日など
 
@@ -33,6 +36,7 @@ SP500_URL = (
 )
 ADJ_BASIS = "split_adjusted_ex_dividends(yahoo_close)"
 BREADTH_SOURCE = "computed:sp500_current_constituents:yahoo"
+NDX_LIST = "ndx100_constituents.csv"   # 追補09（F11、QW-1.0）。main に置く一覧（年数回、手で更新）
 FIELDS = {
     "Open": "open",
     "High": "high",
@@ -234,8 +238,36 @@ def git_last_commit_iso():
         return None
 
 
-def compute_breadth(px, keep_days=260):
-    """S&P500構成銘柄の日足から、市場内部の指標を日ごとに計算する。"""
+def load_ndx_list(path):
+    """ナスダック100の一覧（ndx100_constituents.csv）を読む。# の行はコメント。'# list_as_of: YYYY-MM-DD' の行から基準日を読む。"""
+    as_of = None
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            if line.startswith("# list_as_of:"):
+                as_of = line.split(":", 1)[1].strip()
+    df = pd.read_csv(path, comment="#")
+    syms = df["ticker"].astype(str).str.strip().str.upper().str.replace(".", "-", regex=False)
+    return list(dict.fromkeys(t for t in syms if t)), as_of
+
+
+def compute_ndx_breadth(px, members):
+    """ナスダック100の銘柄の日足から、50日線・150日線の上にいる銘柄の割合（%）と、その日にデータのある銘柄数を日ごとに出す。
+    計算の形は compute_breadth の sp500_pct_above_50sma と同じ（終値、線は期間分の足がそろってから）。追補09 F11。"""
+    sub = px[px["ticker"].isin(set(members))]
+    close = sub.pivot(index="date", columns="ticker", values="close").sort_index().astype(float)
+    out = {}
+    for w in (50, 150):
+        sma = close.rolling(w, min_periods=w).mean()
+        valid = sma.notna() & close.notna()
+        n = valid.sum(axis=1)
+        out[f"ndx100_pct_above_{w}sma"] = ((close > sma) & valid).sum(axis=1) / n.where(n > 0) * 100
+    out["ndx100_members_with_data"] = close.notna().sum(axis=1)
+    return pd.DataFrame(out)
+
+
+def compute_breadth(px, keep_days=260, extra=None):
+    """S&P500構成銘柄の日足から、市場内部の指標を日ごとに計算する。
+    extra（日付×系列の表）を渡すと、同じ日付の行に系列を足してから保存の形にする（追補09 の ndx100_ 系列）。無ければ従来どおり。"""
     close = px.pivot(index="date", columns="ticker", values="close").sort_index().astype(float)
     high = px.pivot(index="date", columns="ticker", values="high").sort_index().astype(float)
     low = px.pivot(index="date", columns="ticker", values="low").sort_index().astype(float)
@@ -262,6 +294,8 @@ def compute_breadth(px, keep_days=260):
         "sp500_members_with_data": close.notna().sum(axis=1),
     }
     wide = pd.DataFrame(series)
+    if extra is not None and not extra.empty:
+        wide = wide.join(extra, how="left")
     wide = wide.dropna(subset=["sp500_pct_above_200sma", "sp500_new_52w_highs"]).tail(keep_days)
     out = wide.reset_index().melt(id_vars="date", var_name="series", value_name="value")
     out["value"] = out["value"].astype(float).round(2)
@@ -269,11 +303,39 @@ def compute_breadth(px, keep_days=260):
     return out.sort_values(["date", "series"]).reset_index(drop=True)
 
 
+def ndx_breadth(a, bpx, calendar, unclosed):
+    """追補09（F11）：ナスダック100の一覧を読み、S&P500の日足に無い銘柄だけ2年分取って保存し、ndx100_ 系列を計算する。
+    どこで失敗しても例外を外に出さない（S&P500 の市場内部と、ほかの取得を止めないため）。返り値は（manifest に書く状態, 系列の表 か None）。"""
+    path = a.ndx_list
+    if not path or not os.path.exists(path):
+        return {"status": "skipped", "note": f"{path} が無い"}, None
+    try:
+        members, list_as_of = load_ndx_list(path)
+        have = set(bpx["ticker"])
+        extra = [t for t in members if t not in have]
+        epx, efailed = download(extra, "2y") if extra else (pd.DataFrame(columns=COLUMNS), [])
+        if not epx.empty:
+            epx = epx[epx["date"].isin(calendar)]
+            if unclosed is not None:
+                epx = epx[epx["date"] != unclosed]
+        epx.sort_values(["ticker", "date"]).to_csv(os.path.join(a.out, "prices_ndx100_extra.csv.gz"), index=False, compression="gzip")
+        npx = pd.concat([bpx[bpx["ticker"].isin(set(members))], epx], ignore_index=True)
+        wide = compute_ndx_breadth(npx, members)
+        status = {"status": "ok", "list_file": path, "list_as_of": list_as_of, "members_listed": len(members),
+                  "members_from_sp500": len([t for t in members if t in have]), "extra_requested": len(extra),
+                  "extra_failed": efailed, "members_with_data_latest": int(wide["ndx100_members_with_data"].iloc[-1]) if not wide.empty else 0,
+                  "note": "いまの構成銘柄で過去を計算（生存者バイアスあり、proxy）。観察専用（追補09 F11）"}
+        return status, wide
+    except Exception as e:
+        return {"status": "failed", "error": str(e)[:300]}, None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", default="out")
     ap.add_argument("--tickers", default="tickers.txt")
     ap.add_argument("--no-breadth", action="store_true")
+    ap.add_argument("--ndx-list", default=NDX_LIST, help="ナスダック100の一覧（追補09）。無ければ ndx100_ 系列を出さずに進む")
     a = ap.parse_args()
     os.makedirs(a.out, exist_ok=True)
     started = datetime.now(timezone.utc)
@@ -316,7 +378,8 @@ def main():
             if unclosed is not None:
                 bpx = bpx[bpx["date"] != unclosed]
             bpx.sort_values(["ticker", "date"]).to_csv(os.path.join(a.out, "prices_sp500.csv.gz"), index=False, compression="gzip")
-            b = compute_breadth(bpx)
+            ndx, ndx_wide = ndx_breadth(a, bpx, calendar, unclosed)   # 追補09。失敗しても S&P500 の市場内部はそのまま出す
+            b = compute_breadth(bpx, extra=ndx_wide)
             b.to_csv(os.path.join(a.out, "breadth.csv"), index=False)
             breadth = {
                 "status": "ok",
@@ -325,6 +388,7 @@ def main():
                 "members_failed": len(bfailed),
                 "source": BREADTH_SOURCE,
                 "note": "現在の構成銘柄で過去を計算（生存者バイアスあり、proxy）",
+                "ndx100": ndx,
             }
         except Exception as e:
             breadth = {"status": "failed", "error": str(e)[:300]}

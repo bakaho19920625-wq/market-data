@@ -1,0 +1,109 @@
+# ナスダック100（Nasdaq-100）の構成銘柄。追補09（F11、QW-1.0）の「QQQの売られ尽くし」で使う（fetch_data.py が読む）。
+# list_as_of: 2026-11-14
+# 作り方：2026-02-01 時点の一覧（topforeignstocks.com、出所 Nasdaq）に、その後の入れ替えを Nasdaq の発表で反映した。
+#   2026-04-20 +SNDK −TEAM／05-18 +LITE −CSGP／06-22 +ALAB +CRWV +NBIS +RKLB +TER −CHTR −CTSH −INSM −VRSK −ZS／
+#   06-29 +HONA（Honeywell の分社）／07-07 +SPCX（Fast Entry）／08-05 −EA（非公開化）／09-14 −KHC（NYSEへ移籍）／10-09 +MRNA −WBD
+# 更新：3・6・9月の定期見直しと12月の年次入れ替え（いずれも第3金曜の翌営業日に有効。2026-05 からの新ルール）の後と、臨時の入れ替えの発表時。list_as_of も書き換える。
+# 表記は Yahoo Finance に合わせる（ドットはハイフン）。GOOG と GOOGL は両方入れる（指数の構成と同じ）。
+ticker,name
+AAPL,Apple
+ABNB,Airbnb
+ADBE,Adobe
+ADI,Analog Devices
+ADP,Automatic Data Processing
+ADSK,Autodesk
+AEP,American Electric Power
+ALAB,Astera Labs
+ALNY,Alnylam Pharmaceuticals
+AMAT,Applied Materials
+AMD,Advanced Micro Devices
+AMGN,Amgen
+AMZN,Amazon.com
+APP,AppLovin
+ARM,Arm Holdings
+ASML,ASML Holding
+AVGO,Broadcom
+AXON,Axon Enterprise
+BKNG,Booking Holdings
+BKR,Baker Hughes
+CCEP,Coca-Cola Europacific Partners
+CDNS,Cadence Design Systems
+CEG,Constellation Energy
+CMCSA,Comcast
+COST,Costco Wholesale
+CPRT,Copart
+CRWD,CrowdStrike
+CRWV,CoreWeave
+CSCO,Cisco Systems
+CSX,CSX
+CTAS,Cintas
+DASH,DoorDash
+DDOG,Datadog
+DXCM,DexCom
+EXC,Exelon
+FANG,Diamondback Energy
+FAST,Fastenal
+FER,Ferrovial
+FTNT,Fortinet
+GEHC,GE HealthCare
+GILD,Gilead Sciences
+GOOG,Alphabet (Class C)
+GOOGL,Alphabet (Class A)
+HON,Honeywell Technologies
+HONA,Honeywell Aerospace
+IDXX,IDEXX Laboratories
+INTC,Intel
+INTU,Intuit
+ISRG,Intuitive Surgical
+KDP,Keurig Dr Pepper
+KLAC,KLA
+LIN,Linde
+LITE,Lumentum Holdings
+LRCX,Lam Research
+MAR,Marriott International
+MCHP,Microchip Technology
+MDLZ,Mondelez International
+MELI,MercadoLibre
+META,Meta Platforms
+MNST,Monster Beverage
+MPWR,Monolithic Power Systems
+MRNA,Moderna
+MRVL,Marvell Technology
+MSFT,Microsoft
+MSTR,Strategy
+MU,Micron Technology
+NBIS,Nebius Group
+NFLX,Netflix
+NVDA,NVIDIA
+NXPI,NXP Semiconductors
+ODFL,Old Dominion Freight Line
+ORLY,O'Reilly Automotive
+PANW,Palo Alto Networks
+PAYX,Paychex
+PCAR,PACCAR
+PDD,PDD Holdings
+PEP,PepsiCo
+PLTR,Palantir Technologies
+PYPL,PayPal Holdings
+QCOM,Qualcomm
+REGN,Regeneron Pharmaceuticals
+RKLB,Rocket Lab
+ROP,Roper Technologies
+ROST,Ross Stores
+SBUX,Starbucks
+SHOP,Shopify
+SNDK,Sandisk
+SNPS,Synopsys
+SPCX,Space Exploration Technologies
+STX,Seagate Technology
+TER,Teradyne
+TMUS,T-Mobile US
+TRI,Thomson Reuters
+TSLA,Tesla
+TTWO,Take-Two Interactive
+TXN,Texas Instruments
+VRTX,Vertex Pharmaceuticals
+WDAY,Workday
+WDC,Western Digital
+WMT,Walmart
+XEL,Xcel Energy
