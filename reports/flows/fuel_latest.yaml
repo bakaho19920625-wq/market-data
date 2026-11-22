@@ -1,85 +1,86 @@
 # 買い戻しの燃料計の控え（追補08 B4.6a、FG-1.0）。定期実行（週次と、その週の最初の日次）が更新する。
 # 数字は公表・報道されたものの転記（reported_unverified）。4本のレポートがこのファイルを読む。項目名は変えない。
 schema: FG-1.0
-updated_jst: "2026-11-10 10:05 JST"
-week_ending: 2026-11-06
+updated_jst: "2026-11-22 09:22 JST"
+week_ending: 2026-11-13
 inputs:
   hf_net:
-    percentile: 0
+    percentile: 2
     window: "5年"
-    value_pct: null
-    chg_pt: -3.7
+    value_pct: 45.4
+    chg_pt: 2.1
     publisher: "Goldman Sachs プライムブック（米国株ファンダメンタル・ロングショートのネット・レバレッジ）"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-06
-    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-12
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-have-we-seen-the-q4-bottom"
     status: reported_unverified
   discretionary:
-    percentile: 3
-    z: -1.1
+    percentile: 13
+    z: null
     publisher: "Deutsche Bank（discretionary investor positioning）"
-    via: "Tickmill「Institutional Insights: Deutsche Bank Investor Flows & Positioning 9/11/26」、Investing.com 2026-11-07"
-    as_of: 2026-11-06
-    url: "https://www.tickmill.com/blog/institutional-insights-deutsche-bank-investor-flows-positioning-91126"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-13
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-have-we-seen-the-q4-bottom"
     status: reported_unverified
   systematic:
-    percentile: 44
-    z: 0.1
+    percentile: 37
+    z: null
     publisher: "Deutsche Bank（systematic strategies positioning）"
-    via: "Tickmill「Institutional Insights: Deutsche Bank Investor Flows & Positioning 9/11/26」"
-    as_of: 2026-11-06
-    url: "https://www.tickmill.com/blog/institutional-insights-deutsche-bank-investor-flows-positioning-91126"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-13
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-have-we-seen-the-q4-bottom"
     status: reported_unverified
 fuel:
   inputs_used: 3
-  position_avg_pct: 15.7
+  position_avg_pct: 17.3
   remaining_pct: 80
   level: "多い"
   bar: "■■■■■■■■□□"
-  prev: {week_ending: null, remaining_pct: null}
+  prev: {week_ending: 2026-11-06, remaining_pct: 80}
 flows:
   cta_next_week_usd_bn:
-    flat: -28
-    up: null
-    down: null
-    scope: "S&P500先物"
-    publisher: "Goldman Sachs（基本想定）"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-06
-    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+    flat: 28
+    up: 26
+    down: -22
+    scope: "世界のシステマティック勢（CTA等）の株式。11/16 の週の見込み（上昇＝5日で約+3.8%、下落＝約−5.9%の場合）"
+    publisher: "BofA"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-13
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-have-we-seen-the-q4-bottom"
   cta_next_month_usd_bn:
-    flat: -45
+    flat: null
     up: null
     down: null
-    scope: "S&P500先物"
-    publisher: "Goldman Sachs（基本想定）"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-06
-    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+    scope: "今週の記事に1か月の見込みはなし（前回 11/6 時点の Goldman の基本想定 −450億ドルは週が違うので外した）"
+    publisher: null
+    via: null
+    as_of: null
+    url: null
   cta_percentile:
-    sp500: 53
-    nasdaq100: 24
+    sp500: 48
+    nasdaq100: 14
     publisher: "Deutsche Bank"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-06
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-13
   buyback_open_window_pct:
-    value: 85
-    publisher: "Citadel Securities"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-06
-    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-cpi-and-equity-flows-test-a-shaken-market"
+    value: 82
+    publisher: "Citadel Securities（S&P500 の時価総額比。11/23 に約91%、12月中旬に約97%の見込み）"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-16
+    url: "https://pro.thestreet.com/market-commentary/the-week-ahead-have-we-seen-the-q4-bottom"
   retail:
-    note: "個人は11/3まで22営業日連続の買い越し（計約330億ドル。Citadel Securities）。11/5は個別株を売り越し（15時時点で3.38億ドル。Vanda）"
-    publisher: "Citadel Securities、Vanda"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-05
+    note: "個人は前週に株式ETFを1日約200億ドル買い、11/9 は約300億ドル。NVDA を 11/5〜11 に純16億ドル買い（JPM）。QQQ の空売り残は発行済みの約11%（2023年以来の高さ、JPM）"
+    publisher: "JPMorgan、Vanda"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-12
   leveraged_etf:
-    note: "レバレッジ・インバース型ETFの残高は1,400億ドル弱（20日で約550億ドル減）。11/5の引け前の機械的な売りはS&P500 約40億ドル・ナスダック100 約130億ドルで過去最大（BofA）"
-    publisher: "BofA、Goldman Sachs"
-    via: "TheStreet Pro「The Week Ahead」2026-11-08"
-    as_of: 2026-11-05
-sector_note: "Deutsche Bank：テックの持ち高は市場全体を下回り、4月の急落時（Liberation Day）の安値より下（百分位の公表なし）"
-line_ja: "買い戻しの燃料：残り約8割（多い。11/6 週のデータ）。プロの買い持ちは過去5年でいちばん軽い（Goldman Sachs）。機械的な売りはあと1週間でS&P500先物 約280億ドルの見込み、自社株買いは約85%が解禁"
+    note: "急落後にレバレッジETFの新規設定が100%点（Nomura）、水曜の引けまでに約265億ドルの買い（うち半導体149億）。残高1,515億ドル（前1,420億）、相場1%の動きで約76億ドルの売買が出る計算（McElligott）"
+    publisher: "Nomura、McElligott"
+    via: "TheStreet Pro「The Week Ahead – Have We Seen the Q4 Bottom?」2026-11-15"
+    as_of: 2026-11-12
+sector_note: "Deutsche Bank：テックの持ち高は26%点（前週7%点）。Goldman：プライムブックの IT のロング／ショート比は1.5で2016年以降の最低、半導体は6月から S&P500 を30pt 超下回る"
+line_ja: "買い戻しの燃料：残り約8割（多い。11/13 週のデータで、今週の急落の前）。プロの買い持ちは過去5年で下から2%の位置（Goldman Sachs）。機械的な売買の見込みは今週 横ばいなら約280億ドルの買い・下げれば約220億ドルの売り（BofA）、自社株買いは11/23 に約9割が解禁"
 notes:
-  - "初回の値（2026-11-10 に作成）。前回比は次の更新から"
-  - "hf_net の水準（%）は記事に記載がなく null。前週比−3.7pt と5年で0%の位置だけを転記"
+  - "2026-11-22 の週次で更新（week_ending 11/13。prev は 11/6 週の約8割）"
+  - "位置の平均 17.3%（2・13・37 の平均）→ 残り 82.7% → 残り約8割。11/13 週の数字で、11/16〜20 の急落（S&P500 −8.6%）の後の持ち高は未取得"
+  - "hf_net は5年の百分位（1年では4%点）。cta_next_week は BofA の世界のシステマティック勢の見込みで、前回（Goldman の S&P500 先物）と出典・範囲が違う"
