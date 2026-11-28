@@ -1,0 +1,210 @@
+{
+ "setups": [
+  {
+   "setup_id": "AAPL-flat_base-2026-11-20",
+   "ticker": "AAPL",
+   "pattern": "flat_base",
+   "registered": "2026-11-20",
+   "pivot": 360.83,
+   "stop": 338.86,
+   "risk_pct": 6.2,
+   "status": "registered",
+   "breakout_date": null,
+   "setup_type": "standard",
+   "base_count": 3,
+   "invalidation": 323.7,
+   "definition_version": "ST-1.5b / engine 1.4b"
+  }
+ ],
+ "folded_counts": {},
+ "regime_history": [
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "initial",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-23",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-26",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-27",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-28",
+   "checklist_regime": "B",
+   "confirmed_regime": "E",
+   "hysteresis": "provisional→B（2日連続の確認待ち）",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-29",
+   "checklist_regime": "E",
+   "confirmed_regime": "E",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-10-30",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-02",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-03",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-04",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-05",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-06",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-09",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-10",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-11",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-12",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-13",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-16",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-17",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-18",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-19",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-20",
+   "checklist_regime": "D",
+   "confirmed_regime": "D",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-23",
+   "checklist_regime": "C",
+   "confirmed_regime": "D",
+   "hysteresis": "provisional→C（2日連続の確認待ち）",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-24",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-25",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  },
+  {
+   "date": "2026-11-27",
+   "checklist_regime": "C",
+   "confirmed_regime": "C",
+   "hysteresis": "confirmed",
+   "provisional": false
+  }
+ ],
+ "updated": "2026-11-27",
+ "definition_version": "ST-1.5b / engine 1.4b",
+ "day_events": {
+  "date": "2026-11-27",
+  "events": []
+ }
+}

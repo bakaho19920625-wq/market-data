@@ -1,0 +1,2 @@
+ticker,pattern,status,base_start,base_low,base_days,depth_pct,ideal_depth,prior_up_pct,footprint,pivot,stop,invalidation,risk_pct,dist_to_pivot_pct,dry5,checks,rs_rank,leader,group,sector_rs_class,resilience_tier,stage,stage_label,base_count,base_count_status,setup_type,base_count_warning,pattern_ja,also
+AAPL,flat_base,watch,2026-10-16,325.33,29,9.8,True,36,6W 10%,360.83,338.86,323.7,6.2,-0.6,1.28,"{'risk_ok': True, 'not_extended': np.True_, 'near_pivot': np.True_, 'dry5_ok': False}",82.9,True,ハードウェア・ネットワーク・AI計算基盤,leader,A,2,2(+),3,ok,standard,True,フラットベース,[]
